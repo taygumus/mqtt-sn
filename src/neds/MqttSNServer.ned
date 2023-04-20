@@ -1,4 +1,4 @@
-package mqttsn.modules;
+package mqttsn.neds;
 
 import inet.applications.udpapp.UdpBasicApp;
 
