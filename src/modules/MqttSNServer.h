@@ -1,5 +1,5 @@
-#ifndef MODULES_MQTTSNCLIENT_H_
-#define MODULES_MQTTSNCLIENT_H_
+#ifndef MODULES_MQTTSNSERVER_H_
+#define MODULES_MQTTSNSERVER_H_
 
 #include "inet/applications/udpapp/UdpBasicApp.h"
 
@@ -17,4 +17,4 @@ class MqttSNServer : public inet::UdpBasicApp
 
 } /* namespace mqttsn */
 
-#endif /* MODULES_MQTTSNCLIENT_H_ */
+#endif /* MODULES_MQTTSNSERVER_H_ */
