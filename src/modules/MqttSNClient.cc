@@ -12,8 +12,10 @@ void MqttSNClient::sendPacket()
 
     const auto& message = inet::makeShared<MqttSNMessage>();
 
-    message->setLength(2);
+    message->setLength(256);
     message->setMsgType(MsgType::ADVERTISE);
+
+    EV << message->getLength();
 
     //inet::Packet *packet = new inet::Packet("Pacchetto");
     //packet->insertAtBack(message);
