@@ -15,8 +15,10 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
     std::stringstream os;
     os << pk;
-
     EV << os.str();
+
+    delete pk;
+    numReceived++;
 }
 
 } /* namespace mqttsn */
