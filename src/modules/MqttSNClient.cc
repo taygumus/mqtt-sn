@@ -8,17 +8,22 @@ Define_Module(MqttSNClient);
 
 void MqttSNClient::sendPacket()
 {
-    EV << "Client Works! \n";
+    EV << "Client is sending a new packet..\n";
 
-    const auto& message = inet::makeShared<MqttSNMessage>();
+    const auto& payload = inet::makeShared<MqttSNMessage>();
+    payload->setMsgType(MsgType::ADVERTISE);
 
-    message->setLength(256);
-    message->setMsgType(MsgType::ADVERTISE);
+    unsigned __int16 bytes = 4;
+    payload->setLength(bytes);
+    payload->setChunkLength(inet::B(bytes));
 
-    EV << message->getLength();
-
-    //inet::Packet *packet = new inet::Packet("Pacchetto");
-    //packet->insertAtBack(message);
+    std::ostringstream str;
+    str << "Packet" << "-" << numSent;
+    inet::Packet *packet = new inet::Packet(str.str().c_str());
+    packet->insertAtBack(payload);
+    inet::L3Address destAddr = chooseDestAddr();
+    socket.sendTo(packet, destAddr, destPort);
+    numSent++;
 }
 
 void MqttSNClient::processPacket(inet::Packet *pk)
