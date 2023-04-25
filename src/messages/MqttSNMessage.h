@@ -15,8 +15,8 @@ class MqttSNMessage : public inet::FieldsChunk
     public:
         MqttSNMessage() {};
 
-        void setLength(unsigned __int16 length);
-        unsigned __int16 getLength();
+        void setLength(uint16_t length);
+        uint16_t getLength();
 
         void setMsgType(MsgType msg);
         MsgType getMsgType();

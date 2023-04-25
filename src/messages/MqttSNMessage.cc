@@ -2,7 +2,7 @@
 
 namespace mqttsn {
 
-void MqttSNMessage::setLength(unsigned __int16 messageLength)
+void MqttSNMessage::setLength(uint16_t messageLength)
 {
     if (messageLength < 256) {
         length.push_back(static_cast<uint8_t>(messageLength));
@@ -14,14 +14,14 @@ void MqttSNMessage::setLength(unsigned __int16 messageLength)
     }
 }
 
-unsigned __int16 MqttSNMessage::getLength()
+uint16_t MqttSNMessage::getLength()
 {
     if (length.size() == 1) {
-        return static_cast<unsigned __int16>(length[0]);
+        return static_cast<uint16_t>(length[0]);
     }
 
     if (length.size() == 3 && length[0] == 0x01) {
-        return static_cast<unsigned __int16>(length[2]) << 8 | static_cast<unsigned __int16>(length[1]);
+        return static_cast<uint16_t>(length[2]) << 8 | static_cast<uint16_t>(length[1]);
     }
 
     return 0;
