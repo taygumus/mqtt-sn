@@ -1,0 +1,12 @@
+*.exe
+
+.settings/
+out/
+simulations/results/
+simulations/.qtenvrc
+
+.cproject
+.nedexclusions
+.nedfolders
+.oppbuildspec
+.project
