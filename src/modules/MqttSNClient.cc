@@ -1,5 +1,5 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNAdvertise.h"
+#include "messages/MqttSNConnect.h"
 #include "types/MsgType.h"
 
 namespace mqttsn {
@@ -10,12 +10,19 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNAdvertise>();
+    const auto& payload = inet::makeShared<MqttSNConnect>();
+    payload->setMsgType(MsgType::CONNECT);
+    payload->setCleanSessionFlag(false);
+    payload->setWillFlag(true);
+    payload->setDuration(20);
+    payload->setClientId("clientId");
 
-    payload->setMsgType(MsgType::ADVERTISE);
-    payload->setGwId(0x02);
-    payload->setDuration(10);
+    EV << payload->getCleanSessionFlag() << std::endl;
+    EV << payload->getWillFlag() << std::endl;
+    EV << payload->getDuration() << std::endl;
+    EV << payload->getClientId() << std::endl;
 
+    /*
     uint16_t bytes = 4;
     payload->setLength(bytes);
     payload->setChunkLength(inet::B(bytes));
@@ -28,6 +35,7 @@ void MqttSNClient::sendPacket()
     inet::L3Address destAddr = chooseDestAddr();
     socket.sendTo(packet, destAddr, destPort);
     numSent++;
+    */
 }
 
 void MqttSNClient::processPacket(inet::Packet *pk)

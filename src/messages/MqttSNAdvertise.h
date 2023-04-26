@@ -8,8 +8,8 @@ namespace mqttsn {
 class MqttSNAdvertise : public MqttSNMessage
 {
     private:
-        uint8_t gwId;
-        uint16_t duration;
+        uint8_t gwId = 0;
+        uint16_t duration = 0;
 
     public:
         MqttSNAdvertise() {};

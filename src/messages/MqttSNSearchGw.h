@@ -8,7 +8,7 @@ namespace mqttsn {
 class MqttSNSearchGw : public MqttSNMessage
 {
     private:
-        uint8_t radius;
+        uint8_t radius = 0;
 
     public:
         MqttSNSearchGw() {};

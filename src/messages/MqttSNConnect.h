@@ -2,27 +2,19 @@
 #define MESSAGES_MQTTSNCONNECT_H_
 
 #include "MqttSNMessage.h"
-#include "types/QoS.h"
-#include "types/TopicIdType.h"
 
 namespace mqttsn {
 
 class MqttSNConnect : public MqttSNMessage
 {
     private:
-        uint8_t flags;
+        uint8_t flags = 0;
+        uint8_t protocolId = 0x01;
+        uint16_t duration = 0;
+        std::string clientId = "";
 
     public:
         MqttSNConnect() {};
-
-        void setDupFlag(bool dupFlag);
-        bool getDupFlag();
-
-        void setQoSFlag(QoS level);
-        QoS getQoSFlag();
-
-        void setRetainFlag(bool retainFlag);
-        bool getRetainFlag();
 
         void setWillFlag(bool willFlag);
         bool getWillFlag();
@@ -30,8 +22,13 @@ class MqttSNConnect : public MqttSNMessage
         void setCleanSessionFlag(bool cleanSessionFlag);
         bool getCleanSessionFlag();
 
-        void setTopicIdTypeFlag(TopicIdType topicIdType);
-        TopicIdType getTopicIdTypeFlag();
+        uint8_t getProtocolId();
+
+        void setDuration(uint16_t seconds);
+        uint16_t getDuration();
+
+        void setClientId(std::string id);
+        std::string getClientId();
 
         ~MqttSNConnect() {};
 };

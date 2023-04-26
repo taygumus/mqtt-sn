@@ -8,8 +8,8 @@ namespace mqttsn {
 class MqttSNGwInfo : public MqttSNMessage
 {
     private:
-        uint8_t gwId;
-        uint32_t gwAdd;
+        uint8_t gwId = 0;
+        uint32_t gwAdd = 0;
 
     public:
         MqttSNGwInfo() {};
