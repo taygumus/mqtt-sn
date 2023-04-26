@@ -1,26 +1,26 @@
 #include "MqttSNConnect.h"
-#include "types/Flags.h"
+#include "types/Flag.h"
 
 namespace mqttsn {
 
 void MqttSNConnect::setWillFlag(bool willFlag)
 {
-    flags |= (willFlag << Flags::WILL);
+    flags = (flags & ~(1 << Flag::WILL)) | (willFlag << Flag::WILL);
 }
 
 bool MqttSNConnect::getWillFlag()
 {
-    return (flags & (1 << Flags::WILL)) != 0;
+    return (flags & (1 << Flag::WILL)) != 0;
 }
 
 void MqttSNConnect::setCleanSessionFlag(bool cleanSessionFlag)
 {
-    flags |= (cleanSessionFlag << Flags::CLEAN_SESSION);
+    flags = (flags & ~(1 << Flag::CLEAN_SESSION)) | (cleanSessionFlag << Flag::CLEAN_SESSION);
 }
 
 bool MqttSNConnect::getCleanSessionFlag()
 {
-    return (flags & (1 << Flags::CLEAN_SESSION)) != 0;
+    return (flags & (1 << Flag::CLEAN_SESSION)) != 0;
 }
 
 uint8_t MqttSNConnect::getProtocolId()

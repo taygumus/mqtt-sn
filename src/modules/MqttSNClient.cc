@@ -1,6 +1,7 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNConnect.h"
+#include "messages/MqttSNWillTopic.h"
 #include "types/MsgType.h"
+#include "types/QoS.h"
 
 namespace mqttsn {
 
@@ -10,17 +11,14 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNConnect>();
-    payload->setMsgType(MsgType::CONNECT);
-    payload->setCleanSessionFlag(false);
-    payload->setWillFlag(true);
-    payload->setDuration(20);
-    payload->setClientId("clientId");
+    const auto& payload = inet::makeShared<MqttSNWillTopic>();
 
-    EV << payload->getCleanSessionFlag() << std::endl;
-    EV << payload->getWillFlag() << std::endl;
-    EV << payload->getDuration() << std::endl;
-    EV << payload->getClientId() << std::endl;
+    payload->setMsgType(MsgType::WILLTOPIC);
+    payload->setQoSFlag(QoS::QOS_0);
+    payload->setRetainFlag(true);
+
+    EV << (int) payload->getQoSFlag() << std::endl;
+    EV << payload->getRetainFlag() << std::endl;
 
     /*
     uint16_t bytes = 4;
