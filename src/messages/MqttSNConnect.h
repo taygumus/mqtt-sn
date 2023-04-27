@@ -11,7 +11,7 @@ class MqttSNConnect : public MqttSNMessage
         uint8_t flags = 0;
         uint8_t protocolId = 0x01;
         uint16_t duration = 0;
-        std::string clientId = "";
+        std::string clientId;
 
     public:
         MqttSNConnect() {};

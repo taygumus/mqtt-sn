@@ -39,10 +39,12 @@ uint16_t MqttSNConnect::getDuration()
 }
 
 void MqttSNConnect::setClientId(std::string id) {
-    if (id.length() <= 23)
-        clientId = id;
+    uint16_t length = id.length();
+
+    if (length >= 1 && length <= 23)
+        clientId = id.substr(0, length);
     else
-        clientId = id.substr(0, 23);
+        throw omnetpp::cRuntimeError("ClientId length must be between 1 and 23");
 }
 
 std::string MqttSNConnect::getClientId() {

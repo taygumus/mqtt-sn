@@ -1,7 +1,7 @@
 #ifndef TYPES_FLAG_H_
 #define TYPES_FLAG_H_
 
-enum Flag {
+enum Flag : uint16_t {
     TOPIC_ID_TYPE = 0,
     CLEAN_SESSION = 2,
     WILL = 3,

@@ -10,6 +10,7 @@ class MqttSNWillTopic : public MqttSNMessage
 {
     private:
         uint8_t flags = 0;
+        std::string willTopic;
 
     public:
         MqttSNWillTopic() {};
@@ -19,6 +20,9 @@ class MqttSNWillTopic : public MqttSNMessage
 
         void setRetainFlag(bool retainFlag);
         bool getRetainFlag();
+
+        void setWillTopic(std::string topicName);
+        std::string getWillTopic();
 
         ~MqttSNWillTopic() {};
 };

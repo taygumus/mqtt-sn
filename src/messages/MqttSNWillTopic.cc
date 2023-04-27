@@ -23,4 +23,32 @@ bool MqttSNWillTopic::getRetainFlag()
     return (flags & (1 << Flag::RETAIN)) != 0;
 }
 
+void MqttSNWillTopic::setWillTopic(std::string topicName) {
+    uint16_t left = 0;
+    uint16_t length = getLength();
+
+    if (length > 3 && length < 256) {
+        left = length - 3;
+    }
+    else if (length >= 256) {
+        left = length - 5;
+    }
+    else {
+        throw omnetpp::cRuntimeError("WillTopic name cannot be set");
+    }
+
+    uint16_t strLength = topicName.length();
+
+    if (strLength <= left) {
+        willTopic = topicName.substr(0, strLength);
+    }
+    else {
+        throw omnetpp::cRuntimeError("WillTopic name too long");
+    }
+}
+
+std::string MqttSNWillTopic::getWillTopic() {
+    return willTopic;
+}
+
 } /* namespace mqttsn */
