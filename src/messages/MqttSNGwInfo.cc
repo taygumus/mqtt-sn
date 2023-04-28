@@ -1,6 +1,12 @@
 #include "MqttSNGwInfo.h"
+#include "types/Length.h"
 
 namespace mqttsn {
+
+MqttSNGwInfo::MqttSNGwInfo()
+{
+    setLength(Length::GWINFO_OCTETS, 0);
+}
 
 void MqttSNGwInfo::setGwId(uint8_t gatewayId)
 {

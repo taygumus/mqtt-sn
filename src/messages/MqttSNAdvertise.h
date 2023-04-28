@@ -12,7 +12,7 @@ class MqttSNAdvertise : public MqttSNMessage
         uint16_t duration = 0;
 
     public:
-        MqttSNAdvertise() {};
+        MqttSNAdvertise();
 
         void setGwId(uint8_t gatewayId);
         uint8_t getGwId();

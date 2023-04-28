@@ -14,7 +14,7 @@ class MqttSNConnect : public MqttSNMessage
         std::string clientId;
 
     public:
-        MqttSNConnect() {};
+        MqttSNConnect();
 
         void setWillFlag(bool willFlag);
         bool getWillFlag();

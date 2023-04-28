@@ -12,7 +12,7 @@ class MqttSNGwInfo : public MqttSNMessage
         uint32_t gwAdd = 0;
 
     public:
-        MqttSNGwInfo() {};
+        MqttSNGwInfo();
 
         void setGwId(uint8_t gatewayId);
         uint8_t getGwId();

@@ -1,6 +1,12 @@
 #include "MqttSNAdvertise.h"
+#include "types/Length.h"
 
 namespace mqttsn {
+
+MqttSNAdvertise::MqttSNAdvertise()
+{
+    setLength(Length::ADVERTISE_OCTETS, 0);
+}
 
 void MqttSNAdvertise::setGwId(uint8_t gatewayId)
 {

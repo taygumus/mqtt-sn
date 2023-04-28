@@ -1,17 +1,22 @@
 #include "MqttSNMessage.h"
+#include "types/Length.h"
 
 namespace mqttsn {
 
-void MqttSNMessage::setLength(uint16_t messageLength)
+void MqttSNMessage::setLength(uint16_t fixedLength, uint16_t variableLength)
 {
-    if (messageLength < 256) {
-        length.push_back(static_cast<uint8_t>(messageLength));
+    length.clear();
+    uint16_t minLength = fixedLength + variableLength + Length::TWO_OCTETS;
+
+    if (minLength < Length::LIMIT_OCTETS) {
+        length.push_back(static_cast<uint8_t>(minLength));
     }
     else {
+        minLength += Length::TWO_OCTETS;
         length.push_back(0x01);
-        length.push_back(static_cast<uint8_t>(messageLength & 0xFF));
-        length.push_back(static_cast<uint8_t>((messageLength >> 8) & 0xFF));
-    }
+        length.push_back(static_cast<uint8_t>(minLength & 0xFF));
+        length.push_back(static_cast<uint8_t>((minLength >> 8) & 0xFF));
+   }
 }
 
 uint16_t MqttSNMessage::getLength()

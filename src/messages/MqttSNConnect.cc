@@ -1,7 +1,13 @@
 #include "MqttSNConnect.h"
+#include "types/Length.h"
 #include "types/Flag.h"
 
 namespace mqttsn {
+
+MqttSNConnect::MqttSNConnect()
+{
+    setLength(Length::CONNECT_OCTETS, 0);
+}
 
 void MqttSNConnect::setWillFlag(bool willFlag)
 {
@@ -41,15 +47,16 @@ uint16_t MqttSNConnect::getDuration()
 void MqttSNConnect::setClientId(std::string id) {
     uint16_t length = id.length();
 
-    if (length >= 1 && length <= 23)
+    if (length >= Length::ONE_OCTET && length <= Length::CLIENT_ID_OCTETS)
         clientId = id.substr(0, length);
     else
-        throw omnetpp::cRuntimeError("ClientId length must be between 1 and 23");
+        throw omnetpp::cRuntimeError("Client Id length must be between 1 and 23");
+
+    setLength(Length::CONNECT_OCTETS, length);
 }
 
 std::string MqttSNConnect::getClientId() {
     return clientId;
 }
-
 
 } /* namespace mqttsn */

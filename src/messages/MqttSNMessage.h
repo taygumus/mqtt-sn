@@ -9,13 +9,15 @@ namespace mqttsn {
 class MqttSNMessage : public inet::FieldsChunk
 {
     private:
-        std::vector<uint8_t> length;
+        std::vector<uint8_t> length = {0x02};
         MsgType msgType;
+
+    protected:
+        void setLength(uint16_t fixedLength, uint16_t variableLength);
 
     public:
         MqttSNMessage() {};
 
-        void setLength(uint16_t length);
         uint16_t getLength();
 
         void setMsgType(MsgType msg);

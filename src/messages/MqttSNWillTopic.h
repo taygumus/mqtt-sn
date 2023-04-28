@@ -13,7 +13,7 @@ class MqttSNWillTopic : public MqttSNMessage
         std::string willTopic;
 
     public:
-        MqttSNWillTopic() {};
+        MqttSNWillTopic();
 
         void setQoSFlag(QoS qosFlag);
         uint8_t getQoSFlag();

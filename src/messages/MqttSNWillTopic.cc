@@ -1,7 +1,13 @@
 #include "MqttSNWillTopic.h"
+#include "types/Length.h"
 #include "types/Flag.h"
 
 namespace mqttsn {
+
+MqttSNWillTopic::MqttSNWillTopic()
+{
+    setLength(Length::WILLTOPIC_OCTETS, 0);
+}
 
 void MqttSNWillTopic::setQoSFlag(QoS qosFlag)
 {
@@ -24,6 +30,7 @@ bool MqttSNWillTopic::getRetainFlag()
 }
 
 void MqttSNWillTopic::setWillTopic(std::string topicName) {
+    /*
     uint16_t left = 0;
     uint16_t length = getLength();
 
@@ -45,6 +52,7 @@ void MqttSNWillTopic::setWillTopic(std::string topicName) {
     else {
         throw omnetpp::cRuntimeError("WillTopic name too long");
     }
+    */
 }
 
 std::string MqttSNWillTopic::getWillTopic() {

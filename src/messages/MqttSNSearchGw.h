@@ -11,7 +11,7 @@ class MqttSNSearchGw : public MqttSNMessage
         uint8_t radius = 0;
 
     public:
-        MqttSNSearchGw() {};
+        MqttSNSearchGw();
 
         void setRadius(uint8_t hops);
         uint8_t getRadius();

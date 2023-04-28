@@ -1,0 +1,17 @@
+#ifndef TYPES_LENGTH_H_
+#define TYPES_LENGTH_H_
+
+enum Length : uint16_t {
+    ONE_OCTET = 1,
+    TWO_OCTETS = 2,
+    LIMIT_OCTETS = 256,
+    CLIENT_ID_OCTETS = 23,
+    ADVERTISE_OCTETS = 3,
+    SEARCHGW_OCTETS = 1,
+    GWINFO_OCTETS = 5,
+    CONNECT_OCTETS = 4,
+    CONNACK_OCTETS = 1,
+    WILLTOPIC_OCTETS = 1
+};
+
+#endif /* TYPES_LENGTH_H_ */

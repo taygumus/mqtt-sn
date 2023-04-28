@@ -12,18 +12,9 @@ void MqttSNClient::sendPacket()
     EV << "Client is sending a new packet..\n";
 
     const auto& payload = inet::makeShared<MqttSNWillTopic>();
-    payload->setLength(5);
     payload->setMsgType(MsgType::WILLTOPIC);
 
-    //payload->setQoSFlag(QoS::QOS_0);
-    //payload->setRetainFlag(true);
-
-    payload->setWillTopic("ta");
-
-    EV << payload->getWillTopic();
-
-    //EV << (int) payload->getQoSFlag() << std::endl;
-    //EV << payload->getRetainFlag() << std::endl;
+    //EV << payload->getLength() << std::endl;
 
     /*
     uint16_t bytes = 4;

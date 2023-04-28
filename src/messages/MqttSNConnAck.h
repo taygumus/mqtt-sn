@@ -12,7 +12,7 @@ class MqttSNConnAck : public MqttSNMessage
         ReturnCode returnCode;
 
     public:
-        MqttSNConnAck() {};
+        MqttSNConnAck();
 
         void setReturnCode(ReturnCode code);
         ReturnCode getReturnCode();
