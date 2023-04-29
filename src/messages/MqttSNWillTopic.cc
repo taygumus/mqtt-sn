@@ -29,7 +29,8 @@ bool MqttSNWillTopic::getRetainFlag()
     return (flags & (1 << Flag::RETAIN)) != 0;
 }
 
-void MqttSNWillTopic::setWillTopic(std::string topicName) {
+void MqttSNWillTopic::setWillTopic(std::string topicName)
+{
     uint16_t length = topicName.length();
 
     if (length <= getAvailableLength())
@@ -40,7 +41,8 @@ void MqttSNWillTopic::setWillTopic(std::string topicName) {
     setLength(Length::WILLTOPIC_OCTETS, length);
 }
 
-std::string MqttSNWillTopic::getWillTopic() {
+std::string MqttSNWillTopic::getWillTopic()
+{
     return willTopic;
 }
 

@@ -28,6 +28,4 @@ uint32_t MqttSNGwInfo::getGwAdd()
     return gwAdd;
 }
 
-
-
 } /* namespace mqttsn */

@@ -2,7 +2,8 @@
 
 namespace mqttsn {
 
-void MqttSNWillMsg::setWillMsg(std::string willMessage) {
+void MqttSNWillMsg::setWillMsg(std::string willMessage)
+{
     uint16_t length = willMessage.length();
 
     if (length <= getAvailableLength())

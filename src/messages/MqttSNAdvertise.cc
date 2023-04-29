@@ -28,5 +28,4 @@ uint16_t MqttSNAdvertise::getDuration()
     return duration;
 }
 
-
 } /* namespace mqttsn */

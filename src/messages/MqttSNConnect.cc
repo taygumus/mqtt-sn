@@ -44,7 +44,8 @@ uint16_t MqttSNConnect::getDuration()
     return duration;
 }
 
-void MqttSNConnect::setClientId(std::string id) {
+void MqttSNConnect::setClientId(std::string id)
+{
     uint16_t length = id.length();
 
     if (length >= Length::ONE_OCTET && length <= Length::CLIENT_ID_OCTETS)
@@ -55,7 +56,8 @@ void MqttSNConnect::setClientId(std::string id) {
     setLength(Length::CONNECT_OCTETS, length);
 }
 
-std::string MqttSNConnect::getClientId() {
+std::string MqttSNConnect::getClientId()
+{
     return clientId;
 }
 

@@ -39,6 +39,7 @@ OBJS = \
     $O/messages/MqttSNConnect.o \
     $O/messages/MqttSNGwInfo.o \
     $O/messages/MqttSNMessage.o \
+    $O/messages/MqttSNRegister.o \
     $O/messages/MqttSNSearchGw.o \
     $O/messages/MqttSNWillMsg.o \
     $O/messages/MqttSNWillTopic.o \
