@@ -11,7 +11,8 @@ enum Length : uint16_t {
     CONNECT_OCTETS = 4,
     CONNACK_OCTETS = 1,
     WILLTOPIC_OCTETS = 1,
-    REGISTER_OCTETS = 4
+    REGISTER_OCTETS = 4,
+    REGACK_OCTETS = 5
 };
 
 #endif /* TYPES_LENGTH_H_ */
