@@ -40,6 +40,7 @@ OBJS = \
     $O/messages/MqttSNGwInfo.o \
     $O/messages/MqttSNMessage.o \
     $O/messages/MqttSNSearchGw.o \
+    $O/messages/MqttSNWillMsg.o \
     $O/messages/MqttSNWillTopic.o \
     $O/modules/MqttSNClient.o \
     $O/modules/MqttSNServer.o
