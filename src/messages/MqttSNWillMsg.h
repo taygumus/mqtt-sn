@@ -14,7 +14,7 @@ class MqttSNWillMsg : public MqttSNMessage
         MqttSNWillMsg() {};
 
         void setWillMsg(std::string willMessage);
-        std::string getWillMsg();
+        std::string getWillMsg() const;
 
         ~MqttSNWillMsg() {};
 };

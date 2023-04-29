@@ -12,15 +12,12 @@ void MqttSNClient::sendPacket()
 
     const auto& payload = inet::makeShared<MqttSNWillMsg>();
     payload->setMsgType(MsgType::WILLMSG);
-    payload->setWillMsg("message");
+    payload->setWillMsg("yo!");
 
-    EV << payload->getLength() << std::endl;
-    EV << payload->getWillMsg() << std::endl;
+    //EV << payload->getLength() << std::endl;
+    //EV << payload->getWillMsg() << std::endl;
 
-    /*
-    uint16_t bytes = 4;
-    payload->setLength(bytes);
-    payload->setChunkLength(inet::B(bytes));
+    payload->setChunkLength(inet::B(payload->getLength()));
 
     std::ostringstream str;
     str << "Packet" << "-" << numSent;
@@ -30,7 +27,6 @@ void MqttSNClient::sendPacket()
     inet::L3Address destAddr = chooseDestAddr();
     socket.sendTo(packet, destAddr, destPort);
     numSent++;
-    */
 }
 
 void MqttSNClient::processPacket(inet::Packet *pk)

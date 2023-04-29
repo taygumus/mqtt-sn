@@ -42,7 +42,7 @@ void MqttSNMessage::setMsgType(MsgType messageType)
     msgType = messageType;
 }
 
-MsgType MqttSNMessage::getMsgType()
+MsgType MqttSNMessage::getMsgType() const
 {
     return msgType;
 }

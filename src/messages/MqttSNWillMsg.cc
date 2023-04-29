@@ -14,7 +14,7 @@ void MqttSNWillMsg::setWillMsg(std::string willMessage)
     setLength(0, length);
 }
 
-std::string MqttSNWillMsg::getWillMsg() {
+std::string MqttSNWillMsg::getWillMsg() const {
     return willMsg;
 }
 

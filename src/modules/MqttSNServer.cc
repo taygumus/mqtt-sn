@@ -1,4 +1,5 @@
 #include "MqttSNServer.h"
+#include "messages/MqttSNWillMsg.h"
 
 namespace mqttsn {
 
@@ -16,6 +17,12 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     std::stringstream os;
     os << pk;
     EV << os.str();
+
+    /*
+    const auto& payload = pk->peekData<MqttSNWillMsg>();
+    EV << payload->getMsgType() << std::endl;
+    EV << payload->getWillMsg() << std::endl;
+    */
 
     delete pk;
     numReceived++;

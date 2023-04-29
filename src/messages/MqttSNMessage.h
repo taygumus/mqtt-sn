@@ -22,7 +22,7 @@ class MqttSNMessage : public inet::FieldsChunk
         uint16_t getAvailableLength();
 
         void setMsgType(MsgType msg);
-        MsgType getMsgType();
+        MsgType getMsgType() const;
 
         ~MqttSNMessage() {};
 };
