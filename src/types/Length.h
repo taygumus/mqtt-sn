@@ -4,7 +4,6 @@
 enum Length : uint16_t {
     ONE_OCTET = 1,
     TWO_OCTETS = 2,
-    LIMIT_OCTETS = 256,
     CLIENT_ID_OCTETS = 23,
     ADVERTISE_OCTETS = 3,
     SEARCHGW_OCTETS = 1,

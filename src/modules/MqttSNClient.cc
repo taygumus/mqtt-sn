@@ -13,8 +13,9 @@ void MqttSNClient::sendPacket()
 
     const auto& payload = inet::makeShared<MqttSNWillTopic>();
     payload->setMsgType(MsgType::WILLTOPIC);
+    payload->setWillTopic("Will topic name");
 
-    //EV << payload->getLength() << std::endl;
+    EV << payload->getLength() << std::endl;
 
     /*
     uint16_t bytes = 4;

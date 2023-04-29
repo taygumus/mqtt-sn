@@ -8,7 +8,7 @@ void MqttSNMessage::setLength(uint16_t fixedLength, uint16_t variableLength)
     length.clear();
     uint16_t minLength = fixedLength + variableLength + Length::TWO_OCTETS;
 
-    if (minLength < Length::LIMIT_OCTETS) {
+    if (minLength <= UINT8_MAX) {
         length.push_back(static_cast<uint8_t>(minLength));
     }
     else {
@@ -30,6 +30,11 @@ uint16_t MqttSNMessage::getLength()
     }
 
     return 0;
+}
+
+uint16_t MqttSNMessage::getAvailableLength()
+{
+    return UINT16_MAX - getLength();
 }
 
 void MqttSNMessage::setMsgType(MsgType messageType)
