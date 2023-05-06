@@ -1,5 +1,4 @@
 #include "MqttSNServer.h"
-#include "messages/MqttSNWillMsg.h"
 
 namespace mqttsn {
 

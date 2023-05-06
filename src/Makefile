@@ -33,19 +33,7 @@ PROJECTRELATIVE_PATH = src
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
-OBJS = \
-    $O/messages/MqttSNAdvertise.o \
-    $O/messages/MqttSNConnAck.o \
-    $O/messages/MqttSNConnect.o \
-    $O/messages/MqttSNGwInfo.o \
-    $O/messages/MqttSNMessage.o \
-    $O/messages/MqttSNRegAck.o \
-    $O/messages/MqttSNRegister.o \
-    $O/messages/MqttSNSearchGw.o \
-    $O/messages/MqttSNWillMsg.o \
-    $O/messages/MqttSNWillTopic.o \
-    $O/modules/MqttSNClient.o \
-    $O/modules/MqttSNServer.o
+OBJS = $O/messages/MqttSNBase.o $O/messages/MqttSNSearchGw.o $O/modules/MqttSNClient.o $O/modules/MqttSNServer.o
 
 # Message files
 MSGFILES =

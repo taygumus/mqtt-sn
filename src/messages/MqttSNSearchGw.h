@@ -1,11 +1,11 @@
 #ifndef MESSAGES_MQTTSNSEARCHGW_H_
 #define MESSAGES_MQTTSNSEARCHGW_H_
 
-#include "MqttSNMessage.h"
+#include "MqttSNBase.h"
 
 namespace mqttsn {
 
-class MqttSNSearchGw : public MqttSNMessage
+class MqttSNSearchGw : public MqttSNBase
 {
     private:
         uint8_t radius = 0;
