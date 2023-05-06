@@ -1,10 +1,11 @@
 #include "MqttSNSearchGw.h"
+#include "types/Length.h"
 
 namespace mqttsn {
 
 MqttSNSearchGw::MqttSNSearchGw()
 {
-    //
+    addLength(Length::ONE_OCTET);
 }
 
 void MqttSNSearchGw::setRadius(uint8_t hops)

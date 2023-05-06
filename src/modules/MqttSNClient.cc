@@ -11,11 +11,10 @@ void MqttSNClient::sendPacket()
     EV << "Client is sending a new packet..\n";
 
     const auto& payload = inet::makeShared<MqttSNSearchGw>();
-
     payload->setMsgType(MsgType::SEARCHGW);
-    EV << (int) payload->getMsgType();
 
-    //EV << payload->getLength() << std::endl;
+    EV << payload->getLength() << std::endl;
+
     //EV << payload->getWillMsg() << std::endl;
 
     /*
