@@ -14,7 +14,7 @@ class MqttSNSearchGw : public MqttSNBase
         MqttSNSearchGw();
 
         void setRadius(uint8_t hops);
-        uint8_t getRadius();
+        uint8_t getRadius() const;
 
         ~MqttSNSearchGw() {};
 };

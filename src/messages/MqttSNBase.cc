@@ -5,6 +5,7 @@
 
 namespace mqttsn {
 
+/* Private */
 void MqttSNBase::setLength(uint16_t octets)
 {
     if (length.size() > 0)
@@ -20,6 +21,7 @@ void MqttSNBase::setLength(uint16_t octets)
    }
 }
 
+/* Protected */
 void MqttSNBase::addLength(uint16_t octets, uint16_t prevOctets)
 {
     if (octets == prevOctets)
@@ -33,7 +35,23 @@ void MqttSNBase::addLength(uint16_t octets, uint16_t prevOctets)
     setLength(current - prevOctets + octets);
 }
 
-std::string MqttSNBase::getClassName(std::string mangledName)
+void MqttSNBase::setClientId(std::string id, std::string& clientId)
+{
+    uint16_t length = id.length();
+    uint16_t prevLength;
+
+    if (length >= Length::ONE_OCTET && length <= Length::CLIENT_ID_OCTETS) {
+        prevLength = clientId.size();
+        clientId = id;
+    }
+    else {
+        throw omnetpp::cRuntimeError("Client ID length must be within the range of 1 to 23 characters");
+    }
+
+    addLength(length, prevLength);
+}
+
+std::string MqttSNBase::getClassName(std::string mangledName) const
 {
     int status;
     char* demangledName = abi::__cxa_demangle(mangledName.c_str(), nullptr, nullptr, &status);
@@ -48,12 +66,13 @@ std::string MqttSNBase::getClassName(std::string mangledName)
     throw omnetpp::cRuntimeError("Error getting class name");
 }
 
+/* Public */
 MqttSNBase::MqttSNBase()
 {
     addLength(Length::TWO_OCTETS);
 }
 
-uint16_t MqttSNBase::getLength()
+uint16_t MqttSNBase::getLength() const
 {
     if (length.size() == 1) {
         return static_cast<uint16_t>(length[0]);
@@ -66,7 +85,7 @@ uint16_t MqttSNBase::getLength()
     return 0;
 }
 
-uint16_t MqttSNBase::getAvailableLength()
+uint16_t MqttSNBase::getAvailableLength() const
 {
     return UINT16_MAX - getLength();
 }

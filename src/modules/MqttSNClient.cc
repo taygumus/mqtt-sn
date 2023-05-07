@@ -1,5 +1,5 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNSearchGw.h"
+#include "messages/MqttSNPingReq.h"
 #include "types/MsgType.h"
 
 namespace mqttsn {
@@ -10,12 +10,12 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNSearchGw>();
-    payload->setMsgType(MsgType::SEARCHGW);
+    const auto& payload = inet::makeShared<MqttSNPingReq>();
+    payload->setMsgType(MsgType::PINGREQ);
+    payload->setClientId("id34e");
 
     EV << payload->getLength() << std::endl;
-
-    //EV << payload->getWillMsg() << std::endl;
+    EV << payload->getClientId() << std::endl;
 
     /*
     payload->setChunkLength(inet::B(payload->getLength()));

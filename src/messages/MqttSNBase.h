@@ -16,13 +16,15 @@ class MqttSNBase : public inet::FieldsChunk
 
     protected:
         void addLength(uint16_t octets, uint16_t prevOctets = 0);
-        std::string getClassName(std::string mangledName);
+        void setClientId(std::string id, std::string& clientId);
+
+        std::string getClassName(std::string mangledName) const;
 
     public:
         MqttSNBase();
 
-        uint16_t getLength();
-        uint16_t getAvailableLength();
+        uint16_t getLength() const;
+        uint16_t getAvailableLength() const;
 
         void setMsgType(MsgType messageType);
         MsgType getMsgType() const;

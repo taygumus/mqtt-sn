@@ -13,7 +13,7 @@ void MqttSNSearchGw::setRadius(uint8_t hops)
     radius = hops;
 }
 
-uint8_t MqttSNSearchGw::getRadius()
+uint8_t MqttSNSearchGw::getRadius() const
 {
     return radius;
 }
