@@ -67,6 +67,16 @@ void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& fie
     addLength(length, prevLength);
 }
 
+void MqttSNBase::setFlag(uint8_t value, Flag position, uint8_t& flags)
+{
+    flags = (flags & ~(0b11 << position)) | (value << position);
+}
+
+void MqttSNBase::setBooleanFlag(bool value, Flag position, uint8_t& flags)
+{
+    flags = (flags & ~(1 << position)) | (value << position);
+}
+
 std::string MqttSNBase::getClassName(std::string mangledName) const
 {
     int status;
@@ -80,6 +90,16 @@ std::string MqttSNBase::getClassName(std::string mangledName) const
     }
 
     throw omnetpp::cRuntimeError("Error getting class name");
+}
+
+uint8_t MqttSNBase::getFlag(Flag position, uint8_t& flags) const
+{
+    return (flags >> position) & 0b11;
+}
+
+bool MqttSNBase::getBooleanFlag(Flag position, uint8_t& flags) const
+{
+    return (flags & (1 << position)) != 0;
 }
 
 /* Public */
