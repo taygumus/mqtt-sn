@@ -1,5 +1,5 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNPingReq.h"
+#include "messages/MqttSNDisconnect.h"
 #include "types/MsgType.h"
 
 namespace mqttsn {
@@ -10,12 +10,12 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNPingReq>();
-    payload->setMsgType(MsgType::PINGREQ);
-    payload->setClientId("id34e");
+    const auto& payload = inet::makeShared<MqttSNDisconnect>();
+    payload->setMsgType(MsgType::DISCONNECT);
+    payload->setDuration(12);
 
     EV << payload->getLength() << std::endl;
-    EV << payload->getClientId() << std::endl;
+    EV << payload->getDuration() << std::endl;
 
     /*
     payload->setChunkLength(inet::B(payload->getLength()));

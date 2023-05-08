@@ -38,6 +38,7 @@ OBJS = \
     $O/messages/MqttSNBaseWithMsgId.o \
     $O/messages/MqttSNBaseWithReturnCode.o \
     $O/messages/MqttSNBaseWithWillMsg.o \
+    $O/messages/MqttSNDisconnect.o \
     $O/messages/MqttSNPingReq.o \
     $O/messages/MqttSNSearchGw.o \
     $O/modules/MqttSNClient.o \
