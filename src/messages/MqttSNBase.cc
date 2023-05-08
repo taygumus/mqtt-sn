@@ -51,6 +51,22 @@ void MqttSNBase::setClientId(std::string id, std::string& clientId)
     addLength(length, prevLength);
 }
 
+void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& field)
+{
+    if (value == field)
+        return;
+
+    uint16_t length = value == 0 ? Length::ZERO_OCTETS : octets;
+    uint16_t prevLength = field == 0 ? Length::ZERO_OCTETS : octets;
+
+    field = value;
+
+    if (length == prevLength)
+        return;
+
+    addLength(length, prevLength);
+}
+
 std::string MqttSNBase::getClassName(std::string mangledName) const
 {
     int status;

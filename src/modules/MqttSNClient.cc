@@ -12,7 +12,6 @@ void MqttSNClient::sendPacket()
 
     const auto& payload = inet::makeShared<MqttSNDisconnect>();
     payload->setMsgType(MsgType::DISCONNECT);
-    payload->setDuration(12);
 
     EV << payload->getLength() << std::endl;
     EV << payload->getDuration() << std::endl;

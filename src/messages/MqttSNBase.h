@@ -16,7 +16,9 @@ class MqttSNBase : public inet::FieldsChunk
 
     protected:
         void addLength(uint16_t octets, uint16_t prevOctets = 0);
+
         void setClientId(std::string id, std::string& clientId);
+        void setOptionalField(uint32_t value, uint16_t octets, uint32_t& field);
 
         std::string getClassName(std::string mangledName) const;
 
