@@ -8,6 +8,7 @@ std::map<std::string, std::vector<MsgType>> msgTypesMap = {
     {"MqttSNDisconnect", {MsgType::DISCONNECT}},
     {"MqttSNAdvertise", {MsgType::ADVERTISE}},
     {"MqttSNGwInfo", {MsgType::GWINFO}},
+    {"MqttSNConnect", {MsgType::CONNECT}},
 
     {"MqttSNBaseWithReturnCode", {MsgType::CONNACK, MsgType::WILLTOPICRESP, MsgType::WILLMSGRESP}},
     {"MqttSNBaseWithWillMsg", {MsgType::WILLMSG, MsgType::WILLMSGUPD}},

@@ -92,12 +92,12 @@ std::string MqttSNBase::getClassName(std::string mangledName) const
     throw omnetpp::cRuntimeError("Error getting class name");
 }
 
-uint8_t MqttSNBase::getFlag(Flag position, uint8_t& flags) const
+uint8_t MqttSNBase::getFlag(Flag position, uint8_t flags) const
 {
     return (flags >> position) & 0b11;
 }
 
-bool MqttSNBase::getBooleanFlag(Flag position, uint8_t& flags) const
+bool MqttSNBase::getBooleanFlag(Flag position, uint8_t flags) const
 {
     return (flags & (1 << position)) != 0;
 }
@@ -135,7 +135,7 @@ void MqttSNBase::setMsgType(MsgType messageType)
         types = msgTypesMap.at(className);
     }
     catch (std::out_of_range e) {
-        throw omnetpp::cRuntimeError("Unknown class name");
+        throw omnetpp::cRuntimeError("Class without message type");
     }
 
     if (std::find(types.begin(), types.end(), messageType) == types.end()) {

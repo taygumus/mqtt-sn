@@ -23,8 +23,8 @@ class MqttSNBase : public inet::FieldsChunk
         void setBooleanFlag(bool value, Flag position, uint8_t& flags);
 
         std::string getClassName(std::string mangledName) const;
-        uint8_t getFlag(Flag position, uint8_t& flags) const;
-        bool getBooleanFlag(Flag position, uint8_t& flags) const;
+        uint8_t getFlag(Flag position, uint8_t flags) const;
+        bool getBooleanFlag(Flag position, uint8_t flags) const;
 
     public:
         MqttSNBase();
