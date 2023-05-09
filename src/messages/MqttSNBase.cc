@@ -67,6 +67,22 @@ void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& fie
     addLength(length, prevLength);
 }
 
+void MqttSNBase::setStringField(std::string value, std::string error, std::string& field)
+{
+    uint16_t length = value.length();
+    uint16_t prevLength;
+
+    if (length <= getAvailableLength()) {
+        prevLength = field.size();
+        field = value;
+    }
+    else {
+        throw omnetpp::cRuntimeError("%s", error.c_str());
+    }
+
+    addLength(length, prevLength);
+}
+
 void MqttSNBase::setFlag(uint8_t value, Flag position, uint8_t& flags)
 {
     flags = (flags & ~(0b11 << position)) | (value << position);

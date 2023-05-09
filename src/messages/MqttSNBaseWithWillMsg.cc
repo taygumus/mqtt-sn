@@ -4,18 +4,7 @@ namespace mqttsn {
 
 void MqttSNBaseWithWillMsg::setWillMsg(std::string willMessage)
 {
-    uint16_t length = willMessage.length();
-    uint16_t prevLength;
-
-    if (length <= getAvailableLength()) {
-        prevLength = willMsg.size();
-        willMsg = willMessage;
-    }
-    else {
-        throw omnetpp::cRuntimeError("Will message too long");
-    }
-
-    addLength(length, prevLength);
+    MqttSNBase::setStringField(willMessage, "Will message too long", willMsg);
 }
 
 std::string MqttSNBaseWithWillMsg::getWillMsg() const
