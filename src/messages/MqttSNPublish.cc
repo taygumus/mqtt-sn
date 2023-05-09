@@ -50,7 +50,13 @@ uint8_t MqttSNPublish::getTopicIdTypeFlag() const
 
 void MqttSNPublish::setData(std::string stringData)
 {
-    MqttSNBase::setStringField(stringData, "Data string too long", data);
+    MqttSNBase::setStringField(
+            stringData,
+            Length::ZERO_OCTETS,
+            MqttSNBase::getAvailableLength(),
+            "Data string length out of range",
+            data
+    );
 }
 
 std::string MqttSNPublish::getData() const

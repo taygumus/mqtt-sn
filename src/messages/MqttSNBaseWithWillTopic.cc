@@ -30,7 +30,13 @@ bool MqttSNBaseWithWillTopic::getRetainFlag() const
 
 void MqttSNBaseWithWillTopic::setWillTopic(std::string topicName)
 {
-    MqttSNBase::setStringField(topicName, "Will topic name too long", willTopic);
+    MqttSNBase::setStringField(
+            topicName,
+            Length::ZERO_OCTETS,
+            MqttSNBase::getAvailableLength(),
+            "Will topic name length out of range",
+            willTopic
+    );
 }
 
 std::string MqttSNBaseWithWillTopic::getWillTopic() const

@@ -35,22 +35,6 @@ void MqttSNBase::addLength(uint16_t octets, uint16_t prevOctets)
     setLength(current - prevOctets + octets);
 }
 
-void MqttSNBase::setClientId(std::string id, std::string& clientId)
-{
-    uint16_t length = id.length();
-    uint16_t prevLength;
-
-    if (length >= Length::ONE_OCTET && length <= Length::CLIENT_ID_OCTETS) {
-        prevLength = clientId.size();
-        clientId = id;
-    }
-    else {
-        throw omnetpp::cRuntimeError("Client ID length must be within the range of 1 to 23 characters");
-    }
-
-    addLength(length, prevLength);
-}
-
 void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& field)
 {
     if (value == field)
@@ -67,12 +51,16 @@ void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& fie
     addLength(length, prevLength);
 }
 
-void MqttSNBase::setStringField(std::string value, std::string error, std::string& field)
+void MqttSNBase::setStringField(std::string value, uint16_t minLength, uint16_t maxLength, std::string error, std::string& field)
 {
+    if (maxLength < minLength) {
+        throw omnetpp::cRuntimeError("Minimum string length cannot be greater than the maximum one");
+    }
+
     uint16_t length = value.length();
     uint16_t prevLength;
 
-    if (length <= getAvailableLength()) {
+    if (length >= minLength && length <= maxLength) {
         prevLength = field.size();
         field = value;
     }

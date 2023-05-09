@@ -1,10 +1,17 @@
 #include "MqttSNRegister.h"
+#include "types/Length.h"
 
 namespace mqttsn {
 
 void MqttSNRegister::setTopicName(std::string name)
 {
-    MqttSNBase::setStringField(name, "Topic name too long", topicName);
+    MqttSNBase::setStringField(
+            name,
+            Length::ZERO_OCTETS,
+            MqttSNBase::getAvailableLength(),
+            "Topic name length out of range",
+            topicName
+    );
 }
 
 std::string MqttSNRegister::getTopicName() const

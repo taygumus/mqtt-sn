@@ -1,6 +1,7 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNPublish.h"
+#include "messages/MqttSNUnsubscribe.h"
 #include "types/MsgType.h"
+#include "types/TopicIdType.h"
 
 namespace mqttsn {
 
@@ -10,12 +11,12 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNPublish>();
-    payload->setMsgType(MsgType::PUBLISH);
-    payload->setData("data string");
+    const auto& payload = inet::makeShared<MqttSNUnsubscribe>();
+    payload->setMsgType(MsgType::UNSUBSCRIBE);
+    payload->setTopicIdTypeFlag(TopicIdType::PRE_DEFINED_TOPIC_ID);
 
     EV << payload->getLength() << std::endl;
-    EV << payload->getData() << std::endl;
+    EV << (int) payload->getTopicIdTypeFlag() << std::endl;
 
     /*
     payload->setChunkLength(inet::B(payload->getLength()));
