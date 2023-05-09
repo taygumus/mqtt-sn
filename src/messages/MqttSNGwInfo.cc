@@ -5,7 +5,7 @@ namespace mqttsn {
 
 MqttSNGwInfo::MqttSNGwInfo()
 {
-    addLength(Length::ONE_OCTET);
+    MqttSNBase::addLength(Length::ONE_OCTET);
 }
 
 void MqttSNGwInfo::setGwId(uint8_t gatewayId)

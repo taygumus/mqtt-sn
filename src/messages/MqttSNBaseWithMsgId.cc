@@ -5,7 +5,7 @@ namespace mqttsn {
 
 MqttSNBaseWithMsgId::MqttSNBaseWithMsgId()
 {
-    addLength(Length::TWO_OCTETS);
+    MqttSNBase::addLength(Length::TWO_OCTETS);
 }
 
 void MqttSNBaseWithMsgId::setMsgId(uint16_t messageId)

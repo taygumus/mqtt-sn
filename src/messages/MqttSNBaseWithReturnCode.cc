@@ -5,7 +5,7 @@ namespace mqttsn {
 
 MqttSNBaseWithReturnCode::MqttSNBaseWithReturnCode()
 {
-    addLength(Length::ONE_OCTET);
+    MqttSNBase::addLength(Length::ONE_OCTET);
 }
 
 void MqttSNBaseWithReturnCode::setReturnCode(ReturnCode code)

@@ -6,7 +6,7 @@ namespace mqttsn {
 
 MqttSNConnect::MqttSNConnect()
 {
-    addLength(Length::TWO_OCTETS);
+    MqttSNBase::addLength(Length::TWO_OCTETS);
 }
 
 void MqttSNConnect::setWillFlag(bool willFlag)

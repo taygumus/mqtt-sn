@@ -5,7 +5,7 @@ namespace mqttsn {
 
 MqttSNBaseWithDuration::MqttSNBaseWithDuration()
 {
-    addLength(Length::TWO_OCTETS);
+    MqttSNBase::addLength(Length::TWO_OCTETS);
 }
 
 void MqttSNBaseWithDuration::setDuration(uint16_t seconds)

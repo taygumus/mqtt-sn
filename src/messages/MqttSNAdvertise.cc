@@ -5,7 +5,7 @@ namespace mqttsn {
 
 MqttSNAdvertise::MqttSNAdvertise()
 {
-    addLength(Length::ONE_OCTET);
+    MqttSNBase::addLength(Length::ONE_OCTET);
 }
 
 void MqttSNAdvertise::setGwId(uint8_t gatewayId)

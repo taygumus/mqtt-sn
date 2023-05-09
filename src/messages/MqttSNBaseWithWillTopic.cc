@@ -5,7 +5,7 @@ namespace mqttsn {
 
 MqttSNBaseWithWillTopic::MqttSNBaseWithWillTopic()
 {
-    addLength(Length::ONE_OCTET);
+    MqttSNBase::addLength(Length::ONE_OCTET);
 }
 
 void MqttSNBaseWithWillTopic::setQoSFlag(QoS qosFlag)

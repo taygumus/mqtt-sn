@@ -1,5 +1,5 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNRegister.h"
+#include "messages/MqttSNSubAck.h"
 #include "types/MsgType.h"
 #include "types/QoS.h"
 
@@ -11,8 +11,8 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNRegister>();
-    payload->setMsgType(MsgType::REGISTER);
+    const auto& payload = inet::makeShared<MqttSNSubAck>();
+    payload->setMsgType(MsgType::SUBACK);
 
     EV << payload->getLength() << std::endl;
 
