@@ -1,7 +1,6 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNSubAck.h"
+#include "messages/MqttSNPublish.h"
 #include "types/MsgType.h"
-#include "types/QoS.h"
 
 namespace mqttsn {
 
@@ -11,10 +10,12 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNSubAck>();
-    payload->setMsgType(MsgType::SUBACK);
+    const auto& payload = inet::makeShared<MqttSNPublish>();
+    payload->setMsgType(MsgType::PUBLISH);
+    payload->setData("data string");
 
     EV << payload->getLength() << std::endl;
+    EV << payload->getData() << std::endl;
 
     /*
     payload->setChunkLength(inet::B(payload->getLength()));
