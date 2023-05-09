@@ -17,13 +17,16 @@ class MqttSNBase : public inet::FieldsChunk
 
     protected:
         void addLength(uint16_t octets, uint16_t prevOctets = 0);
+
         void setClientId(std::string id, std::string& clientId);
         void setOptionalField(uint32_t value, uint16_t octets, uint32_t& field);
         void setStringField(std::string value, std::string error, std::string& field);
+
         void setFlag(uint8_t value, Flag position, uint8_t& flags);
         void setBooleanFlag(bool value, Flag position, uint8_t& flags);
 
         std::string getClassName(std::string mangledName) const;
+
         uint8_t getFlag(Flag position, uint8_t flags) const;
         bool getBooleanFlag(Flag position, uint8_t flags) const;
 

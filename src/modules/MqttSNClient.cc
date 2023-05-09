@@ -1,5 +1,5 @@
 #include "MqttSNClient.h"
-#include "messages/MqttSNBaseWithWillTopic.h"
+#include "messages/MqttSNRegister.h"
 #include "types/MsgType.h"
 #include "types/QoS.h"
 
@@ -11,15 +11,10 @@ void MqttSNClient::sendPacket()
 {
     EV << "Client is sending a new packet..\n";
 
-    const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
-    payload->setMsgType(MsgType::WILLTOPIC);
-
-    payload->setQoSFlag(QoS::QOS_ZERO);
-    payload->setRetainFlag(true);
+    const auto& payload = inet::makeShared<MqttSNRegister>();
+    payload->setMsgType(MsgType::REGISTER);
 
     EV << payload->getLength() << std::endl;
-    EV << (int) payload->getQoSFlag() << std::endl;
-    EV << (int) payload->getRetainFlag() << std::endl;
 
     /*
     payload->setChunkLength(inet::B(payload->getLength()));
