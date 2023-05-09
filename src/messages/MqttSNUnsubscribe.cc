@@ -1,6 +1,6 @@
 #include "MqttSNUnsubscribe.h"
-#include "types/Length.h"
 #include "types/TopicIdType.h"
+#include "types/Length.h"
 
 namespace mqttsn {
 
@@ -21,16 +21,26 @@ uint8_t MqttSNUnsubscribe::getTopicIdTypeFlag() const
 
 void MqttSNUnsubscribe::setTopicName(std::string name)
 {
-    /*
-    TopicIdType topicIdFlag = getTopicIdTypeFlag();
+    uint8_t topicIdFlag = getTopicIdTypeFlag();
 
-    if (topicIdFlag == TopicIdType::TOPIC_NAME) {
-        MqttSNBase::setStringField(name, "Topic name too long", topicName);
-    }
-    else if (topicIdFlag == TopicIdType::SHORT_TOPIC_NAME) {
-
-    }
-    */
+    if (topicIdFlag == TopicIdType::TOPIC_NAME)
+        MqttSNBase::setStringField(
+                name,
+                Length::ZERO_OCTETS,
+                MqttSNBase::getAvailableLength(),
+                "Topic name length out of range",
+                topicName
+        );
+    else if (topicIdFlag == TopicIdType::SHORT_TOPIC_NAME)
+        MqttSNBase::setStringField(
+                name,
+                Length::ZERO_OCTETS,
+                Length::TWO_OCTETS,
+                "Short topic name length out of range",
+                topicName
+        );
+    else
+        throw omnetpp::cRuntimeError("The topic ID type flag is not correctly set to either topic name or short topic name");
 }
 
 std::string MqttSNUnsubscribe::getTopicName() const
@@ -38,19 +48,24 @@ std::string MqttSNUnsubscribe::getTopicName() const
     return topicName;
 }
 
-/*
-void MqttSNMsgIdWithTopicId::setTopicId(uint16_t id)
+void MqttSNUnsubscribe::setTopicId(uint16_t id)
 {
-    if (id == 0 || id == UINT16_MAX)
+    if (id == UINT16_MAX)
         throw omnetpp::cRuntimeError("Reserved topic ID");
 
-    topicId = id;
+    if (getTopicIdTypeFlag() == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        uint32_t field = topicId;
+        MqttSNBase::setOptionalField(id, Length::TWO_OCTETS, field);
+        topicId = field;
+    }
+    else {
+        throw omnetpp::cRuntimeError("The topic ID type flag is not correctly set to pre-defined topic ID");
+    }
 }
 
-uint16_t MqttSNMsgIdWithTopicId::getTopicId() const
+uint16_t MqttSNUnsubscribe::getTopicId() const
 {
     return topicId;
 }
-*/
 
 } /* namespace mqttsn */

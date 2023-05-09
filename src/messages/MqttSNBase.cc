@@ -53,9 +53,8 @@ void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& fie
 
 void MqttSNBase::setStringField(std::string value, uint16_t minLength, uint16_t maxLength, std::string error, std::string& field)
 {
-    if (maxLength < minLength) {
+    if (maxLength < minLength)
         throw omnetpp::cRuntimeError("Minimum string length cannot be greater than the maximum one");
-    }
 
     uint16_t length = value.length();
     uint16_t prevLength;

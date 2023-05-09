@@ -1,7 +1,8 @@
 #include "MqttSNClient.h"
+
+#include "../types/TopicIdType.h"
 #include "messages/MqttSNUnsubscribe.h"
 #include "types/MsgType.h"
-#include "types/TopicIdType.h"
 
 namespace mqttsn {
 
@@ -14,9 +15,10 @@ void MqttSNClient::sendPacket()
     const auto& payload = inet::makeShared<MqttSNUnsubscribe>();
     payload->setMsgType(MsgType::UNSUBSCRIBE);
     payload->setTopicIdTypeFlag(TopicIdType::PRE_DEFINED_TOPIC_ID);
+    payload->setTopicId(25);
 
     EV << payload->getLength() << std::endl;
-    EV << (int) payload->getTopicIdTypeFlag() << std::endl;
+    EV << payload->getTopicId() << std::endl;
 
     /*
     payload->setChunkLength(inet::B(payload->getLength()));
