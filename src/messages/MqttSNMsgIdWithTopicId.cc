@@ -10,7 +10,7 @@ MqttSNMsgIdWithTopicId::MqttSNMsgIdWithTopicId()
 
 void MqttSNMsgIdWithTopicId::setTopicId(uint16_t id)
 {
-    if (id == 0 || id == UINT16_MAX)
+    if (id == UINT16_MAX)
         throw omnetpp::cRuntimeError("Reserved topic ID");
 
     topicId = id;
