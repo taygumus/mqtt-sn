@@ -4,23 +4,23 @@
 std::map<std::string, std::vector<MsgType>> msgTypesMap = {
 
     {"MqttSNBase", {MsgType::WILLTOPICREQ, MsgType::WILLMSGREQ, MsgType::PINGRESP}},
+    {"MqttSNBaseWithMsgId", {MsgType::PUBREC, MsgType::PUBREL, MsgType::PUBCOMP, MsgType::UNSUBACK}},
     {"MqttSNBaseWithReturnCode", {MsgType::CONNACK, MsgType::WILLTOPICRESP, MsgType::WILLMSGRESP}},
     {"MqttSNBaseWithWillMsg", {MsgType::WILLMSG, MsgType::WILLMSGUPD}},
     {"MqttSNBaseWithWillTopic", {MsgType::WILLTOPIC, MsgType::WILLTOPICUPD}},
-    {"MqttSNBaseWithMsgId", {MsgType::PUBREC, MsgType::PUBREL, MsgType::PUBCOMP, MsgType::UNSUBACK}},
     {"MqttSNMsgIdWithTopicIdPlus", {MsgType::REGACK, MsgType::PUBACK}},
 
-    {"MqttSNSearchGw", {MsgType::SEARCHGW}},
-    {"MqttSNPingReq", {MsgType::PINGREQ}},
-    {"MqttSNDisconnect", {MsgType::DISCONNECT}},
     {"MqttSNAdvertise", {MsgType::ADVERTISE}},
-    {"MqttSNGwInfo", {MsgType::GWINFO}},
     {"MqttSNConnect", {MsgType::CONNECT}},
-    {"MqttSNRegister", {MsgType::REGISTER}},
-    {"MqttSNSubAck", {MsgType::SUBACK}},
+    {"MqttSNDisconnect", {MsgType::DISCONNECT}},
+    {"MqttSNGwInfo", {MsgType::GWINFO}},
+    {"MqttSNPingReq", {MsgType::PINGREQ}},
     {"MqttSNPublish", {MsgType::PUBLISH}},
-    {"MqttSNUnsubscribe", {MsgType::UNSUBSCRIBE}},
-    {"MqttSNSubscribe", {MsgType::SUBSCRIBE}}
+    {"MqttSNRegister", {MsgType::REGISTER}},
+    {"MqttSNSearchGw", {MsgType::SEARCHGW}},
+    {"MqttSNSubAck", {MsgType::SUBACK}},
+    {"MqttSNSubscribe", {MsgType::SUBSCRIBE}},
+    {"MqttSNUnsubscribe", {MsgType::UNSUBSCRIBE}}
 };
 
 #endif /* TYPES_MSGTYPESMAP_H_ */
