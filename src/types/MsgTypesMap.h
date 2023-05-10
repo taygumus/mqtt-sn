@@ -18,7 +18,8 @@ std::map<std::string, std::vector<MsgType>> msgTypesMap = {
     {"MqttSNRegister", {MsgType::REGISTER}},
     {"MqttSNSubAck", {MsgType::SUBACK}},
     {"MqttSNPublish", {MsgType::PUBLISH}},
-    {"MqttSNUnsubscribe", {MsgType::UNSUBSCRIBE}}
+    {"MqttSNUnsubscribe", {MsgType::UNSUBSCRIBE}},
+    {"MqttSNSubscribe", {MsgType::SUBSCRIBE}}
 };
 
 #endif /* TYPES_MSGTYPESMAP_H_ */

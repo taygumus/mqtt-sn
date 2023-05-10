@@ -51,6 +51,7 @@ OBJS = \
     $O/messages/MqttSNRegister.o \
     $O/messages/MqttSNSearchGw.o \
     $O/messages/MqttSNSubAck.o \
+    $O/messages/MqttSNSubscribe.o \
     $O/messages/MqttSNUnsubscribe.o \
     $O/modules/MqttSNClient.o \
     $O/modules/MqttSNServer.o

@@ -9,9 +9,11 @@ namespace mqttsn {
 class MqttSNUnsubscribe : public MqttSNBaseWithMsgId
 {
     private:
-        uint8_t flags = 0;
         std::string topicName;
         uint16_t topicId = 0;
+
+    protected:
+        uint8_t flags = 0;
 
     public:
         MqttSNUnsubscribe();
