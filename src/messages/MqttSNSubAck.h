@@ -1,12 +1,12 @@
 #ifndef MESSAGES_MQTTSNSUBACK_H_
 #define MESSAGES_MQTTSNSUBACK_H_
 
-#include "MqttSNMsgIdWithTopicIdExtended.h"
+#include "MqttSNMsgIdWithTopicIdPlus.h"
 #include "types/QoS.h"
 
 namespace mqttsn {
 
-class MqttSNSubAck : public MqttSNMsgIdWithTopicIdExtended
+class MqttSNSubAck : public MqttSNMsgIdWithTopicIdPlus
 {
     private:
         uint8_t flags = 0;

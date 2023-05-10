@@ -45,7 +45,7 @@ OBJS = \
     $O/messages/MqttSNDisconnect.o \
     $O/messages/MqttSNGwInfo.o \
     $O/messages/MqttSNMsgIdWithTopicId.o \
-    $O/messages/MqttSNMsgIdWithTopicIdExtended.o \
+    $O/messages/MqttSNMsgIdWithTopicIdPlus.o \
     $O/messages/MqttSNPingReq.o \
     $O/messages/MqttSNPublish.o \
     $O/messages/MqttSNRegister.o \

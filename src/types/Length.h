@@ -7,7 +7,7 @@ enum Length : uint16_t {
     TWO_OCTETS = 2,
     THREE_OCTETS = 3,
     FOUR_OCTETS = 4,
-    CLIENT_ID_OCTETS = 23,
+    CLIENT_ID_OCTETS = 23
 };
 
 #endif /* TYPES_LENGTH_H_ */
