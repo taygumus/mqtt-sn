@@ -1,15 +1,18 @@
 #ifndef MODULES_MQTTSNSERVER_H_
 #define MODULES_MQTTSNSERVER_H_
 
-#include "inet/applications/udpapp/UdpBasicApp.h"
+#include "MqttSNApp.h"
 
 namespace mqttsn {
 
-class MqttSNServer : public inet::UdpBasicApp
+class MqttSNServer : public MqttSNApp
 {
     protected:
-        virtual void sendPacket() override;
-        virtual void processPacket(inet::Packet *msg) override;
+        virtual void processStart();
+        virtual void processSend();
+        virtual void processStop();
+        virtual void processPacket(inet::Packet *msg);
+
     public:
         MqttSNServer() {};
         ~MqttSNServer() {};

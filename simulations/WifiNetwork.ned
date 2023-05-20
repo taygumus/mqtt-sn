@@ -21,18 +21,15 @@ network WifiNetwork
         configurator: Ipv4NetworkConfigurator {
             @display("p=60,111");
         }
-        client1: WirelessHost {
-            @display("p=224,111");
+        client: WirelessHost {
+            @display("p=222,172");
         }
-        client2: WirelessHost {
-            @display("p=224,189");
+        server1: WirelessHost {
+            @display("p=467,263");
         }
-        client3: WirelessHost {
-            @display("p=224,270");
+        server2: WirelessHost {
+            @display("p=467,111");
         }
-        server: WirelessHost {
-            @display("p=468,111");
-        }
-        
+
 }
 

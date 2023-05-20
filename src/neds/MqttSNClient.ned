@@ -1,10 +1,14 @@
 package mqttsn.neds;
 
-import inet.applications.udpapp.UdpBasicApp;
+import inet.applications.contract.IApp;
 
-simple MqttSNClient extends UdpBasicApp
+simple MqttSNClient like IApp
 {
     parameters:
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
+
+   	gates:
+		input socketIn;
+        output socketOut;
 }
