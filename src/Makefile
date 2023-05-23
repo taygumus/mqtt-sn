@@ -54,7 +54,6 @@ OBJS = \
     $O/messages/MqttSNSubscribe.o \
     $O/messages/MqttSNUnsubscribe.o \
     $O/modules/MqttSNApp.o \
-    $O/modules/MqttSNClient.o \
     $O/modules/MqttSNServer.o
 
 # Message files

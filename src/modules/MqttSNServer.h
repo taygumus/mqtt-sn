@@ -8,14 +8,33 @@ namespace mqttsn {
 class MqttSNServer : public MqttSNApp
 {
     protected:
+        enum SelfMsgKinds { START = 1, SEND, STOP };
+
+        // parameters
+        inet::clocktime_t startTime;
+        inet::clocktime_t stopTime;
+
+        // state
+        inet::ClockEvent *advertiseMsg = nullptr;
+
+    protected:
+        virtual void initialize(int stage) override;
+        virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
+
         virtual void processStart();
         virtual void processSend();
         virtual void processStop();
-        virtual void processPacket(inet::Packet *msg);
+
+        virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
+        virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
+        virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
+
+        virtual void processPacket(inet::Packet *msg) override;
 
     public:
         MqttSNServer() {};
-        ~MqttSNServer() {};
+
+        ~MqttSNServer();
 };
 
 } /* namespace mqttsn */
