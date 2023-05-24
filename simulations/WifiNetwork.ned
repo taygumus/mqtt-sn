@@ -10,7 +10,7 @@ import inet.node.inet.WirelessHost;
 network WifiNetwork
 {
     @display("bgb=530,334");
-
+    
     submodules:
         accessPoint: AccessPoint {
             @display("p=357,28");
@@ -30,6 +30,5 @@ network WifiNetwork
         server2: WirelessHost {
             @display("p=467,111");
         }
-
 }
 

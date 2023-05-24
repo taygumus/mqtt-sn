@@ -16,20 +16,23 @@ class MqttSNServer : public MqttSNApp
 
         // state
         inet::ClockEvent *advertiseMsg = nullptr;
+        inet::ClockEvent *advertiseEvent = nullptr;
 
     protected:
         virtual void initialize(int stage) override;
         virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
-
-        virtual void processStart();
-        virtual void processSend();
-        virtual void processStop();
 
         virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
         virtual void processPacket(inet::Packet *msg) override;
+
+        virtual void processStart();
+        virtual void processSend();
+        virtual void processStop();
+
+        virtual void sendPacket();
 
     public:
         MqttSNServer() {};
