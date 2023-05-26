@@ -67,7 +67,7 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNServer::processPacket(inet::Packet *pk)
 {
-    EV_INFO << "...Received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
+    EV_INFO << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
     delete pk;
 }
 
