@@ -9,8 +9,8 @@ class MqttSNServer : public MqttSNApp
 {
     protected:
         // parameters
-        inet::clocktime_t startTime;
-        inet::clocktime_t stopTime;
+        inet::clocktime_t startAdvertise;
+        inet::clocktime_t stopAdvertise;
 
         // state
         inet::ClockEvent *advertiseEvent = nullptr;

@@ -15,11 +15,11 @@ void MqttSNServer::initialize(int stage)
         numAdvertiseSent = 0;
         WATCH(numAdvertiseSent);
 
-        startTime = par("startTime");
-        stopTime = par("stopTime");
+        startAdvertise = par("startAdvertise");
+        stopAdvertise = par("stopAdvertise");
 
-        if (stopTime >= inet::CLOCKTIME_ZERO && stopTime < startTime)
-            throw omnetpp::cRuntimeError("Invalid startTime/stopTime parameters");
+        if (stopAdvertise >= inet::CLOCKTIME_ZERO && stopAdvertise < startAdvertise)
+            throw omnetpp::cRuntimeError("Invalid startAdvertise/stopAdvertise parameters");
 
         advertiseEvent = new inet::ClockEvent("advertiseTimer");
     }
@@ -30,7 +30,7 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
     if (msg == advertiseEvent) {
         sendPacket();
         inet::clocktime_t d = par("advertiseInterval");
-        if (stopTime < inet::CLOCKTIME_ZERO || getClockTime() + d < stopTime) {
+        if (stopAdvertise < inet::CLOCKTIME_ZERO || getClockTime() + d < stopAdvertise) {
             scheduleClockEventAfter(d, advertiseEvent);
         }
     }
@@ -47,8 +47,8 @@ void MqttSNServer::handleStartOperation(inet::LifecycleOperation *operation)
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
-    inet::clocktime_t start = std::max(startTime, getClockTime());
-    if ((stopTime < inet::CLOCKTIME_ZERO) || (start < stopTime) || (start == stopTime && startTime == stopTime)) {
+    inet::clocktime_t start = std::max(startAdvertise, getClockTime());
+    if ((stopAdvertise < inet::CLOCKTIME_ZERO) || (start < stopAdvertise) || (start == stopAdvertise && startAdvertise == stopAdvertise)) {
         scheduleClockEventAt(start, advertiseEvent);
     }
 }
@@ -67,7 +67,7 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNServer::processPacket(inet::Packet *pk)
 {
-    EV_INFO << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
+    EV_INFO << "...Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
     delete pk;
 }
 
@@ -82,7 +82,7 @@ void MqttSNServer::sendPacket()
     inet::Packet *packet = new inet::Packet(str.str().c_str());
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, inet::L3Address("255.255.255.255"), par("destPort"));
+    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
     numAdvertiseSent++;
 }
 

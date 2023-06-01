@@ -6,12 +6,13 @@ simple MqttSNServer like IApp
 {
     parameters:
         string localAddress = default("");
+        string broadcastAddress = default("255.255.255.255");
         
         int localPort = default(-1);
         int destPort = default(-1);
         
-        double startTime @unit(s) = default(this.advertiseInterval);
-        double stopTime @unit(s) = default(-1s);
+        double startAdvertise @unit(s) = default(this.advertiseInterval);
+        double stopAdvertise @unit(s) = default(-1s);
         
         volatile double advertiseInterval @unit(s);
         
