@@ -6,22 +6,25 @@ namespace mqttsn {
 
 Define_Module(MqttSNServer);
 
+int MqttSNServer::gatewayIdCounter = -1;
+
 void MqttSNServer::initialize(int stage)
 {
     ClockUserModuleMixin::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-
-        numAdvertiseSent = 0;
-        WATCH(numAdvertiseSent);
-
         startAdvertise = par("startAdvertise");
         stopAdvertise = par("stopAdvertise");
 
         if (stopAdvertise >= inet::CLOCKTIME_ZERO && stopAdvertise < startAdvertise)
             throw omnetpp::cRuntimeError("Invalid startAdvertise/stopAdvertise parameters");
-
         advertiseEvent = new inet::ClockEvent("advertiseTimer");
+
+        if (gatewayIdCounter < UINT8_MAX)
+            gatewayIdCounter++;
+        else
+            throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
+        gatewayId = gatewayIdCounter;
     }
 }
 
@@ -85,6 +88,7 @@ void MqttSNServer::sendPacket()
 {
     const auto& payload = inet::makeShared<MqttSNAdvertise>();
     payload->setMsgType(MsgType::ADVERTISE);
+    payload->setGwId(gatewayId);
     payload->setChunkLength(inet::B(payload->getLength()));
 
     std::ostringstream str;

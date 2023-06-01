@@ -15,6 +15,9 @@ class MqttSNServer : public MqttSNApp
         // state
         inet::ClockEvent *advertiseEvent = nullptr;
 
+        static int gatewayIdCounter;
+        uint8_t gatewayId;
+
         // statistics
         int numAdvertiseSent = 0;
 

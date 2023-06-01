@@ -13,6 +13,7 @@ class MqttSNBase : public inet::FieldsChunk
         std::vector<uint8_t> length;
         MsgType msgType;
 
+    private:
         void setLength(uint16_t octets);
 
     protected:
