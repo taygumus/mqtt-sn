@@ -2,18 +2,9 @@
 
 namespace mqttsn {
 
-void MqttSNApp::finish()
-{
-    inet::ApplicationBase::finish();
-}
-
-void MqttSNApp::refreshDisplay() const
-{
-    inet::ApplicationBase::refreshDisplay();
-}
-
 void MqttSNApp::socketDataArrived(inet::UdpSocket *socket, inet::Packet *packet)
 {
+    EV << "ciaooooooooo" << std::endl;
     processPacket(packet);
 }
 

@@ -10,13 +10,24 @@ void MqttSNClient::initialize(int stage)
     ClockUserModuleMixin::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        //
+        numAdvertiseReceived = 0;
+        WATCH(numAdvertiseReceived);
     }
 }
 
 void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     //
+}
+
+void MqttSNClient::finish()
+{
+    inet::ApplicationBase::finish();
+}
+
+void MqttSNClient::refreshDisplay() const
+{
+    inet::ApplicationBase::refreshDisplay();
 }
 
 void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
@@ -45,6 +56,9 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 {
     EV_INFO << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
     delete pk;
+
+    numAdvertiseReceived++; //
+    EV << "Client received AdvertisePacket" << "-" << numAdvertiseReceived << std::endl;
 }
 
 void MqttSNClient::sendPacket()

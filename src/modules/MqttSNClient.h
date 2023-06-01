@@ -8,8 +8,14 @@ namespace mqttsn {
 class MqttSNClient : public MqttSNApp
 {
     protected:
+        // statistics
+        int numAdvertiseReceived = 0;
+
+    protected:
         virtual void initialize(int stage) override;
         virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
+        virtual void finish() override;
+        virtual void refreshDisplay() const override;
 
         virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
