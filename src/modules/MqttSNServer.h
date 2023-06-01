@@ -33,7 +33,6 @@ class MqttSNServer : public MqttSNApp
 
     public:
         MqttSNServer() {};
-
         ~MqttSNServer();
 };
 

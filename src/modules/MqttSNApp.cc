@@ -4,7 +4,6 @@ namespace mqttsn {
 
 void MqttSNApp::socketDataArrived(inet::UdpSocket *socket, inet::Packet *packet)
 {
-    EV << "ciaooooooooo" << std::endl;
     processPacket(packet);
 }
 
