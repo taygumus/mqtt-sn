@@ -13,8 +13,7 @@ simple MqttSNServer like IApp
         
         double startAdvertise @unit(s) = default(this.advertiseInterval);
         double stopAdvertise @unit(s) = default(-1s);
-        
-        volatile double advertiseInterval @unit(s);
+        int advertiseInterval @unit(s); // range between 0..65535 seconds
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNServer);

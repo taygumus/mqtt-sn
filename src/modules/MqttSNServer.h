@@ -11,6 +11,7 @@ class MqttSNServer : public MqttSNApp
         // parameters
         inet::clocktime_t startAdvertise;
         inet::clocktime_t stopAdvertise;
+        uint16_t advertiseInterval;
 
         // state
         inet::ClockEvent *advertiseEvent = nullptr;

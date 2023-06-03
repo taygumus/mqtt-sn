@@ -15,6 +15,7 @@ void MqttSNServer::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         startAdvertise = par("startAdvertise");
         stopAdvertise = par("stopAdvertise");
+        advertiseInterval = par("advertiseInterval");
 
         if (stopAdvertise >= inet::CLOCKTIME_ZERO && stopAdvertise < startAdvertise)
             throw omnetpp::cRuntimeError("Invalid startAdvertise/stopAdvertise parameters");
@@ -32,7 +33,7 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     if (msg == advertiseEvent) {
         sendPacket();
-        inet::clocktime_t d = par("advertiseInterval");
+        inet::clocktime_t d = advertiseInterval;
         if (stopAdvertise < inet::CLOCKTIME_ZERO || getClockTime() + d < stopAdvertise) {
             scheduleClockEventAfter(d, advertiseEvent);
         }
@@ -89,6 +90,7 @@ void MqttSNServer::sendPacket()
     const auto& payload = inet::makeShared<MqttSNAdvertise>();
     payload->setMsgType(MsgType::ADVERTISE);
     payload->setGwId(gatewayId);
+    payload->setDuration(advertiseInterval);
     payload->setChunkLength(inet::B(payload->getLength()));
 
     std::ostringstream str;
