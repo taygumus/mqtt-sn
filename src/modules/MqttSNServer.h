@@ -2,6 +2,7 @@
 #define MODULES_MQTTSNSERVER_H_
 
 #include "MqttSNApp.h"
+#include "types/MsgType.h"
 
 namespace mqttsn {
 
@@ -23,6 +24,8 @@ class MqttSNServer : public MqttSNApp
         int numAdvertiseSent = 0;
 
     protected:
+        const auto getAdvertisePayload(MsgType msgType, uint8_t gatewayId, uint16_t duration);
+
         virtual void initialize(int stage) override;
         virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
         virtual void finish() override;
@@ -33,7 +36,6 @@ class MqttSNServer : public MqttSNApp
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
         virtual void processPacket(inet::Packet *msg) override;
-        virtual void sendPacket();
 
     public:
         MqttSNServer() {};

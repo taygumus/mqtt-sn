@@ -8,6 +8,18 @@ Define_Module(MqttSNServer);
 
 int MqttSNServer::gatewayIdCounter = -1;
 
+const auto MqttSNServer::getAdvertisePayload(MsgType msgType, uint8_t gatewayId, uint16_t duration)
+{
+    const auto& payload = inet::makeShared<MqttSNAdvertise>();
+
+    payload->setMsgType(msgType);
+    payload->setGwId(gatewayId);
+    payload->setDuration(duration);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    return payload;
+}
+
 void MqttSNServer::initialize(int stage)
 {
     ClockUserModuleMixin::initialize(stage);
@@ -32,7 +44,16 @@ void MqttSNServer::initialize(int stage)
 void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     if (msg == advertiseEvent) {
-        sendPacket();
+        const auto& payload = getAdvertisePayload(MsgType::ADVERTISE, gatewayId, advertiseInterval);
+
+        std::ostringstream str;
+        str << "AdvertisePacket"<< "-" << numAdvertiseSent;
+        inet::Packet *packet = new inet::Packet(str.str().c_str());
+        packet->insertAtBack(payload);
+
+        socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
+        numAdvertiseSent++;
+
         inet::clocktime_t d = advertiseInterval;
         if (stopAdvertise < inet::CLOCKTIME_ZERO || getClockTime() + d < stopAdvertise) {
             scheduleClockEventAfter(d, advertiseEvent);
@@ -85,6 +106,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     delete pk;
 }
 
+/*
 void MqttSNServer::sendPacket()
 {
     const auto& payload = inet::makeShared<MqttSNAdvertise>();
@@ -101,6 +123,7 @@ void MqttSNServer::sendPacket()
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
     numAdvertiseSent++;
 }
+*/
 
 MqttSNServer::~MqttSNServer()
 {
