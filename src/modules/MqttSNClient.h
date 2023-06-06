@@ -18,7 +18,6 @@ class MqttSNClient : public MqttSNApp
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
         virtual void processPacket(inet::Packet *msg) override;
-        virtual void sendPacket();
 
     public:
         MqttSNClient() {};

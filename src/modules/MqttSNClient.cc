@@ -1,5 +1,8 @@
 #include "MqttSNClient.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
+#include "types/MsgType.h"
+#include "messages/MqttSNBase.h"
+#include "messages/MqttSNAdvertise.h"
 
 namespace mqttsn {
 
@@ -53,13 +56,21 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
-    EV_INFO << "...Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
-    delete pk;
-}
+    EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
-void MqttSNClient::sendPacket()
-{
-    //
+    const auto& header = pk->peekData<MqttSNBase>();
+    checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+
+    switch(header->getMsgType()) {
+        case MsgType::ADVERTISE:
+            //
+            break;
+
+        default:
+            throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
+    }
+
+    delete pk;
 }
 
 MqttSNClient::~MqttSNClient()

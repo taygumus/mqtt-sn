@@ -102,28 +102,9 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNServer::processPacket(inet::Packet *pk)
 {
-    EV_INFO << "...Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
+    EV_INFO << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
     delete pk;
 }
-
-/*
-void MqttSNServer::sendPacket()
-{
-    const auto& payload = inet::makeShared<MqttSNAdvertise>();
-    payload->setMsgType(MsgType::ADVERTISE);
-    payload->setGwId(gatewayId);
-    payload->setDuration(advertiseInterval);
-    payload->setChunkLength(inet::B(payload->getLength()));
-
-    std::ostringstream str;
-    str << "AdvertisePacket"<< "-" << numAdvertiseSent;
-    inet::Packet *packet = new inet::Packet(str.str().c_str());
-    packet->insertAtBack(payload);
-
-    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
-    numAdvertiseSent++;
-}
-*/
 
 MqttSNServer::~MqttSNServer()
 {

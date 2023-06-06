@@ -19,4 +19,15 @@ void MqttSNApp::socketClosed(inet::UdpSocket *socket)
         startActiveOperationExtraTimeOrFinish(-1);
 }
 
+void MqttSNApp::checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength)
+{
+    if (receivedLength != fieldLength) {
+        throw omnetpp::cRuntimeError(
+                "Packet integrity error: Received length (%d bytes) does not match the expected length (%d bytes)",
+                (uint16_t) receivedLength.get(),
+                (uint16_t) fieldLength.get()
+        );
+    }
+}
+
 } /* namespace mqttsn */

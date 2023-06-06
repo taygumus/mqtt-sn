@@ -21,6 +21,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void socketErrorArrived(inet::UdpSocket *socket, inet::Indication *indication) override;
         virtual void socketClosed(inet::UdpSocket *socket) override;
 
+        virtual void checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength);
         virtual void processPacket(inet::Packet *msg) = 0;
 
     public:
