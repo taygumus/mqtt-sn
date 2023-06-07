@@ -2,11 +2,15 @@
 #define MODULES_MQTTSNCLIENT_H_
 
 #include "MqttSNApp.h"
+#include "types/GatewayInfo.h"
 
 namespace mqttsn {
 
 class MqttSNClient : public MqttSNApp
 {
+    protected:
+        std::map<uint8_t, GatewayInfo> activeGateways;
+
     protected:
         virtual void initialize(int stage) override;
         virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
@@ -18,6 +22,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
         virtual void processPacket(inet::Packet *msg) override;
+        virtual void processAdvertise(inet::Packet *pk);
 
     public:
         MqttSNClient() {};
