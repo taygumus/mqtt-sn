@@ -9,7 +9,11 @@ namespace mqttsn {
 class MqttSNClient : public MqttSNApp
 {
     protected:
+        // parameters
+        volatile double checkGatewaysInterval;
+
         // state
+        inet::ClockEvent *checkGatewaysEvent = nullptr;
         std::map<uint8_t, GatewayInfo> activeGateways;
 
     protected:
@@ -24,6 +28,8 @@ class MqttSNClient : public MqttSNApp
 
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processAdvertise(inet::Packet *pk);
+
+        virtual void checkGatewaysAvailability();
 
     public:
         MqttSNClient() {};

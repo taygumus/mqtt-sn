@@ -15,13 +15,19 @@ void MqttSNClient::initialize(int stage)
     ClockUserModuleMixin::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        //
+        checkGatewaysInterval = par("checkGatewaysInterval");
+        checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
     }
 }
 
 void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
-    socket.processMessage(msg);
+    if (msg == checkGatewaysEvent) {
+        checkGatewaysAvailability();
+        scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
+    }
+    else
+        socket.processMessage(msg);
 }
 
 void MqttSNClient::finish()
@@ -43,16 +49,18 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
-    //
+    scheduleClockEventAt(checkGatewaysInterval, checkGatewaysEvent);
 }
 
 void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
+    cancelEvent(checkGatewaysEvent);
     socket.close();
 }
 
 void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 {
+    cancelClockEvent(checkGatewaysEvent);
     socket.destroy();
 }
 
@@ -72,22 +80,6 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
     }
 
-    // Print elements
-    /*
-    for (const auto& entry : activeGateways) {
-        uint8_t gatewayId = entry.first;
-        const GatewayInfo& gatewayInfo = entry.second;
-
-        EV << "Gateway ID: " << static_cast<int>(gatewayId) << std::endl;
-        EV << "Address: " << gatewayInfo.address.str() << std::endl;
-        EV << "Port: " << gatewayInfo.port << std::endl;
-        EV << "Duration: " << gatewayInfo.duration << std::endl;
-        EV << "Last Advertise Time: " << gatewayInfo.lastAdvertiseTime << std::endl;
-        EV << std::endl;
-    }
-    */
-    //
-
     delete pk;
 }
 
@@ -104,8 +96,8 @@ void MqttSNClient::processAdvertise(inet::Packet *pk)
     auto it = activeGateways.find(gatewayId);
 
     if (it == activeGateways.end()) {
+        // gatewayId not found in the map
         GatewayInfo gatewayInfo;
-
         gatewayInfo.address = srcAddress;
         gatewayInfo.port = srcPort;
         gatewayInfo.duration = duration;
@@ -117,9 +109,29 @@ void MqttSNClient::processAdvertise(inet::Packet *pk)
         it->second.lastAdvertiseTime = getClockTime();
 }
 
+void MqttSNClient::checkGatewaysAvailability()
+{
+    int nadv = par("nadv");
+    inet::clocktime_t currentTime = getClockTime();
+
+    for (auto it = activeGateways.begin(); it != activeGateways.end();) {
+
+        const GatewayInfo& gatewayInfo = it->second;
+        inet::clocktime_t elapsedTime = currentTime - gatewayInfo.lastAdvertiseTime;
+
+        if (elapsedTime >= (nadv * gatewayInfo.duration)) {
+            // gateway is considered unavailable
+            it = activeGateways.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
 MqttSNClient::~MqttSNClient()
 {
-    //
+    cancelAndDelete(checkGatewaysEvent);
 }
 
 } /* namespace mqttsn */
