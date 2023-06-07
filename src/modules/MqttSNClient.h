@@ -9,6 +9,7 @@ namespace mqttsn {
 class MqttSNClient : public MqttSNApp
 {
     protected:
+        // state
         std::map<uint8_t, GatewayInfo> activeGateways;
 
     protected:
@@ -21,7 +22,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
-        virtual void processPacket(inet::Packet *msg) override;
+        virtual void processPacket(inet::Packet *pk) override;
         virtual void processAdvertise(inet::Packet *pk);
 
     public:

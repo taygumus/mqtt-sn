@@ -35,7 +35,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
-        virtual void processPacket(inet::Packet *msg) override;
+        virtual void processPacket(inet::Packet *pk) override;
 
     public:
         MqttSNServer() {};
