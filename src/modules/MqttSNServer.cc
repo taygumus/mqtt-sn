@@ -8,18 +8,6 @@ Define_Module(MqttSNServer);
 
 int MqttSNServer::gatewayIdCounter = -1;
 
-const auto MqttSNServer::getAdvertisePayload(MsgType msgType, uint8_t gatewayId, uint16_t duration)
-{
-    const auto& payload = inet::makeShared<MqttSNAdvertise>();
-
-    payload->setMsgType(msgType);
-    payload->setGwId(gatewayId);
-    payload->setDuration(duration);
-    payload->setChunkLength(inet::B(payload->getLength()));
-
-    return payload;
-}
-
 void MqttSNServer::initialize(int stage)
 {
     ClockUserModuleMixin::initialize(stage);
@@ -44,16 +32,7 @@ void MqttSNServer::initialize(int stage)
 void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     if (msg == advertiseEvent) {
-        const auto& payload = getAdvertisePayload(MsgType::ADVERTISE, gatewayId, advertiseInterval);
-
-        std::ostringstream str;
-        str << "AdvertisePacket"<< "-" << numAdvertiseSent;
-        inet::Packet *packet = new inet::Packet(str.str().c_str());
-        packet->insertAtBack(payload);
-
-        socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
-        numAdvertiseSent++;
-
+        sendAdvertise();
         inet::clocktime_t d = advertiseInterval;
         if (stopAdvertise < inet::CLOCKTIME_ZERO || getClockTime() + d < stopAdvertise) {
             scheduleClockEventAfter(d, advertiseEvent);
@@ -104,6 +83,23 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 {
     EV_INFO << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
     delete pk;
+}
+
+void MqttSNServer::sendAdvertise()
+{
+    const auto& payload = inet::makeShared<MqttSNAdvertise>();
+    payload->setMsgType(MsgType::ADVERTISE);
+    payload->setGwId(gatewayId);
+    payload->setDuration(advertiseInterval);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::ostringstream str;
+    str << "AdvertisePacket"<< "-" << numAdvertiseSent;
+    inet::Packet *packet = new inet::Packet(str.str().c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
+    numAdvertiseSent++;
 }
 
 MqttSNServer::~MqttSNServer()

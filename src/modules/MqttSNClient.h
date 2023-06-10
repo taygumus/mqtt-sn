@@ -26,9 +26,12 @@ class MqttSNClient : public MqttSNApp
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
+        // process received packet
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processAdvertise(inet::Packet *pk);
 
+        // send packet
+            //
         virtual void checkGatewaysAvailability();
 
     public:

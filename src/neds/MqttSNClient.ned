@@ -10,8 +10,8 @@ simple MqttSNClient like IApp
         int localPort = default(-1);
         int destPort = default(-1);
         
-        volatile double checkGatewaysInterval @unit(s) = default(1s);
-        int nadv = default(2); //The number of consecutive times without receiving ADVERTISE
+        volatile double checkGatewaysInterval @unit(s) = default(1s); // active gateways check in the map
+        int nadv = default(2); // the number of consecutive times without receiving ADVERTISE
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
