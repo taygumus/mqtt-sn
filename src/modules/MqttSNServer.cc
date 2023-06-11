@@ -1,5 +1,6 @@
 #include "MqttSNServer.h"
 #include "inet/networklayer/common/L3AddressResolver.h"
+#include "inet/networklayer/common/L3AddressTag_m.h"
 #include "messages/MqttSNAdvertise.h"
 
 namespace mqttsn {
@@ -81,7 +82,15 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNServer::processPacket(inet::Packet *pk)
 {
-    EV_INFO << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
+    EV << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
+
+    inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
+    // broadcasted to itself
+    if (srcAddress == inet::L3Address("127.0.0.1")) {
+        delete pk;
+        return;
+    }
+
     delete pk;
 }
 
