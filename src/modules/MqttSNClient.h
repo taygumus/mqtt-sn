@@ -33,7 +33,7 @@ class MqttSNClient : public MqttSNApp
 
         // process received packet
         virtual void processPacket(inet::Packet *pk) override;
-        virtual void processAdvertise(inet::Packet *pk);
+        virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processSearchGateway(inet::Packet *pk);
 
         // send packet

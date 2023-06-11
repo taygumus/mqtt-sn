@@ -79,12 +79,21 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 {
     EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
+    inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
+    // broadcasted to itself
+    if (srcAddress == inet::L3Address("127.0.0.1")) {
+        delete pk;
+        return;
+    }
+
     const auto& header = pk->peekData<MqttSNBase>();
     checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
 
+    int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
+
     switch(header->getMsgType()) {
         case MsgType::ADVERTISE:
-            processAdvertise(pk);
+            processAdvertise(pk, srcAddress, srcPort);
             break;
         case MsgType::SEARCHGW:
             processSearchGateway(pk);
@@ -97,12 +106,9 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     delete pk;
 }
 
-void MqttSNClient::processAdvertise(inet::Packet *pk)
+void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNAdvertise>();
-
-    inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
-    int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
     uint8_t gatewayId = payload->getGwId();
     uint16_t duration = payload->getDuration();
@@ -166,13 +172,10 @@ void MqttSNClient::checkGatewaysAvailability()
 void MqttSNClient::handleSearchGatewayInterval()
 {
     if (!maxIntervalReached) {
-        searchGatewayInterval *= searchGatewayInterval;
         double maxInterval = par("maxSearchGatewayInterval");
 
-        if (searchGatewayInterval > maxInterval) {
-            searchGatewayInterval = maxInterval;
-            maxIntervalReached = true;
-        }
+        searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
+        maxIntervalReached = (searchGatewayInterval == maxInterval);
     }
 
     scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
