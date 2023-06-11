@@ -5,6 +5,7 @@
 #include "types/MsgType.h"
 #include "messages/MqttSNBase.h"
 #include "messages/MqttSNAdvertise.h"
+#include "messages/MqttSNSearchGw.h"
 
 namespace mqttsn {
 
@@ -17,6 +18,9 @@ void MqttSNClient::initialize(int stage)
     if (stage == inet::INITSTAGE_LOCAL) {
         checkGatewaysInterval = par("checkGatewaysInterval");
         checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
+
+        searchGatewayInterval = uniform(0, par("searchGatewayMaxDelay"));
+        searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
     }
 }
 
@@ -26,8 +30,12 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
         checkGatewaysAvailability();
         scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
     }
-    else
+    else if(msg == searchGatewayEvent) {
+        handleSearchGatewayEvent();
+    }
+    else {
         socket.processMessage(msg);
+    }
 }
 
 void MqttSNClient::finish()
@@ -50,17 +58,20 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
     socket.setBroadcast(true);
 
     scheduleClockEventAt(checkGatewaysInterval, checkGatewaysEvent);
+    scheduleClockEventAt(searchGatewayInterval, searchGatewayEvent);
 }
 
 void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(checkGatewaysEvent);
+    cancelEvent(searchGatewayEvent);
     socket.close();
 }
 
 void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 {
     cancelClockEvent(checkGatewaysEvent);
+    cancelClockEvent(searchGatewayEvent);
     socket.destroy();
 }
 
@@ -74,6 +85,9 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     switch(header->getMsgType()) {
         case MsgType::ADVERTISE:
             processAdvertise(pk);
+            break;
+        case MsgType::SEARCHGW:
+            processSearchGateway(pk);
             break;
 
         default:
@@ -105,8 +119,28 @@ void MqttSNClient::processAdvertise(inet::Packet *pk)
 
         activeGateways[gatewayId] = gatewayInfo;
     }
-    else
+    else {
         it->second.lastAdvertiseTime = getClockTime();
+    }
+}
+
+void MqttSNClient::processSearchGateway(inet::Packet *pk)
+{
+    // no need for this client to send again the search gateway message
+    searchGateway = false;
+}
+
+void MqttSNClient::sendSearchGateway()
+{
+    const auto& payload = inet::makeShared<MqttSNSearchGw>();
+    payload->setMsgType(MsgType::SEARCHGW);
+    payload->setRadius(0x00);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet *packet = new inet::Packet("SearchGwPacket");
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
 void MqttSNClient::checkGatewaysAvailability()
@@ -129,9 +163,33 @@ void MqttSNClient::checkGatewaysAvailability()
     }
 }
 
+void MqttSNClient::handleSearchGatewayInterval()
+{
+    if (!maxIntervalReached) {
+        searchGatewayInterval *= searchGatewayInterval;
+        double maxInterval = par("maxSearchGatewayInterval");
+
+        if (searchGatewayInterval > maxInterval) {
+            searchGatewayInterval = maxInterval;
+            maxIntervalReached = true;
+        }
+    }
+
+    scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
+}
+
+void MqttSNClient::handleSearchGatewayEvent()
+{
+    if (searchGateway) {
+        sendSearchGateway();
+        handleSearchGatewayInterval();
+    }
+}
+
 MqttSNClient::~MqttSNClient()
 {
     cancelAndDelete(checkGatewaysEvent);
+    cancelAndDelete(searchGatewayEvent);
 }
 
 } /* namespace mqttsn */

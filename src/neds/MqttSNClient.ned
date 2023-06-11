@@ -6,12 +6,16 @@ simple MqttSNClient like IApp
 {
     parameters:
         string localAddress = default("");
+        string broadcastAddress = default("255.255.255.255");
         
         int localPort = default(-1);
         int destPort = default(-1);
         
-        volatile double checkGatewaysInterval @unit(s) = default(1s); // active gateways check in the map
+        double checkGatewaysInterval @unit(s) = default(1s); // active gateways check in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE
+        
+        double searchGatewayMaxDelay @unit(s) = default(5s);
+        double maxSearchGatewayInterval @unit(s) = default(100s); // exponential rtx interval will reach a maximum
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
