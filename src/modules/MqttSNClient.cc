@@ -80,8 +80,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
-    // broadcasted to itself
-    if (srcAddress == inet::L3Address("127.0.0.1")) {
+    if (isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
     }

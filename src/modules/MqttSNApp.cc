@@ -30,4 +30,10 @@ void MqttSNApp::checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength
     }
 }
 
+bool MqttSNApp::isSelfBroadcastAddress(inet::L3Address address)
+{
+    inet::L3Address selfBroadcastAddress = inet::L3Address("127.0.0.1");
+    return (address == selfBroadcastAddress);
+}
+
 } /* namespace mqttsn */
