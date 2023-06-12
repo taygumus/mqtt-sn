@@ -98,6 +98,12 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             processSearchGw(pk);
             break;
 
+        case MsgType::GWINFO:
+            // TO DO
+            // block the gwInfo to send in processSearchGw AND
+            // process gwInfo updating the activeGatways
+            break;
+
         default:
             throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
     }
@@ -133,6 +139,8 @@ void MqttSNClient::processSearchGw(inet::Packet *pk)
 {
     // no need for this client to send again the search gateway message
     searchGateway = false;
+
+    // if I have any gateway in the list I'll send a GwInfo message in broadcast (to manage the priority)
 }
 
 void MqttSNClient::sendSearchGw()
