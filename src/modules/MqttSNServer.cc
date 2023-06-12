@@ -2,6 +2,7 @@
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "messages/MqttSNAdvertise.h"
+#include "messages/MqttSNGwInfo.h"
 
 namespace mqttsn {
 
@@ -39,8 +40,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
             scheduleClockEventAfter(d, advertiseEvent);
         }
     }
-    else
+    else {
         socket.processMessage(msg);
+    }
 }
 
 void MqttSNServer::finish()
@@ -90,9 +92,28 @@ void MqttSNServer::processPacket(inet::Packet *pk)
         return;
     }
 
-    //
+    const auto& header = pk->peekData<MqttSNBase>();
+    checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+
+    switch(header->getMsgType()) {
+        case MsgType::SEARCHGW:
+            processSearchGw(pk);
+            break;
+
+        case MsgType::ADVERTISE:
+        case MsgType::GWINFO:
+            break;
+
+        default:
+            throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
+    }
 
     delete pk;
+}
+
+void MqttSNServer::processSearchGw(inet::Packet *pk)
+{
+    MqttSNApp::sendGwInfo(gatewayId);
 }
 
 void MqttSNServer::sendAdvertise()

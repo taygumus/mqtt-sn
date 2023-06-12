@@ -1,4 +1,6 @@
 #include "MqttSNApp.h"
+#include "types/MsgType.h"
+#include "messages/MqttSNGwInfo.h"
 
 namespace mqttsn {
 
@@ -17,6 +19,20 @@ void MqttSNApp::socketClosed(inet::UdpSocket *socket)
 {
     if (operationalState == State::STOPPING_OPERATION)
         startActiveOperationExtraTimeOrFinish(-1);
+}
+
+void MqttSNApp::sendGwInfo(uint8_t gatewayId, uint32_t gatewayAddress)
+{
+    const auto& payload = inet::makeShared<MqttSNGwInfo>();
+    payload->setMsgType(MsgType::GWINFO);
+    payload->setGwId(gatewayId);
+    payload->setGwAdd(gatewayAddress);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet *packet = new inet::Packet("GwInfoPacket");
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
 void MqttSNApp::checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength)

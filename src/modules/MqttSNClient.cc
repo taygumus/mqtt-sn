@@ -3,7 +3,6 @@
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
 #include "types/MsgType.h"
-#include "messages/MqttSNBase.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
 
@@ -94,8 +93,9 @@ void MqttSNClient::processPacket(inet::Packet *pk)
         case MsgType::ADVERTISE:
             processAdvertise(pk, srcAddress, srcPort);
             break;
+
         case MsgType::SEARCHGW:
-            processSearchGateway(pk);
+            processSearchGw(pk);
             break;
 
         default:
@@ -129,13 +129,13 @@ void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress
     }
 }
 
-void MqttSNClient::processSearchGateway(inet::Packet *pk)
+void MqttSNClient::processSearchGw(inet::Packet *pk)
 {
     // no need for this client to send again the search gateway message
     searchGateway = false;
 }
 
-void MqttSNClient::sendSearchGateway()
+void MqttSNClient::sendSearchGw()
 {
     const auto& payload = inet::makeShared<MqttSNSearchGw>();
     payload->setMsgType(MsgType::SEARCHGW);
@@ -183,7 +183,7 @@ void MqttSNClient::handleSearchGatewayInterval()
 void MqttSNClient::handleSearchGatewayEvent()
 {
     if (searchGateway) {
-        sendSearchGateway();
+        sendSearchGw();
         handleSearchGatewayInterval();
     }
 }

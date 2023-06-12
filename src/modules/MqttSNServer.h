@@ -35,6 +35,7 @@ class MqttSNServer : public MqttSNApp
 
         // process received packet
         virtual void processPacket(inet::Packet *pk) override;
+        virtual void processSearchGw(inet::Packet *pk);
 
         // send packet
         virtual void sendAdvertise();

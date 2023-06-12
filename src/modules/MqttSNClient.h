@@ -34,10 +34,10 @@ class MqttSNClient : public MqttSNApp
         // process received packet
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processSearchGateway(inet::Packet *pk);
+        virtual void processSearchGw(inet::Packet *pk);
 
         // send packet
-        virtual void sendSearchGateway();
+        virtual void sendSearchGw();
 
         // others
         virtual void checkGatewaysAvailability();
