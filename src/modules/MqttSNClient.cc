@@ -26,8 +26,7 @@ void MqttSNClient::initialize(int stage)
 void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     if (msg == checkGatewaysEvent) {
-        checkGatewaysAvailability();
-        scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
+        handleCheckGatewaysEvent();
     }
     else if(msg == searchGatewayEvent) {
         handleSearchGatewayEvent();
@@ -140,6 +139,7 @@ void MqttSNClient::processSearchGw(inet::Packet *pk)
     // no need for this client to send again the search gateway message
     searchGateway = false;
 
+    // TO DO
     // if I have any gateway in the list I'll send a GwInfo message in broadcast (to manage the priority)
 }
 
@@ -154,6 +154,28 @@ void MqttSNClient::sendSearchGw()
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
+}
+
+void MqttSNClient::handleCheckGatewaysEvent()
+{
+    checkGatewaysAvailability();
+    scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
+}
+
+void MqttSNClient::handleSearchGatewayEvent()
+{
+    if (searchGateway) {
+        sendSearchGw();
+
+        if (!maxIntervalReached) {
+            double maxInterval = par("maxSearchGatewayInterval");
+
+            searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
+            maxIntervalReached = (searchGatewayInterval == maxInterval);
+        }
+
+        scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
+    }
 }
 
 void MqttSNClient::checkGatewaysAvailability()
@@ -173,26 +195,6 @@ void MqttSNClient::checkGatewaysAvailability()
         else {
             ++it;
         }
-    }
-}
-
-void MqttSNClient::handleSearchGatewayInterval()
-{
-    if (!maxIntervalReached) {
-        double maxInterval = par("maxSearchGatewayInterval");
-
-        searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
-        maxIntervalReached = (searchGatewayInterval == maxInterval);
-    }
-
-    scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
-}
-
-void MqttSNClient::handleSearchGatewayEvent()
-{
-    if (searchGateway) {
-        sendSearchGw();
-        handleSearchGatewayInterval();
     }
 }
 

@@ -39,10 +39,12 @@ class MqttSNClient : public MqttSNApp
         // send packet
         virtual void sendSearchGw();
 
+        // event handlers
+        virtual void handleCheckGatewaysEvent();
+        virtual void handleSearchGatewayEvent();
+
         // others
         virtual void checkGatewaysAvailability();
-        virtual void handleSearchGatewayInterval();
-        virtual void handleSearchGatewayEvent();
 
     public:
         MqttSNClient() {};

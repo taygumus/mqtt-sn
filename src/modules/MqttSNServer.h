@@ -16,6 +16,8 @@ class MqttSNServer : public MqttSNApp
 
         // state
         inet::ClockEvent *advertiseEvent = nullptr;
+        bool lastAdvertise = false;
+        bool activeGateway = true;
 
         static int gatewayIdCounter;
         uint8_t gatewayId;
@@ -39,6 +41,9 @@ class MqttSNServer : public MqttSNApp
 
         // send packet
         virtual void sendAdvertise();
+
+        // event handlers
+        virtual void handleAdvertiseEvent();
 
     public:
         MqttSNServer() {};

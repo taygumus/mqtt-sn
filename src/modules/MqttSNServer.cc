@@ -19,14 +19,17 @@ void MqttSNServer::initialize(int stage)
         stopAdvertise = par("stopAdvertise");
         advertiseInterval = par("advertiseInterval");
 
-        if (stopAdvertise >= inet::CLOCKTIME_ZERO && stopAdvertise < startAdvertise)
+        if (stopAdvertise >= inet::CLOCKTIME_ZERO && stopAdvertise < startAdvertise) {
             throw omnetpp::cRuntimeError("Invalid startAdvertise/stopAdvertise parameters");
+        }
         advertiseEvent = new inet::ClockEvent("advertiseTimer");
 
-        if (gatewayIdCounter < UINT8_MAX)
+        if (gatewayIdCounter < UINT8_MAX) {
             gatewayIdCounter++;
-        else
+        }
+        else {
             throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
+        }
         gatewayId = gatewayIdCounter;
     }
 }
@@ -34,11 +37,7 @@ void MqttSNServer::initialize(int stage)
 void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     if (msg == advertiseEvent) {
-        sendAdvertise();
-        inet::clocktime_t d = advertiseInterval;
-        if (stopAdvertise < inet::CLOCKTIME_ZERO || getClockTime() + d < stopAdvertise) {
-            scheduleClockEventAfter(d, advertiseEvent);
-        }
+        handleAdvertiseEvent();
     }
     else {
         socket.processMessage(msg);
@@ -68,6 +67,9 @@ void MqttSNServer::handleStartOperation(inet::LifecycleOperation *operation)
     if ((stopAdvertise < inet::CLOCKTIME_ZERO) || (start < stopAdvertise) || (start == stopAdvertise && startAdvertise == stopAdvertise)) {
         scheduleClockEventAt(start, advertiseEvent);
     }
+    else {
+        activeGateway = false;
+    }
 }
 
 void MqttSNServer::handleStopOperation(inet::LifecycleOperation *operation)
@@ -84,13 +86,14 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNServer::processPacket(inet::Packet *pk)
 {
-    EV << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
-
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
-    if (isSelfBroadcastAddress(srcAddress)) {
+
+    if (!activeGateway || isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
     }
+
+    EV << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     const auto& header = pk->peekData<MqttSNBase>();
     checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
@@ -131,6 +134,27 @@ void MqttSNServer::sendAdvertise()
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
     numAdvertiseSent++;
+}
+
+void MqttSNServer::handleAdvertiseEvent()
+{
+    if (!lastAdvertise) {
+        sendAdvertise();
+    }
+
+    if ((stopAdvertise < inet::CLOCKTIME_ZERO) || (getClockTime() + advertiseInterval < stopAdvertise)) {
+        scheduleClockEventAfter(advertiseInterval, advertiseEvent);
+    }
+    else {
+        inet::clocktime_t remainingTime = stopAdvertise - getClockTime();
+        if (remainingTime > inet::CLOCKTIME_ZERO) {
+            scheduleClockEventAfter(remainingTime, advertiseEvent);
+            lastAdvertise = true;
+        }
+        else {
+            activeGateway = false;
+        }
+    }
 }
 
 MqttSNServer::~MqttSNServer()
