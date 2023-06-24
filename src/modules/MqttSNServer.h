@@ -42,7 +42,7 @@ class MqttSNServer : public MqttSNApp
         // send packet
         virtual void sendAdvertise();
 
-        // event handlers
+        // event handler
         virtual void handleAdvertiseEvent();
 
     public:

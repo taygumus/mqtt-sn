@@ -75,13 +75,14 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
-    EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
-
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
+
     if (isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
     }
+
+    EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     const auto& header = pk->peekData<MqttSNBase>();
     checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
