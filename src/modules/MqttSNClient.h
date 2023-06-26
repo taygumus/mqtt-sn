@@ -11,6 +11,7 @@ class MqttSNClient : public MqttSNApp
     protected:
         // parameters
         double checkGatewaysInterval;
+        uint16_t temporaryDuration;
 
         // state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
@@ -31,20 +32,22 @@ class MqttSNClient : public MqttSNApp
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
-        // process received packet
+        // process received packets
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processSearchGw(inet::Packet *pk);
+        virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 
-        // send packet
+        // send packets
         virtual void sendSearchGw();
 
-        // event handler
+        // event handlers
         virtual void handleCheckGatewaysEvent();
         virtual void handleSearchGatewayEvent();
 
-        // other
+        // others
         virtual void checkGatewaysAvailability();
+        virtual void updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNClient() {};

@@ -35,14 +35,14 @@ class MqttSNServer : public MqttSNApp
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
 
-        // process received packet
+        // process received packets
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processSearchGw(inet::Packet *pk);
 
-        // send packet
+        // send packets
         virtual void sendAdvertise();
 
-        // event handler
+        // event handlers
         virtual void handleAdvertiseEvent();
 
     public:

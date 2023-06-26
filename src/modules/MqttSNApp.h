@@ -21,10 +21,10 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void socketErrorArrived(inet::UdpSocket *socket, inet::Indication *indication) override;
         virtual void socketClosed(inet::UdpSocket *socket) override;
 
-        // process received packet
+        // process received packets
         virtual void processPacket(inet::Packet *pk) = 0;
 
-        // send packet
+        // send packets
         virtual void sendGwInfo(uint8_t gatewayId, uint32_t gatewayAddress = 0);
 
         // others

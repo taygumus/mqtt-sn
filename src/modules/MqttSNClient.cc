@@ -5,6 +5,7 @@
 #include "types/MsgType.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
+#include "messages/MqttSNGwInfo.h"
 
 namespace mqttsn {
 
@@ -20,6 +21,8 @@ void MqttSNClient::initialize(int stage)
 
         searchGatewayInterval = uniform(0, par("searchGatewayMaxDelay"));
         searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
+
+        temporaryDuration = par("temporaryDuration");
     }
 }
 
@@ -99,9 +102,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::GWINFO:
-            // TO DO
-            // block the gwInfo to send in processSearchGw AND
-            // process gwInfo updating the activeGatways
+            processGwInfo(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -118,30 +119,47 @@ void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress
     uint8_t gatewayId = payload->getGwId();
     uint16_t duration = payload->getDuration();
 
-    auto it = activeGateways.find(gatewayId);
+    updateActiveGateways(gatewayId, duration, srcAddress, srcPort);
 
-    if (it == activeGateways.end()) {
-        // gatewayId not found in the map
-        GatewayInfo gatewayInfo;
-        gatewayInfo.address = srcAddress;
-        gatewayInfo.port = srcPort;
-        gatewayInfo.duration = duration;
-        gatewayInfo.lastAdvertiseTime = getClockTime();
+    // Print elements
+        for (const auto& entry : activeGateways) {
+            uint8_t gatewayId = entry.first;
+            const GatewayInfo& gatewayInfo = entry.second;
 
-        activeGateways[gatewayId] = gatewayInfo;
-    }
-    else {
-        it->second.lastAdvertiseTime = getClockTime();
-    }
+            EV << "Gateway ID: " << static_cast<int>(gatewayId) << std::endl;
+            EV << "Address: " << gatewayInfo.address.str() << std::endl;
+            EV << "Port: " << gatewayInfo.port << std::endl;
+            EV << "Duration: " << gatewayInfo.duration << std::endl;
+            EV << "Last Updated Time: " << gatewayInfo.lastUpdatedTime << std::endl;
+            EV << std::endl;
+        }
+        //
 }
 
 void MqttSNClient::processSearchGw(inet::Packet *pk)
 {
     // no need for this client to send again the search gateway message
-    searchGateway = false;
+    if (searchGateway) {
+        searchGateway = false;
+    }
 
     // TO DO
-    // if I have any gateway in the list I'll send a GwInfo message in broadcast (to manage the priority)
+    // if I have any gateway in the list I'll SEND a GwInfo message in broadcast (to manage the priority)
+}
+
+void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNGwInfo>();
+
+    uint8_t gatewayId = payload->getGwId();
+    //uint16_t gatewayAddress = payload->getGwAdd();
+// risposta da client o server (da gestire)
+
+    updateActiveGateways(gatewayId, 0, srcAddress, srcPort);
+
+    if (searchGateway) {
+        searchGateway = false;
+    }
 }
 
 void MqttSNClient::sendSearchGw()
@@ -187,7 +205,7 @@ void MqttSNClient::checkGatewaysAvailability()
     for (auto it = activeGateways.begin(); it != activeGateways.end();) {
 
         const GatewayInfo& gatewayInfo = it->second;
-        inet::clocktime_t elapsedTime = currentTime - gatewayInfo.lastAdvertiseTime;
+        inet::clocktime_t elapsedTime = currentTime - gatewayInfo.lastUpdatedTime;
 
         if (elapsedTime >= (nadv * gatewayInfo.duration)) {
             // gateway is considered unavailable
@@ -196,6 +214,34 @@ void MqttSNClient::checkGatewaysAvailability()
         else {
             ++it;
         }
+    }
+}
+
+void MqttSNClient::updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort)
+{
+    auto it = activeGateways.find(gatewayId);
+
+    // gwInfo messages use a temporary duration set in the client
+    if (duration == 0) {
+        duration = temporaryDuration;
+    }
+
+    if (it == activeGateways.end()) {
+        GatewayInfo gatewayInfo;
+        gatewayInfo.address = srcAddress;
+        gatewayInfo.port = srcPort;
+        gatewayInfo.duration = duration;
+        gatewayInfo.lastUpdatedTime = getClockTime();
+
+        activeGateways[gatewayId] = gatewayInfo;
+    }
+    else {
+        // we update the duration field only when we receive an advertise message
+        if (duration != temporaryDuration && it->second.duration != duration) {
+            it->second.duration = duration;
+        }
+
+        it->second.lastUpdatedTime = getClockTime();
     }
 }
 

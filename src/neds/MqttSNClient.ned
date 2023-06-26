@@ -17,6 +17,8 @@ simple MqttSNClient like IApp
         double searchGatewayMaxDelay @unit(s) = default(5s);
         double maxSearchGatewayInterval @unit(s) = default(100s); // exponential rtx interval will reach a maximum
         
+        int temporaryDuration @unit(s) = default(5s); // range between 0..65535 seconds
+        
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
 
