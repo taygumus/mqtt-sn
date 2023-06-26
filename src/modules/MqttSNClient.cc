@@ -120,20 +120,6 @@ void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress
     uint16_t duration = payload->getDuration();
 
     updateActiveGateways(gatewayId, duration, srcAddress, srcPort);
-
-    // Print elements
-        for (const auto& entry : activeGateways) {
-            uint8_t gatewayId = entry.first;
-            const GatewayInfo& gatewayInfo = entry.second;
-
-            EV << "Gateway ID: " << static_cast<int>(gatewayId) << std::endl;
-            EV << "Address: " << gatewayInfo.address.str() << std::endl;
-            EV << "Port: " << gatewayInfo.port << std::endl;
-            EV << "Duration: " << gatewayInfo.duration << std::endl;
-            EV << "Last Updated Time: " << gatewayInfo.lastUpdatedTime << std::endl;
-            EV << std::endl;
-        }
-        //
 }
 
 void MqttSNClient::processSearchGw(inet::Packet *pk)
@@ -155,11 +141,14 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     std::string gatewayAddress = payload->getGwAdd();
     uint16_t gatewayPort = payload->getGwPort();
 
-    EV << "Gateway address: " << gatewayAddress << std::endl;
-    EV << "Gateway port: " << gatewayPort << std::endl;
-
-    // risposta da client o server (da gestire)
-    updateActiveGateways(gatewayId, 0, srcAddress, srcPort);
+    if (gatewayAddress != "" && gatewayPort > 0) {
+        // gwInfo from other client
+        updateActiveGateways(gatewayId, 0, inet::L3Address(gatewayAddress), (int) gatewayPort);
+    }
+    else {
+        // gwInfo from a server
+        updateActiveGateways(gatewayId, 0, srcAddress, srcPort);
+    }
 
     if (searchGateway) {
         searchGateway = false;
@@ -240,7 +229,7 @@ void MqttSNClient::updateActiveGateways(uint8_t gatewayId, uint16_t duration, in
         activeGateways[gatewayId] = gatewayInfo;
     }
     else {
-        // we update the duration field only when we receive an advertise message
+        // update the duration field only when we receive an advertise message
         if (duration != temporaryDuration && it->second.duration != duration) {
             it->second.duration = duration;
         }
