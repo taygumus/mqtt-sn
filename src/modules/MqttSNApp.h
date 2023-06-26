@@ -25,7 +25,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void processPacket(inet::Packet *pk) = 0;
 
         // send packets
-        virtual void sendGwInfo(uint8_t gatewayId, uint32_t gatewayAddress = 0);
+        virtual void sendGwInfo(uint8_t gatewayId, std::string gatewayAddress = "", uint16_t gatewayPort = 0);
 
         // others
         virtual void checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength);

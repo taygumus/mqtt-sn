@@ -152,9 +152,13 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     const auto& payload = pk->peekData<MqttSNGwInfo>();
 
     uint8_t gatewayId = payload->getGwId();
-    //uint16_t gatewayAddress = payload->getGwAdd();
-// risposta da client o server (da gestire)
+    std::string gatewayAddress = payload->getGwAdd();
+    uint16_t gatewayPort = payload->getGwPort();
 
+    EV << "Gateway address: " << gatewayAddress << std::endl;
+    EV << "Gateway port: " << gatewayPort << std::endl;
+
+    // risposta da client o server (da gestire)
     updateActiveGateways(gatewayId, 0, srcAddress, srcPort);
 
     if (searchGateway) {

@@ -21,12 +21,13 @@ void MqttSNApp::socketClosed(inet::UdpSocket *socket)
         startActiveOperationExtraTimeOrFinish(-1);
 }
 
-void MqttSNApp::sendGwInfo(uint8_t gatewayId, uint32_t gatewayAddress)
+void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16_t gatewayPort)
 {
     const auto& payload = inet::makeShared<MqttSNGwInfo>();
     payload->setMsgType(MsgType::GWINFO);
     payload->setGwId(gatewayId);
     payload->setGwAdd(gatewayAddress);
+    payload->setGwPort(gatewayPort);
     payload->setChunkLength(inet::B(payload->getLength()));
 
     inet::Packet *packet = new inet::Packet("GwInfoPacket");

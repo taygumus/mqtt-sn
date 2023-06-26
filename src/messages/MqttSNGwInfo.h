@@ -10,6 +10,7 @@ class MqttSNGwInfo : public MqttSNBase
     private:
         uint8_t gwId = 0;
         uint32_t gwAdd = 0;
+        uint16_t gwPort = 0;
 
     public:
         MqttSNGwInfo();
@@ -17,8 +18,11 @@ class MqttSNGwInfo : public MqttSNBase
         void setGwId(uint8_t gatewayId);
         uint8_t getGwId() const;
 
-        void setGwAdd(uint32_t gatewayAddress);
-        uint32_t getGwAdd() const;
+        void setGwAdd(std::string gatewayAddress);
+        std::string getGwAdd() const;
+
+        void setGwPort(uint16_t gatewayPort);
+        uint16_t getGwPort() const;
 
         ~MqttSNGwInfo() {};
 };
