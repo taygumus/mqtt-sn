@@ -23,6 +23,9 @@ void MqttSNClient::initialize(int stage)
         searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
 
         temporaryDuration = par("temporaryDuration");
+
+        gatewayInfoInterval = uniform(0, par("gatewayInfoMaxDelay"));
+        gatewayInfoEvent = new inet::ClockEvent("gatewayInfoTimer");
     }
 }
 
@@ -33,6 +36,9 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
     }
     else if(msg == searchGatewayEvent) {
         handleSearchGatewayEvent();
+    }
+    else if (msg == gatewayInfoEvent) {
+        // TO DO
     }
     else {
         socket.processMessage(msg);
@@ -66,6 +72,8 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(checkGatewaysEvent);
     cancelEvent(searchGatewayEvent);
+    cancelEvent(gatewayInfoEvent);
+
     socket.close();
 }
 
@@ -73,6 +81,8 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 {
     cancelClockEvent(checkGatewaysEvent);
     cancelClockEvent(searchGatewayEvent);
+    cancelClockEvent(gatewayInfoEvent);
+
     socket.destroy();
 }
 
@@ -129,8 +139,10 @@ void MqttSNClient::processSearchGw(inet::Packet *pk)
         searchGateway = false;
     }
 
-    // TO DO
-    // if I have any gateway in the list I'll SEND a GwInfo message in broadcast (to manage the priority)
+    if (!activeGateways.empty()) {
+        // delay sending of gwInfo message for a random time
+        scheduleClockEventAfter(gatewayInfoInterval, gatewayInfoEvent);
+    }
 }
 
 void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
@@ -148,8 +160,12 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     else {
         // gwInfo from a server
         updateActiveGateways(gatewayId, 0, srcAddress, srcPort);
+
+        // if client receives a gwInfo message, it will cancel the transmission of its gwInfo message
+        cancelEvent(gatewayInfoEvent);
     }
 
+    // completed the search gateway process for the client
     if (searchGateway) {
         searchGateway = false;
     }
@@ -242,6 +258,7 @@ MqttSNClient::~MqttSNClient()
 {
     cancelAndDelete(checkGatewaysEvent);
     cancelAndDelete(searchGatewayEvent);
+    cancelAndDelete(gatewayInfoEvent);
 }
 
 } /* namespace mqttsn */

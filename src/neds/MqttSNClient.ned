@@ -14,10 +14,12 @@ simple MqttSNClient like IApp
         double checkGatewaysInterval @unit(s) = default(1s); // active gateways check in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE
         
-        double searchGatewayMaxDelay @unit(s) = default(5s);
+        double searchGatewayMaxDelay @unit(s) = default(5s); // random number upper bound 
         double maxSearchGatewayInterval @unit(s) = default(100s); // exponential rtx interval will reach a maximum
         
         int temporaryDuration @unit(s) = default(5s); // range between 0..65535 seconds
+        
+        double gatewayInfoMaxDelay @unit(s) = default(3s); // random number upper bound 
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);

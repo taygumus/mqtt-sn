@@ -22,6 +22,9 @@ class MqttSNClient : public MqttSNApp
         bool maxIntervalReached = false;
         bool searchGateway = true;
 
+        inet::ClockEvent *gatewayInfoEvent = nullptr;
+        double gatewayInfoInterval;
+
     protected:
         virtual void initialize(int stage) override;
         virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
