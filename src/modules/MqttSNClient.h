@@ -47,6 +47,7 @@ class MqttSNClient : public MqttSNApp
         // event handlers
         virtual void handleCheckGatewaysEvent();
         virtual void handleSearchGatewayEvent();
+        virtual void handleGatewayInfoEvent();
 
         // others
         virtual void checkGatewaysAvailability();

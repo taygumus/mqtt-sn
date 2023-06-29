@@ -38,7 +38,7 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
         handleSearchGatewayEvent();
     }
     else if (msg == gatewayInfoEvent) {
-        // TO DO
+        handleGatewayInfoEvent();
     }
     else {
         socket.processMessage(msg);
@@ -204,6 +204,17 @@ void MqttSNClient::handleSearchGatewayEvent()
 
         scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
     }
+}
+
+void MqttSNClient::handleGatewayInfoEvent()
+{
+    auto firstElement = *activeGateways.begin();
+
+    uint8_t gatewayId = firstElement.first;
+    GatewayInfo gatewayInfo = firstElement.second;
+
+    // client answers with a gwInfo message
+    sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
 }
 
 void MqttSNClient::checkGatewaysAvailability()
