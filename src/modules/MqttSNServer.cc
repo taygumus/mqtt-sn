@@ -147,6 +147,7 @@ void MqttSNServer::handleAdvertiseEvent()
     }
     else {
         inet::clocktime_t remainingTime = stopAdvertise - getClockTime();
+        // keep gateway active for the remaining time but without sending an advertise message
         if (remainingTime > inet::CLOCKTIME_ZERO) {
             scheduleClockEventAfter(remainingTime, advertiseEvent);
             lastAdvertise = true;
