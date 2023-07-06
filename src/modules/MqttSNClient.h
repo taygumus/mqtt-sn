@@ -11,19 +11,24 @@ class MqttSNClient : public MqttSNApp
     protected:
         // parameters
         double checkGatewaysInterval;
+        double searchGatewayInterval;
         uint16_t temporaryDuration;
+        double gatewayInfoInterval;
+        double checkConnectionInterval;
 
         // state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
         std::map<uint8_t, GatewayInfo> activeGateways;
 
         inet::ClockEvent *searchGatewayEvent = nullptr;
-        double searchGatewayInterval;
         bool maxIntervalReached = false;
         bool searchGateway = true;
 
         inet::ClockEvent *gatewayInfoEvent = nullptr;
-        double gatewayInfoInterval;
+
+        inet::ClockEvent *checkConnectionEvent = nullptr;
+        bool isConnected = false;
+        GatewayInfo connectedGateway;
 
     protected:
         virtual void initialize(int stage) override;
@@ -48,6 +53,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleCheckGatewaysEvent();
         virtual void handleSearchGatewayEvent();
         virtual void handleGatewayInfoEvent();
+        virtual void handleCheckConnectionEvent();
 
         // others
         virtual void checkGatewaysAvailability();

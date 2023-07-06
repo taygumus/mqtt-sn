@@ -21,6 +21,8 @@ simple MqttSNClient like IApp
         
         double gatewayInfoMaxDelay @unit(s) = default(3s); // random number upper bound (TGWINFO)
         
+        double checkConnectionInterval @unit(s) = default(500ms); // check interval for client's connection to a gateway/server
+        
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
 

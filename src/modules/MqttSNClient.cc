@@ -26,6 +26,9 @@ void MqttSNClient::initialize(int stage)
 
         gatewayInfoInterval = uniform(0, par("gatewayInfoMaxDelay"));
         gatewayInfoEvent = new inet::ClockEvent("gatewayInfoTimer");
+
+        checkConnectionInterval = par("checkConnectionInterval");
+        checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
     }
 }
 
@@ -39,6 +42,9 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
     }
     else if (msg == gatewayInfoEvent) {
         handleGatewayInfoEvent();
+    }
+    else if (msg == checkConnectionEvent) {
+        handleCheckConnectionEvent();
     }
     else {
         socket.processMessage(msg);
@@ -66,6 +72,7 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
 
     scheduleClockEventAt(checkGatewaysInterval, checkGatewaysEvent);
     scheduleClockEventAt(searchGatewayInterval, searchGatewayEvent);
+    scheduleClockEventAt(checkConnectionInterval, checkConnectionEvent);
 }
 
 void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
@@ -73,6 +80,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
     cancelEvent(checkGatewaysEvent);
     cancelEvent(searchGatewayEvent);
     cancelEvent(gatewayInfoEvent);
+    cancelEvent(checkConnectionEvent);
 
     socket.close();
 }
@@ -82,6 +90,7 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
     cancelClockEvent(checkGatewaysEvent);
     cancelClockEvent(searchGatewayEvent);
     cancelClockEvent(gatewayInfoEvent);
+    cancelClockEvent(checkConnectionEvent);
 
     socket.destroy();
 }
@@ -208,6 +217,7 @@ void MqttSNClient::handleSearchGatewayEvent()
 
 void MqttSNClient::handleGatewayInfoEvent()
 {
+    // selection policy -> first element
     auto firstElement = *activeGateways.begin();
 
     uint8_t gatewayId = firstElement.first;
@@ -215,6 +225,16 @@ void MqttSNClient::handleGatewayInfoEvent()
 
     // client answers with a gwInfo message
     sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
+}
+
+void MqttSNClient::handleCheckConnectionEvent()
+{
+    if (!activeGateways.empty() && !isConnected) {
+        // TO DO
+        // unicast message to the gateway for connect msg
+    }
+
+    scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
 void MqttSNClient::checkGatewaysAvailability()
@@ -270,6 +290,7 @@ MqttSNClient::~MqttSNClient()
     cancelAndDelete(checkGatewaysEvent);
     cancelAndDelete(searchGatewayEvent);
     cancelAndDelete(gatewayInfoEvent);
+    cancelAndDelete(checkConnectionEvent);
 }
 
 } /* namespace mqttsn */
