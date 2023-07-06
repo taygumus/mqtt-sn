@@ -3,6 +3,7 @@
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
 #include "types/MsgType.h"
+#include "types/Length.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
 #include "messages/MqttSNGwInfo.h"
@@ -31,6 +32,7 @@ void MqttSNClient::initialize(int stage)
         checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
 
         clientId = generateClientId();
+        EV << "CLIENT ID:" << clientId << std::endl;
     }
 }
 
@@ -236,8 +238,6 @@ void MqttSNClient::handleCheckConnectionEvent()
         // unicast message to the gateway for connect msg
     }
 
-    EV << "Client ID:" << generateClientId() << std::endl;
-
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
@@ -291,12 +291,12 @@ void MqttSNClient::updateActiveGateways(uint8_t gatewayId, uint16_t duration, in
 
 std::string MqttSNClient::generateClientId()
 {
-    int length = intuniform(1, 23);
+    uint16_t length = intuniform(Length::ONE_OCTET, Length::CLIENT_ID_OCTETS);
 
     std::string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     std::string clientId;
 
-    for (int i = 0; i < length; i++) {
+    for (uint16_t i = 0; i < length; i++) {
         clientId += allowedChars[intuniform(0, allowedChars.length() - 1)];
     }
 
