@@ -29,6 +29,8 @@ void MqttSNClient::initialize(int stage)
 
         checkConnectionInterval = par("checkConnectionInterval");
         checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
+
+        clientId = generateClientId();
     }
 }
 
@@ -234,6 +236,8 @@ void MqttSNClient::handleCheckConnectionEvent()
         // unicast message to the gateway for connect msg
     }
 
+    EV << "Client ID:" << generateClientId() << std::endl;
+
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
@@ -283,6 +287,20 @@ void MqttSNClient::updateActiveGateways(uint8_t gatewayId, uint16_t duration, in
 
         it->second.lastUpdatedTime = getClockTime();
     }
+}
+
+std::string MqttSNClient::generateClientId()
+{
+    int length = intuniform(1, 23);
+
+    std::string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    std::string clientId;
+
+    for (int i = 0; i < length; i++) {
+        clientId += allowedChars[intuniform(0, allowedChars.length() - 1)];
+    }
+
+    return clientId;
 }
 
 MqttSNClient::~MqttSNClient()

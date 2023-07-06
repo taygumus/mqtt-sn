@@ -27,6 +27,7 @@ class MqttSNClient : public MqttSNApp
         inet::ClockEvent *gatewayInfoEvent = nullptr;
 
         inet::ClockEvent *checkConnectionEvent = nullptr;
+        std::string clientId;
         bool isConnected = false;
         GatewayInfo connectedGateway;
 
@@ -58,6 +59,7 @@ class MqttSNClient : public MqttSNApp
         // others
         virtual void checkGatewaysAvailability();
         virtual void updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort);
+        virtual std::string generateClientId();
 
     public:
         MqttSNClient() {};

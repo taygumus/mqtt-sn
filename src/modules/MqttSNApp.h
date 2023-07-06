@@ -29,7 +29,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
         // others
         virtual void checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength);
-        bool isSelfBroadcastAddress(inet::L3Address address);
+        virtual bool isSelfBroadcastAddress(inet::L3Address address);
 
     public:
         MqttSNApp() {};
