@@ -7,6 +7,7 @@
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
 #include "messages/MqttSNGwInfo.h"
+#include "messages/MqttSNConnect.h"
 
 namespace mqttsn {
 
@@ -32,7 +33,6 @@ void MqttSNClient::initialize(int stage)
         checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
 
         clientId = generateClientId();
-        EV << "CLIENT ID:" << clientId << std::endl;
     }
 }
 
@@ -197,6 +197,21 @@ void MqttSNClient::sendSearchGw()
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
+void MqttSNClient::sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t duration, inet::L3Address destAddress, int destPort)
+{
+    const auto& payload = inet::makeShared<MqttSNConnect>();
+    payload->setMsgType(MsgType::CONNECT);
+    payload->setWillFlag(willFlag);
+    payload->setCleanSessionFlag(cleanSessionFlag);
+    payload->setClientId(clientId);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet *packet = new inet::Packet("ConnectPacket");
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
 void MqttSNClient::handleCheckGatewaysEvent()
 {
     checkGatewaysAvailability();
@@ -234,8 +249,12 @@ void MqttSNClient::handleGatewayInfoEvent()
 void MqttSNClient::handleCheckConnectionEvent()
 {
     if (!activeGateways.empty() && !isConnected) {
-        // TO DO
-        // unicast message to the gateway for connect msg
+        // selection policy -> first element
+        auto firstElement = *activeGateways.begin();
+        GatewayInfo gatewayInfo = firstElement.second;
+
+        // TO DO -> flags, keep-alive
+        sendConnect(false, false, 0, gatewayInfo.address, gatewayInfo.port);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
