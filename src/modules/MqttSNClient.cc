@@ -8,6 +8,7 @@
 #include "messages/MqttSNSearchGw.h"
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNConnect.h"
+#include "messages/MqttSNBaseWithReturnCode.h"
 
 namespace mqttsn {
 
@@ -128,6 +129,10 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             processGwInfo(pk, srcAddress, srcPort);
             break;
 
+        case MsgType::CONNACK:
+            processConnAck(pk, srcAddress, srcPort);
+            break;
+
         default:
             throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
     }
@@ -182,6 +187,28 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     if (searchGateway) {
         searchGateway = false;
     }
+}
+
+void MqttSNClient::processConnAck(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithReturnCode>();
+    ReturnCode returnCode = payload->getReturnCode();
+
+    // TO DO -> manage the other codes
+    if (returnCode != ReturnCode::ACCEPTED) {
+        return;
+    }
+
+    // client is connected to the gateway
+    isConnected = true;
+    connectedGateway.address = srcAddress;
+    connectedGateway.port = srcPort;
+    connectedGateway.duration = 0;
+    connectedGateway.lastUpdatedTime = getClockTime();
+
+    std::ostringstream str;
+    str << "Client connected to: " << srcAddress.str();
+    bubble(str.str().c_str());
 }
 
 void MqttSNClient::sendSearchGw()
@@ -250,6 +277,7 @@ void MqttSNClient::handleCheckConnectionEvent()
 {
     if (!activeGateways.empty() && !isConnected) {
         // selection policy -> first element
+        // TO DO -> change policy otherwise every client selects that server
         auto firstElement = *activeGateways.begin();
         GatewayInfo gatewayInfo = firstElement.second;
 

@@ -3,6 +3,8 @@
 
 #include "MqttSNApp.h"
 #include "types/MsgType.h"
+#include "types/ReturnCode.h"
+#include "types/ClientInfo.h"
 
 namespace mqttsn {
 
@@ -22,6 +24,8 @@ class MqttSNServer : public MqttSNApp
         static int gatewayIdCounter;
         uint8_t gatewayId;
 
+        std::map<std::string, ClientInfo> clients;
+
         // statistics
         int numAdvertiseSent = 0;
 
@@ -38,12 +42,17 @@ class MqttSNServer : public MqttSNApp
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processSearchGw(inet::Packet *pk);
+        virtual void processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendAdvertise();
+        virtual void sendBaseWithReturnCode(MsgType msgType, ReturnCode returnCode, inet::L3Address destAddress, int destPort);
 
         // event handlers
         virtual void handleAdvertiseEvent();
+
+        // others
+        virtual void updateClients(std::string clientId, inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNServer() {};

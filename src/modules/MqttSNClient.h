@@ -29,8 +29,7 @@ class MqttSNClient : public MqttSNApp
         inet::ClockEvent *checkConnectionEvent = nullptr;
         std::string clientId;
         bool isConnected = false;
-        // TO DO
-        // GatewayInfo connectedGateway;
+        GatewayInfo connectedGateway;
 
     protected:
         virtual void initialize(int stage) override;
@@ -47,6 +46,7 @@ class MqttSNClient : public MqttSNApp
         virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processSearchGw(inet::Packet *pk);
         virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processConnAck(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendSearchGw();
