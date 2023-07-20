@@ -63,6 +63,7 @@ class MqttSNClient : public MqttSNApp
         virtual void checkGatewaysAvailability();
         virtual void updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort);
         virtual std::string generateClientId();
+        virtual std::pair<uint8_t, GatewayInfo> selectRandomGateway();
 
     public:
         MqttSNClient() {};

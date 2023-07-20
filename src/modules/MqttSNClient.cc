@@ -265,11 +265,11 @@ void MqttSNClient::handleSearchGatewayEvent()
 
 void MqttSNClient::handleGatewayInfoEvent()
 {
-    // selection policy -> first element
-    auto firstElement = *activeGateways.begin();
+    // random selection policy
+    std::pair<uint8_t, GatewayInfo> selectedGateway = selectRandomGateway();
 
-    uint8_t gatewayId = firstElement.first;
-    GatewayInfo gatewayInfo = firstElement.second;
+    uint8_t gatewayId = selectedGateway.first;
+    GatewayInfo gatewayInfo = selectedGateway.second;
 
     // client answers with a gwInfo message
     sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
@@ -278,14 +278,15 @@ void MqttSNClient::handleGatewayInfoEvent()
 void MqttSNClient::handleCheckConnectionEvent()
 {
     if (!activeGateways.empty() && !isConnected) {
-        // selection policy -> first element
-        // TO DO -> change policy otherwise every client selects that server
-        auto firstElement = *activeGateways.begin();
-        GatewayInfo gatewayInfo = firstElement.second;
+        // random selection policy
+        std::pair<uint8_t, GatewayInfo> selectedGateway = selectRandomGateway();
+        GatewayInfo gatewayInfo = selectedGateway.second;
 
         // TO DO -> keep-alive
         sendConnect(willFlag, false, 0, gatewayInfo.address, gatewayInfo.port);
     }
+
+    EV << "Server connesso: " << connectedGateway.address << std::endl; //
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
@@ -350,6 +351,20 @@ std::string MqttSNClient::generateClientId()
     }
 
     return clientId;
+}
+
+std::pair<uint8_t, GatewayInfo> MqttSNClient::selectRandomGateway()
+{
+    if (activeGateways.empty()) {
+        throw omnetpp::cRuntimeError("No active gateway found");
+    }
+
+    uint16_t randomIndex = intuniform(0, activeGateways.size() - 1);
+
+    auto it = activeGateways.begin();
+    std::advance(it, randomIndex);
+
+    return std::make_pair(it->first, it->second);
 }
 
 MqttSNClient::~MqttSNClient()
