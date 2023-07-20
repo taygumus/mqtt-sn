@@ -2,8 +2,7 @@
 #define TYPES_CLIENTINFO_H_
 
 struct ClientInfo {
-    inet::L3Address address;
-    int port;
+    std::string clientId;
 };
 
 #endif /* TYPES_CLIENTINFO_H_ */

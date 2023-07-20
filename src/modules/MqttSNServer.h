@@ -24,7 +24,7 @@ class MqttSNServer : public MqttSNApp
         static int gatewayIdCounter;
         uint8_t gatewayId;
 
-        std::map<std::string, ClientInfo> clients;
+        std::map<std::pair<inet::L3Address, int>, ClientInfo> connectedClients;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -52,7 +52,8 @@ class MqttSNServer : public MqttSNApp
         virtual void handleAdvertiseEvent();
 
         // others
-        virtual void updateClients(std::string clientId, inet::L3Address srcAddress, int srcPort);
+        virtual void updateConnectedClients(inet::L3Address srcAddress, int srcPort, std::string clientId);
+        virtual bool clientIsConnected(inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNServer() {};

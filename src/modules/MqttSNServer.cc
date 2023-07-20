@@ -103,6 +103,17 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
+    // packet types that require a connection session
+    switch(header->getMsgType()) {
+        case MsgType::WILLTOPIC:
+        case MsgType::WILLMSG:
+            if (!clientIsConnected(srcAddress, srcPort)) {
+                delete pk;
+                return;
+            }
+            break;
+    }
+
     switch(header->getMsgType()) {
         case MsgType::SEARCHGW:
             processSearchGw(pk);
@@ -131,16 +142,15 @@ void MqttSNServer::processSearchGw(inet::Packet *pk)
 void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNConnect>();
+
     // TO DO ->flags, keep alive etc
-    uint8_t protocolId = payload->getProtocolId();
-    if (protocolId != 0x01) {
+    if (payload->getProtocolId() != 0x01) {
         return;
     }
 
-    bool willFlag = payload->getWillFlag();
-    std::string clientId = payload->getClientId();
+    bool willFlag = payload->getWillFlag(); //
 
-    updateClients(clientId, srcAddress, srcPort);
+    updateConnectedClients(srcAddress, srcPort, payload->getClientId());
     // TO DO -> return code
     sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
 }
@@ -216,20 +226,26 @@ void MqttSNServer::handleAdvertiseEvent()
     }
 }
 
-void MqttSNServer::updateClients(std::string clientId, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::updateConnectedClients(inet::L3Address srcAddress, int srcPort, std::string clientId)
 {
-    auto it = clients.find(clientId);
+    auto key = std::make_pair(srcAddress, srcPort);
+    auto it = connectedClients.find(key);
 
-    if (it == clients.end()) {
+    if (it == connectedClients.end()) {
         ClientInfo clientInfo;
-        clientInfo.address = srcAddress;
-        clientInfo.port = srcPort;
+        clientInfo.clientId = clientId;
 
-        clients[clientId] = clientInfo;
+        connectedClients[key] = clientInfo;
     }
     else {
         // TO DO
     }
+}
+
+bool MqttSNServer::clientIsConnected(inet::L3Address address, int port)
+{
+    // check if the client with the specified address and port is present in the data structure
+    return (connectedClients.find(std::make_pair(address, port)) != connectedClients.end());
 }
 
 MqttSNServer::~MqttSNServer()
