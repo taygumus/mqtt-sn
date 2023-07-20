@@ -9,7 +9,7 @@ import inet.node.inet.WirelessHost;
 
 network WifiNetwork
 {
-    @display("bgb=561,334");
+    @display("bgb=713,380");
 
     submodules:
         accessPoint: AccessPoint {
@@ -25,13 +25,16 @@ network WifiNetwork
             @display("p=201,132");
         }
         client2: WirelessHost {
-            @display("p=201,265");
+            @display("p=201,219");
+        }
+        client3: WirelessHost {
+            @display("p=201,311");
         }
         server1: WirelessHost {
-            @display("p=494,265");
+            @display("p=492,132");
         }
         server2: WirelessHost {
-            @display("p=494,132");
+            @display("p=641,132");
         }
 }
 

@@ -15,6 +15,7 @@ class MqttSNClient : public MqttSNApp
         uint16_t temporaryDuration;
         double gatewayInfoInterval;
         double checkConnectionInterval;
+        bool willFlag;
 
         // state
         inet::ClockEvent *checkGatewaysEvent = nullptr;

@@ -137,6 +137,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
         return;
     }
 
+    bool willFlag = payload->getWillFlag();
     std::string clientId = payload->getClientId();
 
     updateClients(clientId, srcAddress, srcPort);

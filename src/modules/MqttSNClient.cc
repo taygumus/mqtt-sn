@@ -34,6 +34,8 @@ void MqttSNClient::initialize(int stage)
         checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
 
         clientId = generateClientId();
+
+        willFlag = par("willFlag");
     }
 }
 
@@ -199,7 +201,7 @@ void MqttSNClient::processConnAck(inet::Packet *pk, inet::L3Address srcAddress, 
         return;
     }
 
-    // client is connected to the gateway
+    // client is connected
     isConnected = true;
     connectedGateway.address = srcAddress;
     connectedGateway.port = srcPort;
@@ -281,8 +283,8 @@ void MqttSNClient::handleCheckConnectionEvent()
         auto firstElement = *activeGateways.begin();
         GatewayInfo gatewayInfo = firstElement.second;
 
-        // TO DO -> flags, keep-alive
-        sendConnect(false, false, 0, gatewayInfo.address, gatewayInfo.port);
+        // TO DO -> keep-alive
+        sendConnect(willFlag, false, 0, gatewayInfo.address, gatewayInfo.port);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
