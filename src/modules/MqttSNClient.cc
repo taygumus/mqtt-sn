@@ -210,7 +210,6 @@ void MqttSNClient::processConnAck(inet::Packet *pk, inet::L3Address srcAddress, 
 
     std::ostringstream str;
     str << "Client connected to: " << srcAddress.str();
-
     EV << str.str() << std::endl;
     bubble(str.str().c_str());
 }
@@ -267,8 +266,7 @@ void MqttSNClient::handleSearchGatewayEvent()
 
 void MqttSNClient::handleGatewayInfoEvent()
 {
-    // random selection policy
-    std::pair<uint8_t, GatewayInfo> selectedGateway = selectRandomGateway();
+    std::pair<uint8_t, GatewayInfo> selectedGateway = selectGateway();
 
     uint8_t gatewayId = selectedGateway.first;
     GatewayInfo gatewayInfo = selectedGateway.second;
@@ -280,15 +278,12 @@ void MqttSNClient::handleGatewayInfoEvent()
 void MqttSNClient::handleCheckConnectionEvent()
 {
     if (!activeGateways.empty() && !isConnected) {
-        // random selection policy
-        std::pair<uint8_t, GatewayInfo> selectedGateway = selectRandomGateway();
+        std::pair<uint8_t, GatewayInfo> selectedGateway = selectGateway();
         GatewayInfo gatewayInfo = selectedGateway.second;
 
         // TO DO -> keep-alive
         sendConnect(willFlag, false, 0, gatewayInfo.address, gatewayInfo.port);
     }
-
-    EV << "Server connesso: " << connectedGateway.address << std::endl; //
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
@@ -355,16 +350,17 @@ std::string MqttSNClient::generateClientId()
     return clientId;
 }
 
-std::pair<uint8_t, GatewayInfo> MqttSNClient::selectRandomGateway()
+std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
 {
     if (activeGateways.empty()) {
         throw omnetpp::cRuntimeError("No active gateway found");
     }
 
-    uint16_t randomIndex = intuniform(0, activeGateways.size() - 1);
+    // random selection policy
+    uint16_t index = intuniform(0, activeGateways.size() - 1);
 
     auto it = activeGateways.begin();
-    std::advance(it, randomIndex);
+    std::advance(it, index);
 
     return std::make_pair(it->first, it->second);
 }
