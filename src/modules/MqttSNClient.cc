@@ -210,6 +210,8 @@ void MqttSNClient::processConnAck(inet::Packet *pk, inet::L3Address srcAddress, 
 
     std::ostringstream str;
     str << "Client connected to: " << srcAddress.str();
+
+    EV << str.str() << std::endl;
     bubble(str.str().c_str());
 }
 
