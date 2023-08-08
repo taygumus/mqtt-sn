@@ -2,7 +2,9 @@
 #define MODULES_MQTTSNCLIENT_H_
 
 #include "MqttSNApp.h"
+#include "types/MsgType.h"
 #include "types/GatewayInfo.h"
+#include "types/QoS.h"
 
 namespace mqttsn {
 
@@ -30,7 +32,7 @@ class MqttSNClient : public MqttSNApp
         inet::ClockEvent *checkConnectionEvent = nullptr;
         std::string clientId;
         bool isConnected = false;
-        GatewayInfo connectedGateway;
+        GatewayInfo selectedGateway;
 
     protected:
         virtual void initialize(int stage) override;
@@ -47,11 +49,13 @@ class MqttSNClient : public MqttSNApp
         virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processSearchGw(inet::Packet *pk);
         virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processConnAck(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processConnAck(inet::Packet *pk);
+        virtual void processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendSearchGw();
         virtual void sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t duration, inet::L3Address destAddress, int destPort);
+        virtual void sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string topicName, inet::L3Address destAddress, int destPort);
 
         // event handlers
         virtual void handleCheckGatewaysEvent();
@@ -64,6 +68,8 @@ class MqttSNClient : public MqttSNApp
         virtual void updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort);
         virtual std::string generateClientId();
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
+        virtual bool isSelectedGateway(inet::L3Address srcAddress, int srcPort);
+        virtual bool isConnectedGateway(inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNClient() {};

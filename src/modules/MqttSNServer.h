@@ -46,6 +46,7 @@ class MqttSNServer : public MqttSNApp
 
         // send packets
         virtual void sendAdvertise();
+        virtual void sendBase(MsgType msgType, inet::L3Address destAddress, int destPort);
         virtual void sendBaseWithReturnCode(MsgType msgType, ReturnCode returnCode, inet::L3Address destAddress, int destPort);
 
         // event handlers
@@ -53,7 +54,7 @@ class MqttSNServer : public MqttSNApp
 
         // others
         virtual void updateConnectedClients(inet::L3Address srcAddress, int srcPort, std::string clientId);
-        virtual bool clientIsConnected(inet::L3Address srcAddress, int srcPort);
+        virtual bool isClientConnected(inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNServer() {};

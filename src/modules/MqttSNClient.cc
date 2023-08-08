@@ -9,6 +9,7 @@
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
+#include "messages/MqttSNBaseWithWillTopic.h"
 
 namespace mqttsn {
 
@@ -119,6 +120,23 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
     switch(header->getMsgType()) {
+        // packet types that are allowed only from the selected gateway
+        case MsgType::WILLTOPICREQ:
+        case MsgType::WILLMSGREQ:
+        case MsgType::CONNACK:
+            if (!isSelectedGateway(srcAddress, srcPort)) {
+                delete pk;
+                return;
+            }
+            break;
+
+        // TO DO -> add the other case where require connection
+
+        default:
+            break;
+    }
+
+    switch(header->getMsgType()) {
         case MsgType::ADVERTISE:
             processAdvertise(pk, srcAddress, srcPort);
             break;
@@ -132,7 +150,11 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::CONNACK:
-            processConnAck(pk, srcAddress, srcPort);
+            processConnAck(pk);
+            break;
+
+        case MsgType::WILLTOPICREQ:
+            processWillTopicReq(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -191,7 +213,7 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     }
 }
 
-void MqttSNClient::processConnAck(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processConnAck(inet::Packet *pk)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithReturnCode>();
     ReturnCode returnCode = payload->getReturnCode();
@@ -203,15 +225,17 @@ void MqttSNClient::processConnAck(inet::Packet *pk, inet::L3Address srcAddress, 
 
     // client is connected
     isConnected = true;
-    connectedGateway.address = srcAddress;
-    connectedGateway.port = srcPort;
-    connectedGateway.duration = 0;
-    connectedGateway.lastUpdatedTime = getClockTime();
 
     std::ostringstream str;
-    str << "Client connected to: " << srcAddress.str();
-    EV << str.str() << std::endl;
+    str << "Client connected to: " << selectedGateway.address.str() << ":" << selectedGateway.port;
+    EV_INFO << str.str() << std::endl;
     bubble(str.str().c_str());
+}
+
+void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    //
+    EV << "WillTopicReq:" << std::endl;
 }
 
 void MqttSNClient::sendSearchGw()
@@ -242,6 +266,36 @@ void MqttSNClient::sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t du
     socket.sendTo(packet, destAddress, destPort);
 }
 
+void MqttSNClient::sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string topicName, inet::L3Address destAddress, int destPort)
+{
+    const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
+    payload->setMsgType(msgType);
+    payload->setQoSFlag(qosFlag);
+    payload->setRetainFlag(retainFlag);
+    payload->setWillTopic(topicName);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::WILLTOPIC:
+            packetName = "WillTopicPacket";
+            break;
+
+        case MsgType::WILLTOPICUPD:
+            packetName = "WillTopicUpdPacket";
+            break;
+
+        default:
+            packetName = "BaseWithWillTopicPacket";
+    }
+
+    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
 void MqttSNClient::handleCheckGatewaysEvent()
 {
     checkGatewaysAvailability();
@@ -266,10 +320,10 @@ void MqttSNClient::handleSearchGatewayEvent()
 
 void MqttSNClient::handleGatewayInfoEvent()
 {
-    std::pair<uint8_t, GatewayInfo> selectedGateway = selectGateway();
+    std::pair<uint8_t, GatewayInfo> gateway = selectGateway();
 
-    uint8_t gatewayId = selectedGateway.first;
-    GatewayInfo gatewayInfo = selectedGateway.second;
+    uint8_t gatewayId = gateway.first;
+    GatewayInfo gatewayInfo = gateway.second;
 
     // client answers with a gwInfo message
     sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
@@ -278,8 +332,10 @@ void MqttSNClient::handleGatewayInfoEvent()
 void MqttSNClient::handleCheckConnectionEvent()
 {
     if (!activeGateways.empty() && !isConnected) {
-        std::pair<uint8_t, GatewayInfo> selectedGateway = selectGateway();
-        GatewayInfo gatewayInfo = selectedGateway.second;
+        std::pair<uint8_t, GatewayInfo> gateway = selectGateway();
+
+        GatewayInfo gatewayInfo = gateway.second;
+        selectedGateway = gatewayInfo;
 
         // TO DO -> keep-alive
         sendConnect(willFlag, false, 0, gatewayInfo.address, gatewayInfo.port);
@@ -363,6 +419,18 @@ std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
     std::advance(it, index);
 
     return std::make_pair(it->first, it->second);
+}
+
+bool MqttSNClient::isSelectedGateway(inet::L3Address srcAddress, int srcPort)
+{
+    // check if the gateway with the specified address and port is the one selected by the client
+    return (selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
+}
+
+bool MqttSNClient::isConnectedGateway(inet::L3Address srcAddress, int srcPort)
+{
+    // check if the gateway with the specified address and port is the one connected by the client
+    return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
 }
 
 MqttSNClient::~MqttSNClient()

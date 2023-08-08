@@ -5,6 +5,7 @@
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNConnect.h"
+#include "messages/MqttSNBase.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
 
 namespace mqttsn {
@@ -107,10 +108,13 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     switch(header->getMsgType()) {
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
-            if (!clientIsConnected(srcAddress, srcPort)) {
+            if (!isClientConnected(srcAddress, srcPort)) {
                 delete pk;
                 return;
             }
+            break;
+
+        default:
             break;
     }
 
@@ -143,16 +147,21 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
 {
     const auto& payload = pk->peekData<MqttSNConnect>();
 
-    // TO DO ->flags, keep alive etc
     if (payload->getProtocolId() != 0x01) {
         return;
     }
 
-    bool willFlag = payload->getWillFlag(); //
-
     updateConnectedClients(srcAddress, srcPort, payload->getClientId());
-    // TO DO -> return code
-    sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
+
+    // TO DO -> keep alive
+
+    if (payload->getWillFlag()) {
+        sendBase(MsgType::WILLTOPICREQ, srcAddress, srcPort);
+    }
+    else {
+        // TO DO -> return code
+        sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
+    }
 }
 
 void MqttSNServer::sendAdvertise()
@@ -170,6 +179,37 @@ void MqttSNServer::sendAdvertise()
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
     numAdvertiseSent++;
+}
+
+void MqttSNServer::sendBase(MsgType msgType, inet::L3Address destAddress, int destPort)
+{
+    const auto& payload = inet::makeShared<MqttSNBase>();
+    payload->setMsgType(msgType);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::WILLTOPICREQ:
+            packetName = "WillTopicReqPacket";
+            break;
+
+        case MsgType::WILLMSGREQ:
+            packetName = "WillMsgReqPacket";
+            break;
+
+        case MsgType::PINGRESP:
+            packetName = "PingRespPacket";
+            break;
+
+        default:
+            packetName = "BasePacket";
+    }
+
+    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::sendBaseWithReturnCode(MsgType msgType, ReturnCode returnCode, inet::L3Address destAddress, int destPort)
@@ -196,7 +236,7 @@ void MqttSNServer::sendBaseWithReturnCode(MsgType msgType, ReturnCode returnCode
 
         default:
             packetName = "BaseWithReturnCodePacket";
-        }
+    }
 
     inet::Packet *packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
@@ -242,10 +282,10 @@ void MqttSNServer::updateConnectedClients(inet::L3Address srcAddress, int srcPor
     }
 }
 
-bool MqttSNServer::clientIsConnected(inet::L3Address address, int port)
+bool MqttSNServer::isClientConnected(inet::L3Address srcAddress, int srcPort)
 {
     // check if the client with the specified address and port is present in the data structure
-    return (connectedClients.find(std::make_pair(address, port)) != connectedClients.end());
+    return (connectedClients.find(std::make_pair(srcAddress, srcPort)) != connectedClients.end());
 }
 
 MqttSNServer::~MqttSNServer()
