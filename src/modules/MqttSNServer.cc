@@ -161,6 +161,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
 
     // TO DO -> keep alive
 
+    // TO DO -> save flag information
     if (payload->getWillFlag()) {
         sendBase(MsgType::WILLTOPICREQ, srcAddress, srcPort);
     }
