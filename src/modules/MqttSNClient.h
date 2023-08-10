@@ -51,11 +51,13 @@ class MqttSNClient : public MqttSNApp
         virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processConnAck(inet::Packet *pk);
         virtual void processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendSearchGw();
         virtual void sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t duration, inet::L3Address destAddress, int destPort);
-        virtual void sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string topicName, inet::L3Address destAddress, int destPort);
+        virtual void sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic, inet::L3Address destAddress, int destPort);
+        virtual void sendBaseWithWillMsg(MsgType msgType, std::string willMsg, inet::L3Address destAddress, int destPort);
 
         // event handlers
         virtual void handleCheckGatewaysEvent();

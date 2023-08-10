@@ -23,7 +23,9 @@ simple MqttSNClient like IApp
         
         double checkConnectionInterval @unit(s) = default(500ms); // check interval for client's connection to a gateway/server
         
-        bool willFlag = default(false); 
+        bool willFlag = default(false);
+        string willTopic = default(""); // will topic name
+        string willMsg = default(""); // will message
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);

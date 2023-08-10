@@ -7,6 +7,8 @@
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBase.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
+#include "messages/MqttSNBaseWithWillTopic.h"
+#include "messages/MqttSNBaseWithWillMsg.h"
 
 namespace mqttsn {
 
@@ -123,16 +125,20 @@ void MqttSNServer::processPacket(inet::Packet *pk)
             processSearchGw(pk);
             break;
 
-        case MsgType::ADVERTISE:
-        case MsgType::GWINFO:
-            break;
-
         case MsgType::CONNECT:
             processConnect(pk, srcAddress, srcPort);
             break;
 
+        case MsgType::WILLTOPIC:
+            processWillTopic(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::WILLMSG:
+            processWillMsg(pk, srcAddress, srcPort);
+            break;
+
         default:
-            throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
+            break;
     }
 
     delete pk;
@@ -162,6 +168,26 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
         // TO DO -> return code
         sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
     }
+}
+
+void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
+
+    // TO DO -> save information about willFlag, willTopic, qosFlag, retainFlag
+    // TO DO -> QOS, retain flags management
+
+    sendBase(MsgType::WILLMSGREQ, srcAddress, srcPort);
+}
+
+void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
+
+    // TO DO -> save information about will message
+
+    // TO DO -> return code
+    sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
 }
 
 void MqttSNServer::sendAdvertise()

@@ -10,6 +10,7 @@
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
+#include "messages/MqttSNBaseWithWillMsg.h"
 
 namespace mqttsn {
 
@@ -121,9 +122,9 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 
     switch(header->getMsgType()) {
         // packet types that are allowed only from the selected gateway
+        case MsgType::CONNACK:
         case MsgType::WILLTOPICREQ:
         case MsgType::WILLMSGREQ:
-        case MsgType::CONNACK:
             if (!isSelectedGateway(srcAddress, srcPort)) {
                 delete pk;
                 return;
@@ -157,8 +158,12 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             processWillTopicReq(pk, srcAddress, srcPort);
             break;
 
+        case MsgType::WILLMSGREQ:
+            processWillMsgReq(pk, srcAddress, srcPort);
+            break;
+
         default:
-            throw omnetpp::cRuntimeError("Unknown message type: %d", (uint16_t) header->getMsgType());
+            break;
     }
 
     delete pk;
@@ -234,8 +239,13 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 
 void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    //
-    EV << "WillTopicReq:" << std::endl;
+    // TO DO -> QOS, retain flags management
+    sendBaseWithWillTopic(MsgType::WILLTOPIC, QoS::QOS_ZERO, false, par("willTopic"), srcAddress, srcPort);
+}
+
+void MqttSNClient::processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    sendBaseWithWillMsg(MsgType::WILLMSG, par("willMsg"), srcAddress, srcPort);
 }
 
 void MqttSNClient::sendSearchGw()
@@ -266,13 +276,13 @@ void MqttSNClient::sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t du
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNClient::sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string topicName, inet::L3Address destAddress, int destPort)
+void MqttSNClient::sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic, inet::L3Address destAddress, int destPort)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
     payload->setMsgType(msgType);
     payload->setQoSFlag(qosFlag);
     payload->setRetainFlag(retainFlag);
-    payload->setWillTopic(topicName);
+    payload->setWillTopic(willTopic);
     payload->setChunkLength(inet::B(payload->getLength()));
 
     std::string packetName;
@@ -288,6 +298,34 @@ void MqttSNClient::sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool reta
 
         default:
             packetName = "BaseWithWillTopicPacket";
+    }
+
+    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
+void MqttSNClient::sendBaseWithWillMsg(MsgType msgType, std::string willMsg, inet::L3Address destAddress, int destPort)
+{
+    const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
+    payload->setMsgType(msgType);
+    payload->setWillMsg(willMsg);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::WILLMSG:
+            packetName = "WillMsgPacket";
+            break;
+
+        case MsgType::WILLMSGUPD:
+            packetName = "WillMsgUpdPacket";
+            break;
+
+        default:
+            packetName = "BaseWithWillMsgPacket";
     }
 
     inet::Packet *packet = new inet::Packet(packetName.c_str());
