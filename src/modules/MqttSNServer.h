@@ -61,6 +61,7 @@ class MqttSNServer : public MqttSNApp
         virtual void updateConnectedClients(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
         virtual void applyClientUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
         virtual bool isClientConnected(inet::L3Address srcAddress, int srcPort);
+        virtual bool isGatewayCongested();
 
     public:
         MqttSNServer() {};

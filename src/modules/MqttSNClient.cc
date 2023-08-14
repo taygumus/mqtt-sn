@@ -221,10 +221,8 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
 void MqttSNClient::processConnAck(inet::Packet *pk)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithReturnCode>();
-    ReturnCode returnCode = payload->getReturnCode();
 
-    // TO DO -> manage the other return codes
-    if (returnCode != ReturnCode::ACCEPTED) {
+    if (payload->getReturnCode() != ReturnCode::ACCEPTED) {
         return;
     }
 

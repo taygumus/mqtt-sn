@@ -15,6 +15,8 @@ simple MqttSNServer like IApp
         double stopAdvertise @unit(s) = default(-1s);
         int advertiseInterval @unit(s); // range between 0..65535 seconds (TADV)
         
+        int maxConnectedClients = default(10); // maximum connected clients before congestion
+        
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNServer);
 

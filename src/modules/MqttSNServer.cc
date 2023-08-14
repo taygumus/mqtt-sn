@@ -154,6 +154,12 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     const auto& payload = pk->peekData<MqttSNConnect>();
 
     if (payload->getProtocolId() != 0x01) {
+        sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED, srcAddress, srcPort);
+        return;
+    }
+
+    if (!isClientConnected(srcAddress, srcPort) && isGatewayCongested()) {
+        sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION, srcAddress, srcPort);
         return;
     }
 
@@ -178,7 +184,6 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
         sendBase(MsgType::WILLTOPICREQ, srcAddress, srcPort);
     }
     else {
-        // TO DO -> return code
         sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
     }
 }
@@ -199,7 +204,7 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
     updates.retainFlag = true;
     updates.willTopic = true;
 
-    // update or save client information
+    // update client information
     updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
 
     // TO DO -> QOS, retain flags management
@@ -219,10 +224,9 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
     ClientInfoUpdates updates;
     updates.willMsg = true;
 
-    // update or save client information
+    // update client information
     updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
 
-    // TO DO -> return code
     sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
 }
 
@@ -380,6 +384,12 @@ bool MqttSNServer::isClientConnected(inet::L3Address srcAddress, int srcPort)
 {
     // check if the client with the specified address and port is present in the data structure
     return (connectedClients.find(std::make_pair(srcAddress, srcPort)) != connectedClients.end());
+}
+
+bool MqttSNServer::isGatewayCongested()
+{
+    // check for gateway congestion based on connected clients count
+    return connectedClients.size() >= (unsigned int) par("maxConnectedClients");
 }
 
 MqttSNServer::~MqttSNServer()
