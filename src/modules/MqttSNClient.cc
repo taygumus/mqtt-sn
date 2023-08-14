@@ -237,7 +237,6 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 
 void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    // TO DO -> QOS, retain flags management
     sendBaseWithWillTopic(MsgType::WILLTOPIC, QoS::QOS_ZERO, false, par("willTopic"), srcAddress, srcPort);
 }
 

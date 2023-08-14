@@ -152,8 +152,9 @@ void MqttSNServer::processSearchGw(inet::Packet *pk)
 void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNConnect>();
+    uint16_t duration = payload->getDuration();
 
-    if (payload->getProtocolId() != 0x01) {
+    if (payload->getProtocolId() != 0x01 || duration == 0) {
         sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED, srcAddress, srcPort);
         return;
     }
@@ -206,8 +207,6 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
 
     // update client information
     updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
-
-    // TO DO -> QOS, retain flags management
 
     sendBase(MsgType::WILLMSGREQ, srcAddress, srcPort);
 }
