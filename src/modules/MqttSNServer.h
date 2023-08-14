@@ -4,7 +4,10 @@
 #include "MqttSNApp.h"
 #include "types/MsgType.h"
 #include "types/ReturnCode.h"
+#include "types/QoS.h"
+#include "types/TopicIdType.h"
 #include "types/ClientInfo.h"
+#include "types/ClientInfoUpdates.h"
 
 namespace mqttsn {
 
@@ -55,7 +58,8 @@ class MqttSNServer : public MqttSNApp
         virtual void handleAdvertiseEvent();
 
         // others
-        virtual void updateConnectedClients(inet::L3Address srcAddress, int srcPort, std::string clientId);
+        virtual void updateConnectedClients(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
+        virtual void applyClientUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
         virtual bool isClientConnected(inet::L3Address srcAddress, int srcPort);
 
     public:

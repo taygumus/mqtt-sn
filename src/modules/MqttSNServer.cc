@@ -157,12 +157,24 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
         return;
     }
 
-    updateConnectedClients(srcAddress, srcPort, payload->getClientId());
+    bool willFlag = payload->getWillFlag();
+
+    // prepare client information
+    ClientInfo clientInfo;
+    clientInfo.clientId = payload->getClientId();
+    clientInfo.willFlag = willFlag;
+
+    // specify which fields to update
+    ClientInfoUpdates updates;
+    updates.clientId = true;
+    updates.willFlag = true;
+
+    // update or save client information
+    updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
 
     // TO DO -> keep alive
 
-    // TO DO -> save flag information
-    if (payload->getWillFlag()) {
+    if (willFlag) {
         sendBase(MsgType::WILLTOPICREQ, srcAddress, srcPort);
     }
     else {
@@ -173,9 +185,23 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
 
 void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
+    const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
-    // TO DO -> save information about willFlag, willTopic, qosFlag, retainFlag
+    // prepare client information
+    ClientInfo clientInfo;
+    clientInfo.qosFlag = (QoS) payload->getQoSFlag();
+    clientInfo.retainFlag = payload->getRetainFlag();
+    clientInfo.willTopic = payload->getWillTopic();
+
+    // specify which fields to update
+    ClientInfoUpdates updates;
+    updates.qosFlag = true;
+    updates.retainFlag = true;
+    updates.willTopic = true;
+
+    // update or save client information
+    updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
+
     // TO DO -> QOS, retain flags management
 
     sendBase(MsgType::WILLMSGREQ, srcAddress, srcPort);
@@ -183,9 +209,18 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
 
 void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
+    const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
-    // TO DO -> save information about will message
+    // prepare client information
+    ClientInfo clientInfo;
+    clientInfo.willMsg = payload->getWillMsg();
+
+    // specify which fields to update
+    ClientInfoUpdates updates;
+    updates.willMsg = true;
+
+    // update or save client information
+    updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
 
     // TO DO -> return code
     sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
@@ -293,19 +328,51 @@ void MqttSNServer::handleAdvertiseEvent()
     }
 }
 
-void MqttSNServer::updateConnectedClients(inet::L3Address srcAddress, int srcPort, std::string clientId)
+void MqttSNServer::updateConnectedClients(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates)
 {
     auto key = std::make_pair(srcAddress, srcPort);
     auto it = connectedClients.find(key);
 
     if (it == connectedClients.end()) {
-        ClientInfo clientInfo;
-        clientInfo.clientId = clientId;
+        ClientInfo newClientInfo;
+        applyClientUpdates(newClientInfo, clientInfo, updates);
 
-        connectedClients[key] = clientInfo;
+        connectedClients[key] = newClientInfo;
     }
     else {
-        // TO DO
+        ClientInfo& existingClientInfo = it->second;
+        applyClientUpdates(existingClientInfo, clientInfo, updates);
+    }
+}
+
+void MqttSNServer::applyClientUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates)
+{
+    if (updates.clientId) {
+        existingClientInfo.clientId = newClientInfo.clientId;
+    }
+    if (updates.dupFlag) {
+        existingClientInfo.dupFlag = newClientInfo.dupFlag;
+    }
+    if (updates.qosFlag) {
+        existingClientInfo.qosFlag = newClientInfo.qosFlag;
+    }
+    if (updates.retainFlag) {
+        existingClientInfo.retainFlag = newClientInfo.retainFlag;
+    }
+    if (updates.willFlag) {
+        existingClientInfo.willFlag = newClientInfo.willFlag;
+    }
+    if (updates.cleanSessionFlag) {
+        existingClientInfo.cleanSessionFlag = newClientInfo.cleanSessionFlag;
+    }
+    if (updates.topicIdTypeFlag) {
+        existingClientInfo.topicIdTypeFlag = newClientInfo.topicIdTypeFlag;
+    }
+    if (updates.willTopic) {
+        existingClientInfo.willTopic = newClientInfo.willTopic;
+    }
+    if (updates.willMsg) {
+        existingClientInfo.willMsg = newClientInfo.willMsg;
     }
 }
 
