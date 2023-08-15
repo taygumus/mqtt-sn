@@ -3,14 +3,15 @@
 
 struct ClientInfoUpdates {
     bool clientId = false;
+    bool willTopic = false;
+    bool willMsg = false;
+    bool duration = false;
     bool dupFlag = false;
     bool qosFlag = false;
     bool retainFlag = false;
     bool willFlag = false;
     bool cleanSessionFlag = false;
     bool topicIdTypeFlag = false;
-    bool willTopic = false;
-    bool willMsg = false;
 };
 
 #endif /* TYPES_CLIENTINFOUPDATES_H_ */

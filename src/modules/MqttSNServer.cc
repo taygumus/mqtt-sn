@@ -169,17 +169,19 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     // prepare client information
     ClientInfo clientInfo;
     clientInfo.clientId = payload->getClientId();
+    clientInfo.duration = duration;
     clientInfo.willFlag = willFlag;
+    clientInfo.cleanSessionFlag = payload->getCleanSessionFlag();
 
     // specify which fields to update
     ClientInfoUpdates updates;
     updates.clientId = true;
+    updates.duration = true;
     updates.willFlag = true;
+    updates.cleanSessionFlag = true;
 
     // update or save client information
     updateConnectedClients(srcAddress, srcPort, clientInfo, updates);
-
-    // TO DO -> keep alive
 
     if (willFlag) {
         sendBase(MsgType::WILLTOPICREQ, srcAddress, srcPort);
@@ -353,6 +355,15 @@ void MqttSNServer::applyClientUpdates(ClientInfo& existingClientInfo, ClientInfo
     if (updates.clientId) {
         existingClientInfo.clientId = newClientInfo.clientId;
     }
+    if (updates.willTopic) {
+        existingClientInfo.willTopic = newClientInfo.willTopic;
+    }
+    if (updates.willMsg) {
+        existingClientInfo.willMsg = newClientInfo.willMsg;
+    }
+    if (updates.duration) {
+        existingClientInfo.duration = newClientInfo.duration;
+    }
     if (updates.dupFlag) {
         existingClientInfo.dupFlag = newClientInfo.dupFlag;
     }
@@ -370,12 +381,6 @@ void MqttSNServer::applyClientUpdates(ClientInfo& existingClientInfo, ClientInfo
     }
     if (updates.topicIdTypeFlag) {
         existingClientInfo.topicIdTypeFlag = newClientInfo.topicIdTypeFlag;
-    }
-    if (updates.willTopic) {
-        existingClientInfo.willTopic = newClientInfo.willTopic;
-    }
-    if (updates.willMsg) {
-        existingClientInfo.willMsg = newClientInfo.willMsg;
     }
 }
 

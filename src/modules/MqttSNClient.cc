@@ -36,8 +36,6 @@ void MqttSNClient::initialize(int stage)
         checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
 
         clientId = generateClientId();
-
-        willFlag = par("willFlag");
     }
 }
 
@@ -237,7 +235,7 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 
 void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    sendBaseWithWillTopic(MsgType::WILLTOPIC, QoS::QOS_ZERO, false, par("willTopic"), srcAddress, srcPort);
+    sendBaseWithWillTopic(MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"), srcAddress, srcPort);
 }
 
 void MqttSNClient::processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
@@ -264,6 +262,7 @@ void MqttSNClient::sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t du
     payload->setMsgType(MsgType::CONNECT);
     payload->setWillFlag(willFlag);
     payload->setCleanSessionFlag(cleanSessionFlag);
+    payload->setDuration(duration);
     payload->setClientId(clientId);
     payload->setChunkLength(inet::B(payload->getLength()));
 
@@ -372,8 +371,7 @@ void MqttSNClient::handleCheckConnectionEvent()
         GatewayInfo gatewayInfo = gateway.second;
         selectedGateway = gatewayInfo;
 
-        // TO DO -> keep-alive
-        sendConnect(willFlag, false, 0, gatewayInfo.address, gatewayInfo.port);
+        sendConnect(par("willFlag"), par("cleanSessionFlag"), (uint16_t) par("duration"), gatewayInfo.address, gatewayInfo.port);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
@@ -466,6 +464,23 @@ bool MqttSNClient::isConnectedGateway(inet::L3Address srcAddress, int srcPort)
 {
     // check if the gateway with the specified address and port is the one connected by the client
     return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
+}
+
+QoS MqttSNClient::intToQoS(int value)
+{
+    // convert an integer to QoS enumeration
+    switch (value) {
+        case 0:
+            return QOS_ZERO;
+        case 1:
+            return QOS_ONE;
+        case 2:
+            return QOS_TWO;
+        case -1:
+            return QOS_MINUS_ONE;
+        default:
+            throw omnetpp::cRuntimeError("Invalid QoS value: %d", value);
+    }
 }
 
 MqttSNClient::~MqttSNClient()

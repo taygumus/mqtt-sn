@@ -17,7 +17,6 @@ class MqttSNClient : public MqttSNApp
         uint16_t temporaryDuration;
         double gatewayInfoInterval;
         double checkConnectionInterval;
-        bool willFlag;
 
         // state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
@@ -72,6 +71,7 @@ class MqttSNClient : public MqttSNApp
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual bool isSelectedGateway(inet::L3Address srcAddress, int srcPort);
         virtual bool isConnectedGateway(inet::L3Address srcAddress, int srcPort);
+        virtual QoS intToQoS(int value);
 
     public:
         MqttSNClient() {};

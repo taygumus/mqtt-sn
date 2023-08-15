@@ -23,9 +23,16 @@ simple MqttSNClient like IApp
         
         double checkConnectionInterval @unit(s) = default(500ms); // check interval for client's connection to a gateway/server
         
-        bool willFlag = default(false);
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
+        int duration @unit(s) = default(15s); // up to a maximum of 65535 seconds, approximately 18 hours
+        
+        bool dupFlag = default(false);
+        int qosFlag = default(0); // valid qos values: 0, 1, 2 and -1
+        bool retainFlag = default(false);
+        bool willFlag = default(false);
+        bool cleanSessionFlag = default(false);
+        int topicIdTypeFlag = default(0); // valid topicIdType values: 0, 1 and 2
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
