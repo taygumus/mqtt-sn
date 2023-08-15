@@ -371,7 +371,7 @@ void MqttSNClient::handleCheckConnectionEvent()
         GatewayInfo gatewayInfo = gateway.second;
         selectedGateway = gatewayInfo;
 
-        sendConnect(par("willFlag"), par("cleanSessionFlag"), (uint16_t) par("duration"), gatewayInfo.address, gatewayInfo.port);
+        sendConnect(par("willFlag"), par("cleanSessionFlag"), (uint16_t) par("keepAlive"), gatewayInfo.address, gatewayInfo.port);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);

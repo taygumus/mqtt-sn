@@ -25,7 +25,7 @@ simple MqttSNClient like IApp
         
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
-        int duration @unit(s) = default(15s); // up to a maximum of 65535 seconds, approximately 18 hours
+        int keepAlive @unit(s) = default(10s); // up to a maximum of 65535 seconds, approximately 18 hours
         
         bool dupFlag = default(false);
         int qosFlag = default(0); // valid qos values: 0, 1, 2 and -1
