@@ -152,9 +152,8 @@ void MqttSNServer::processSearchGw(inet::Packet *pk)
 void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNConnect>();
-    uint16_t duration = payload->getDuration();
 
-    if (payload->getProtocolId() != 0x01 || duration == 0) {
+    if (payload->getProtocolId() != 0x01) {
         sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED, srcAddress, srcPort);
         return;
     }
@@ -169,7 +168,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     // prepare client information
     ClientInfo clientInfo;
     clientInfo.clientId = payload->getClientId();
-    clientInfo.duration = duration;
+    clientInfo.duration = payload->getDuration();
     clientInfo.willFlag = willFlag;
     clientInfo.cleanSessionFlag = payload->getCleanSessionFlag();
 
