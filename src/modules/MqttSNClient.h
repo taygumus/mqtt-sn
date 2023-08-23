@@ -50,6 +50,12 @@ class MqttSNClient : public MqttSNApp
 
         // client state management
         virtual void handleStateChangeEvent();
+        virtual void performStateTransition(ClientState currentState, ClientState nextState);
+
+        virtual void fromDisconnectedToActive();
+        virtual void fromActiveToDisconnected();
+        // TO DO -> to complete
+
         virtual double getStateInterval(ClientState currentState);
         virtual std::string getClientState();
         virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);

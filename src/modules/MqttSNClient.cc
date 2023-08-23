@@ -128,16 +128,61 @@ void MqttSNClient::handleStateChangeEvent()
     uint16_t nextStateIndex = intuniform(0, possibleNextStates.size() - 1);
     ClientState nextState = possibleNextStates[nextStateIndex];
 
+    // get the interval for the next state
     double nextStateInterval = getStateInterval(nextState);
     if (nextStateInterval != -1) {
         scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
     }
 
-    // TO DO -> funzioni tipo fromDisconnectedToActive
+    // perform state transition functions based on current and next states
+    performStateTransition(currentState, nextState);
 
-    // Update the current state
+    // update the current state
     currentState = nextState;
     EV << "Current client state: " << getClientState() << std::endl;
+}
+
+void MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
+{
+    // calls the appropriate state transition function based on current and next states
+    switch (currentState) {
+        case ClientState::DISCONNECTED:
+            switch (nextState) {
+                case ClientState::ACTIVE:
+                    fromDisconnectedToActive();
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case ClientState::ACTIVE:
+            switch (nextState) {
+                case ClientState::DISCONNECTED:
+                    fromActiveToDisconnected();
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
+
+        // TO DO -> Add other cases
+    }
+}
+
+void MqttSNClient::fromDisconnectedToActive()
+{
+    // TO DO
+    EV << "FromDisconnectedToActive" << std::endl;
+}
+
+void MqttSNClient::fromActiveToDisconnected()
+{
+    // TO DO
+    EV << "fromActiveToDisconnected" << std::endl;
 }
 
 double MqttSNClient::getStateInterval(ClientState currentState)
