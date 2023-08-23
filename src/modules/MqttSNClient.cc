@@ -21,6 +21,9 @@ void MqttSNClient::initialize(int stage)
     ClockUserModuleMixin::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
+        stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
+        currentState = ClientState::DISCONNECTED;
+
         checkGatewaysInterval = par("checkGatewaysInterval");
         checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
 
@@ -41,7 +44,10 @@ void MqttSNClient::initialize(int stage)
 
 void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
-    if (msg == checkGatewaysEvent) {
+    if (msg == stateChangeEvent) {
+        handleStateChangeEvent();
+    }
+    else if (msg == checkGatewaysEvent) {
         handleCheckGatewaysEvent();
     }
     else if(msg == searchGatewayEvent) {
@@ -77,13 +83,23 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
+    /* TO DO
     scheduleClockEventAt(checkGatewaysInterval, checkGatewaysEvent);
     scheduleClockEventAt(searchGatewayInterval, searchGatewayEvent);
     scheduleClockEventAt(checkConnectionInterval, checkConnectionEvent);
+    */
+
+    EV << "Current client state: " << getClientState() << std::endl;
+
+    double currentStateInterval = getStateInterval(currentState);
+    if (currentStateInterval != -1) {
+        scheduleClockEventAt(currentStateInterval, stateChangeEvent);
+    }
 }
 
 void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
+    cancelEvent(stateChangeEvent);
     cancelEvent(checkGatewaysEvent);
     cancelEvent(searchGatewayEvent);
     cancelEvent(gatewayInfoEvent);
@@ -94,12 +110,96 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 
 void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 {
+    cancelClockEvent(stateChangeEvent);
     cancelClockEvent(checkGatewaysEvent);
     cancelClockEvent(searchGatewayEvent);
     cancelClockEvent(gatewayInfoEvent);
     cancelClockEvent(checkConnectionEvent);
 
     socket.destroy();
+}
+
+void MqttSNClient::handleStateChangeEvent()
+{
+    // get the possible next states based on the current state
+    std::vector<ClientState> possibleNextStates = getNextPossibleStates(currentState);
+
+    // randomly select one of the possible next states
+    uint16_t nextStateIndex = intuniform(0, possibleNextStates.size() - 1);
+    ClientState nextState = possibleNextStates[nextStateIndex];
+
+    double nextStateInterval = getStateInterval(nextState);
+    if (nextStateInterval != -1) {
+        scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
+    }
+
+    // TO DO -> funzioni tipo fromDisconnectedToActive
+
+    // Update the current state
+    currentState = nextState;
+    EV << "Current client state: " << getClientState() << std::endl;
+}
+
+double MqttSNClient::getStateInterval(ClientState currentState)
+{
+    // returns the interval duration for the given state
+    switch (currentState) {
+        case ClientState::DISCONNECTED:
+            return par("disconnectedStateInterval");
+
+        case ClientState::ACTIVE:
+            return par("activeStateInterval");
+
+        case ClientState::LOST:
+            return par("lostStateInterval");
+
+        case ClientState::ASLEEP:
+            return par("asleepStateInterval");
+
+        case ClientState::AWAKE:
+            return par("awakeStateInterval");
+    }
+}
+
+std::string MqttSNClient::getClientState()
+{
+    // get current client state as a string
+    switch (currentState) {
+        case ClientState::DISCONNECTED:
+            return "Disconnected";
+
+        case ClientState::ACTIVE:
+            return "Active";
+
+        case ClientState::LOST:
+            return "Lost";
+
+        case ClientState::ASLEEP:
+            return "Asleep";
+
+        case ClientState::AWAKE:
+            return "Awake";
+    }
+}
+
+std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState) {
+    // get the possible next states based on the current state
+    switch (currentState) {
+        case ClientState::DISCONNECTED:
+            return {ClientState::ACTIVE};
+
+        case ClientState::ACTIVE:
+            return {ClientState::LOST, ClientState::ASLEEP, ClientState::DISCONNECTED};
+
+        case ClientState::LOST:
+            return {ClientState::ACTIVE};
+
+        case ClientState::ASLEEP:
+            return {ClientState::LOST, ClientState::ACTIVE, ClientState::AWAKE};
+
+        case ClientState::AWAKE:
+            return {ClientState::ASLEEP, ClientState::ACTIVE, ClientState::DISCONNECTED};
+    }
 }
 
 void MqttSNClient::processPacket(inet::Packet *pk)
@@ -425,8 +525,21 @@ void MqttSNClient::updateActiveGateways(uint8_t gatewayId, uint16_t duration, in
     }
 }
 
+bool MqttSNClient::isSelectedGateway(inet::L3Address srcAddress, int srcPort)
+{
+    // check if the gateway with the specified address and port is the one selected by the client
+    return (selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
+}
+
+bool MqttSNClient::isConnectedGateway(inet::L3Address srcAddress, int srcPort)
+{
+    // check if the gateway with the specified address and port is the one connected by the client
+    return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
+}
+
 std::string MqttSNClient::generateClientId()
 {
+    // generate a random client ID of variable length
     uint16_t length = intuniform(Length::ONE_OCTET, Length::CLIENT_ID_OCTETS);
 
     std::string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -454,30 +567,22 @@ std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
     return std::make_pair(it->first, it->second);
 }
 
-bool MqttSNClient::isSelectedGateway(inet::L3Address srcAddress, int srcPort)
-{
-    // check if the gateway with the specified address and port is the one selected by the client
-    return (selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
-}
-
-bool MqttSNClient::isConnectedGateway(inet::L3Address srcAddress, int srcPort)
-{
-    // check if the gateway with the specified address and port is the one connected by the client
-    return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
-}
-
 QoS MqttSNClient::intToQoS(int value)
 {
     // convert an integer to QoS enumeration
     switch (value) {
         case 0:
             return QOS_ZERO;
+
         case 1:
             return QOS_ONE;
+
         case 2:
             return QOS_TWO;
+
         case -1:
             return QOS_MINUS_ONE;
+
         default:
             throw omnetpp::cRuntimeError("Invalid QoS value: %d", value);
     }
@@ -485,6 +590,7 @@ QoS MqttSNClient::intToQoS(int value)
 
 MqttSNClient::~MqttSNClient()
 {
+    cancelAndDelete(stateChangeEvent);
     cancelAndDelete(checkGatewaysEvent);
     cancelAndDelete(searchGatewayEvent);
     cancelAndDelete(gatewayInfoEvent);

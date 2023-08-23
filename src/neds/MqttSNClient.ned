@@ -11,6 +11,13 @@ simple MqttSNClient like IApp
         int localPort = default(-1);
         int destPort = default(-1);
         
+        // time intervals for each state, -1s means forever
+        double disconnectedStateInterval @unit(s) = default(2s);
+        double activeStateInterval @unit(s) = default(2s);
+        double lostStateInterval @unit(s) = default(2s);
+        double asleepStateInterval @unit(s) = default(2s);
+        double awakeStateInterval @unit(s) = default(2s);
+        
         double checkGatewaysInterval @unit(s) = default(1s); // active gateways check in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE (NADV)
         

@@ -2,6 +2,7 @@
 #define MODULES_MQTTSNCLIENT_H_
 
 #include "MqttSNApp.h"
+#include "types/ClientState.h"
 #include "types/MsgType.h"
 #include "types/GatewayInfo.h"
 #include "types/QoS.h"
@@ -18,7 +19,11 @@ class MqttSNClient : public MqttSNApp
         double gatewayInfoInterval;
         double checkConnectionInterval;
 
-        // state
+        // client state management
+        inet::ClockEvent *stateChangeEvent = nullptr;
+        ClientState currentState;
+
+        // active state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
         std::map<uint8_t, GatewayInfo> activeGateways;
 
@@ -42,6 +47,12 @@ class MqttSNClient : public MqttSNApp
         virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
+
+        // client state management
+        virtual void handleStateChangeEvent();
+        virtual double getStateInterval(ClientState currentState);
+        virtual std::string getClientState();
+        virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);
 
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;
@@ -67,10 +78,10 @@ class MqttSNClient : public MqttSNApp
         // others
         virtual void checkGatewaysAvailability();
         virtual void updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort);
-        virtual std::string generateClientId();
-        virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual bool isSelectedGateway(inet::L3Address srcAddress, int srcPort);
         virtual bool isConnectedGateway(inet::L3Address srcAddress, int srcPort);
+        virtual std::string generateClientId();
+        virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual QoS intToQoS(int value);
 
     public:
