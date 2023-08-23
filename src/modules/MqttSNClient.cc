@@ -83,12 +83,6 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
-    /* TO DO
-    scheduleClockEventAt(checkGatewaysInterval, checkGatewaysEvent);
-    scheduleClockEventAt(searchGatewayInterval, searchGatewayEvent);
-    scheduleClockEventAt(checkConnectionInterval, checkConnectionEvent);
-    */
-
     EV << "Current client state: " << getClientState() << std::endl;
 
     double currentStateInterval = getStateInterval(currentState);
@@ -175,14 +169,17 @@ void MqttSNClient::performStateTransition(ClientState currentState, ClientState 
 
 void MqttSNClient::fromDisconnectedToActive()
 {
-    // TO DO
-    EV << "FromDisconnectedToActive" << std::endl;
+    EV << "Disconnected -> Active" << std::endl;
+
+    scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
+    scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
+    scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
 void MqttSNClient::fromActiveToDisconnected()
 {
+    EV << "Active -> Disconnected" << std::endl;
     // TO DO
-    EV << "fromActiveToDisconnected" << std::endl;
 }
 
 double MqttSNClient::getStateInterval(ClientState currentState)
@@ -249,6 +246,11 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
 
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
+    if (currentState != ClientState::ACTIVE) {
+        delete pk;
+        return;
+    }
+
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
 
     if (isSelfBroadcastAddress(srcAddress)) {
