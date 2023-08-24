@@ -6,6 +6,7 @@
 #include "types/ReturnCode.h"
 #include "types/QoS.h"
 #include "types/TopicIdType.h"
+#include "types/ClientState.h"
 #include "types/ClientInfo.h"
 #include "types/ClientInfoUpdates.h"
 
@@ -27,7 +28,7 @@ class MqttSNServer : public MqttSNApp
         static int gatewayIdCounter;
         uint8_t gatewayId;
 
-        std::map<std::pair<inet::L3Address, int>, ClientInfo> connectedClients;
+        std::map<std::pair<inet::L3Address, int>, ClientInfo> clients;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -58,10 +59,11 @@ class MqttSNServer : public MqttSNApp
         virtual void handleAdvertiseEvent();
 
         // others
-        virtual void updateConnectedClients(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
-        virtual void applyClientUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
-        virtual bool isClientConnected(inet::L3Address srcAddress, int srcPort);
+        virtual void updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
+        virtual void applyClientInfoUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
         virtual bool isGatewayCongested();
+        virtual bool isClientExists(inet::L3Address srcAddress, int srcPort);
+        ClientState getClientState(inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNServer() {};

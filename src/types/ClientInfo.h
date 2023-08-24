@@ -12,6 +12,7 @@ struct ClientInfo {
     bool willFlag = false;
     bool cleanSessionFlag = false;
     TopicIdType topicIdTypeFlag = TopicIdType::TOPIC_NAME;
+    ClientState currentState = ClientState::DISCONNECTED;
 };
 
 #endif /* TYPES_CLIENTINFO_H_ */

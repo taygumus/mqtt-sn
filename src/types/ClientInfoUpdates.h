@@ -12,6 +12,7 @@ struct ClientInfoUpdates {
     bool willFlag = false;
     bool cleanSessionFlag = false;
     bool topicIdTypeFlag = false;
+    bool currentState = false;
 };
 
 #endif /* TYPES_CLIENTINFOUPDATES_H_ */
