@@ -390,16 +390,16 @@ void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, Client
     }
 }
 
-bool MqttSNServer::isGatewayCongested()
-{
-    // check for gateway congestion based on clients count
-    return clients.size() >= (unsigned int) par("maximumClients");
-}
-
 bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort)
 {
     // check if the client with the specified address and port is present in the data structure
     return (clients.find(std::make_pair(srcAddress, srcPort)) != clients.end());
+}
+
+bool MqttSNServer::isGatewayCongested()
+{
+    // check for gateway congestion based on clients count
+    return clients.size() >= (unsigned int) par("maximumClients");
 }
 
 ClientState MqttSNServer::getClientState(inet::L3Address srcAddress, int srcPort)
