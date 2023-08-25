@@ -18,6 +18,7 @@ class MqttSNClient : public MqttSNApp
         uint16_t temporaryDuration;
         double gatewayInfoInterval;
         double checkConnectionInterval;
+        uint16_t keepAlive;
 
         // client state management
         inet::ClockEvent *stateChangeEvent = nullptr;
@@ -37,6 +38,8 @@ class MqttSNClient : public MqttSNApp
         std::string clientId;
         bool isConnected = false;
         GatewayInfo selectedGateway;
+
+        inet::ClockEvent *pingEvent = nullptr;
 
     protected:
         virtual void initialize(int stage) override;
@@ -80,6 +83,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleSearchGatewayEvent();
         virtual void handleGatewayInfoEvent();
         virtual void handleCheckConnectionEvent();
+        virtual void handlePingEvent();
 
         // others
         virtual void checkGatewaysAvailability();

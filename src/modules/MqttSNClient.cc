@@ -39,6 +39,9 @@ void MqttSNClient::initialize(int stage)
         checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
 
         clientId = generateClientId();
+
+        keepAlive = par("keepAlive");
+        pingEvent = new inet::ClockEvent("pingTimer");
     }
 }
 
@@ -58,6 +61,9 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
     }
     else if (msg == checkConnectionEvent) {
         handleCheckConnectionEvent();
+    }
+    else if (msg == pingEvent) {
+        handlePingEvent();
     }
     else {
         socket.processMessage(msg);
@@ -98,6 +104,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
     cancelEvent(searchGatewayEvent);
     cancelEvent(gatewayInfoEvent);
     cancelEvent(checkConnectionEvent);
+    cancelEvent(pingEvent);
 
     socket.close();
 }
@@ -109,6 +116,7 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
     cancelClockEvent(searchGatewayEvent);
     cancelClockEvent(gatewayInfoEvent);
     cancelClockEvent(checkConnectionEvent);
+    cancelClockEvent(pingEvent);
 
     socket.destroy();
 }
@@ -373,6 +381,7 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 
     // client is connected
     isConnected = true;
+    scheduleClockEventAfter(keepAlive, pingEvent);
 
     std::ostringstream str;
     str << "Client connected to: " << selectedGateway.address.str() << ":" << selectedGateway.port;
@@ -518,10 +527,17 @@ void MqttSNClient::handleCheckConnectionEvent()
         GatewayInfo gatewayInfo = gateway.second;
         selectedGateway = gatewayInfo;
 
-        sendConnect(par("willFlag"), par("cleanSessionFlag"), (uint16_t) par("keepAlive"), gatewayInfo.address, gatewayInfo.port);
+        sendConnect(par("willFlag"), par("cleanSessionFlag"), keepAlive, gatewayInfo.address, gatewayInfo.port);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
+}
+
+void MqttSNClient::handlePingEvent()
+{
+    //
+    EV << "Ping Active" << std::endl;
+    scheduleClockEventAfter(keepAlive, pingEvent);
 }
 
 void MqttSNClient::checkGatewaysAvailability()
@@ -642,6 +658,7 @@ MqttSNClient::~MqttSNClient()
     cancelAndDelete(searchGatewayEvent);
     cancelAndDelete(gatewayInfoEvent);
     cancelAndDelete(checkConnectionEvent);
+    cancelAndDelete(pingEvent);
 }
 
 } /* namespace mqttsn */
