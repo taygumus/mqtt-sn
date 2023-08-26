@@ -52,8 +52,7 @@ class MqttSNServer : public MqttSNApp
 
         // send packets
         virtual void sendAdvertise();
-        virtual void sendBase(MsgType msgType, inet::L3Address destAddress, int destPort);
-        virtual void sendBaseWithReturnCode(MsgType msgType, ReturnCode returnCode, inet::L3Address destAddress, int destPort);
+        virtual void sendBaseWithReturnCode(inet::L3Address destAddress, int destPort, MsgType msgType, ReturnCode returnCode);
 
         // event handlers
         virtual void handleAdvertiseEvent();
@@ -61,9 +60,9 @@ class MqttSNServer : public MqttSNApp
         // others
         virtual void updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
         virtual void applyClientInfoUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
-        virtual bool isClientExists(inet::L3Address srcAddress, int srcPort);
         virtual bool isGatewayCongested();
-        ClientState getClientState(inet::L3Address srcAddress, int srcPort);
+        virtual bool isClientExists(inet::L3Address srcAddress, int srcPort, ClientState* currentState = nullptr);
+        virtual bool isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState);
 
     public:
         MqttSNServer() {};

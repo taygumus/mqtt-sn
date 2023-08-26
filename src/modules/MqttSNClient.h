@@ -74,9 +74,9 @@ class MqttSNClient : public MqttSNApp
 
         // send packets
         virtual void sendSearchGw();
-        virtual void sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t duration, inet::L3Address destAddress, int destPort);
-        virtual void sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic, inet::L3Address destAddress, int destPort);
-        virtual void sendBaseWithWillMsg(MsgType msgType, std::string willMsg, inet::L3Address destAddress, int destPort);
+        virtual void sendConnect(inet::L3Address destAddress, int destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration);
+        virtual void sendBaseWithWillTopic(inet::L3Address destAddress, int destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);
+        virtual void sendBaseWithWillMsg(inet::L3Address destAddress, int destPort, MsgType msgType, std::string willMsg);
 
         // event handlers
         virtual void handleCheckGatewaysEvent();
@@ -87,7 +87,7 @@ class MqttSNClient : public MqttSNApp
 
         // others
         virtual void checkGatewaysAvailability();
-        virtual void updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort);
+        virtual void updateActiveGateways(inet::L3Address srcAddress, int srcPort, uint8_t gatewayId, uint16_t duration);
         virtual bool isSelectedGateway(inet::L3Address srcAddress, int srcPort);
         virtual bool isConnectedGateway(inet::L3Address srcAddress, int srcPort);
         virtual std::string generateClientId();

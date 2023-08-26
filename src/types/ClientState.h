@@ -6,8 +6,7 @@ enum ClientState {
     ACTIVE,
     LOST,
     ASLEEP,
-    AWAKE,
-    INVALID_STATE
+    AWAKE
 };
 
 #endif /* TYPES_CLIENTSTATE_H_ */

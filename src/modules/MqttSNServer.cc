@@ -110,7 +110,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     switch(header->getMsgType()) {
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
-            if (getClientState(srcAddress, srcPort) != ClientState::ACTIVE) {
+            if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
             }
@@ -155,13 +155,13 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
 
     // prevent client connection when its protocol ID is not supported
     if (payload->getProtocolId() != 0x01) {
-        sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED, srcAddress, srcPort);
+        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED);
         return;
     }
 
     // prevent new client connections when the gateway is congested
     if (isGatewayCongested() && !isClientExists(srcAddress, srcPort)) {
-        sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION, srcAddress, srcPort);
+        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
         return;
     }
 
@@ -187,10 +187,10 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
     if (willFlag) {
-        sendBase(MsgType::WILLTOPICREQ, srcAddress, srcPort);
+        MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLTOPICREQ);
     }
     else {
-        sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
+        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
     }
 }
 
@@ -213,7 +213,7 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
     // update client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
-    sendBase(MsgType::WILLMSGREQ, srcAddress, srcPort);
+    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
 }
 
 void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
@@ -231,7 +231,7 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
     // update client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
-    sendBaseWithReturnCode(MsgType::CONNACK, ReturnCode::ACCEPTED, srcAddress, srcPort);
+    sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -251,38 +251,7 @@ void MqttSNServer::sendAdvertise()
     numAdvertiseSent++;
 }
 
-void MqttSNServer::sendBase(MsgType msgType, inet::L3Address destAddress, int destPort)
-{
-    const auto& payload = inet::makeShared<MqttSNBase>();
-    payload->setMsgType(msgType);
-    payload->setChunkLength(inet::B(payload->getLength()));
-
-    std::string packetName;
-
-    switch(msgType) {
-        case MsgType::WILLTOPICREQ:
-            packetName = "WillTopicReqPacket";
-            break;
-
-        case MsgType::WILLMSGREQ:
-            packetName = "WillMsgReqPacket";
-            break;
-
-        case MsgType::PINGRESP:
-            packetName = "PingRespPacket";
-            break;
-
-        default:
-            packetName = "BasePacket";
-    }
-
-    inet::Packet *packet = new inet::Packet(packetName.c_str());
-    packet->insertAtBack(payload);
-
-    socket.sendTo(packet, destAddress, destPort);
-}
-
-void MqttSNServer::sendBaseWithReturnCode(MsgType msgType, ReturnCode returnCode, inet::L3Address destAddress, int destPort)
+void MqttSNServer::sendBaseWithReturnCode(inet::L3Address destAddress, int destPort, MsgType msgType, ReturnCode returnCode)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithReturnCode>();
     payload->setMsgType(msgType);
@@ -390,28 +359,33 @@ void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, Client
     }
 }
 
-bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort)
-{
-    // check if the client with the specified address and port is present in the data structure
-    return (clients.find(std::make_pair(srcAddress, srcPort)) != clients.end());
-}
-
 bool MqttSNServer::isGatewayCongested()
 {
     // check for gateway congestion based on clients count
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
-ClientState MqttSNServer::getClientState(inet::L3Address srcAddress, int srcPort)
+bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, ClientState* currentState)
 {
-    // retrieve the state of a client identified by the given address and port
+    // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
 
     if (clientIterator != clients.end()) {
-        return clientIterator->second.currentState;
-    }
+        // if the client exists, update the reference and return true
+        if (currentState != nullptr) {
+            *currentState = clientIterator->second.currentState;
+        }
 
-    return ClientState::INVALID_STATE;
+        return true;
+    }
+    // client not found, return false
+    return false;
+}
+
+bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState)
+{
+    ClientState currentState;
+    return (isClientExists(srcAddress, srcPort, &currentState) && currentState == clientState);
 }
 
 MqttSNServer::~MqttSNServer()

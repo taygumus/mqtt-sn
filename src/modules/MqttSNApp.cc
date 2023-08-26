@@ -36,6 +36,37 @@ void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
+void MqttSNApp::sendBase(inet::L3Address destAddress, int destPort, MsgType msgType)
+{
+    const auto& payload = inet::makeShared<MqttSNBase>();
+    payload->setMsgType(msgType);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::WILLTOPICREQ:
+            packetName = "WillTopicReqPacket";
+            break;
+
+        case MsgType::WILLMSGREQ:
+            packetName = "WillMsgReqPacket";
+            break;
+
+        case MsgType::PINGRESP:
+            packetName = "PingRespPacket";
+            break;
+
+        default:
+            packetName = "BasePacket";
+    }
+
+    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
 void MqttSNApp::checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength)
 {
     if (receivedLength != fieldLength) {

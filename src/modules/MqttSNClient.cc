@@ -329,7 +329,7 @@ void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress
     uint8_t gatewayId = payload->getGwId();
     uint16_t duration = payload->getDuration();
 
-    updateActiveGateways(gatewayId, duration, srcAddress, srcPort);
+    updateActiveGateways(srcAddress, srcPort, gatewayId, duration);
 }
 
 void MqttSNClient::processSearchGw(inet::Packet *pk)
@@ -355,11 +355,11 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
 
     if (gatewayAddress != "" && gatewayPort > 0) {
         // gwInfo from other client
-        updateActiveGateways(gatewayId, 0, inet::L3Address(gatewayAddress), (int) gatewayPort);
+        updateActiveGateways(inet::L3Address(gatewayAddress), (int) gatewayPort, gatewayId, 0);
     }
     else {
         // gwInfo from a server
-        updateActiveGateways(gatewayId, 0, srcAddress, srcPort);
+        updateActiveGateways(srcAddress, srcPort, gatewayId, 0);
 
         // if client receives a gwInfo message, it will cancel the transmission of its gwInfo message
         cancelEvent(gatewayInfoEvent);
@@ -391,12 +391,12 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 
 void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    sendBaseWithWillTopic(MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"), srcAddress, srcPort);
+    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
 }
 
 void MqttSNClient::processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    sendBaseWithWillMsg(MsgType::WILLMSG, par("willMsg"), srcAddress, srcPort);
+    sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
 }
 
 void MqttSNClient::sendSearchGw()
@@ -412,7 +412,7 @@ void MqttSNClient::sendSearchGw()
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNClient::sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t duration, inet::L3Address destAddress, int destPort)
+void MqttSNClient::sendConnect(inet::L3Address destAddress, int destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration)
 {
     const auto& payload = inet::makeShared<MqttSNConnect>();
     payload->setMsgType(MsgType::CONNECT);
@@ -428,7 +428,7 @@ void MqttSNClient::sendConnect(bool willFlag, bool cleanSessionFlag, uint16_t du
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNClient::sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic, inet::L3Address destAddress, int destPort)
+void MqttSNClient::sendBaseWithWillTopic(inet::L3Address destAddress, int destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
     payload->setMsgType(msgType);
@@ -458,7 +458,7 @@ void MqttSNClient::sendBaseWithWillTopic(MsgType msgType, QoS qosFlag, bool reta
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNClient::sendBaseWithWillMsg(MsgType msgType, std::string willMsg, inet::L3Address destAddress, int destPort)
+void MqttSNClient::sendBaseWithWillMsg(inet::L3Address destAddress, int destPort, MsgType msgType, std::string willMsg)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
     payload->setMsgType(msgType);
@@ -527,7 +527,7 @@ void MqttSNClient::handleCheckConnectionEvent()
         GatewayInfo gatewayInfo = gateway.second;
         selectedGateway = gatewayInfo;
 
-        sendConnect(par("willFlag"), par("cleanSessionFlag"), keepAlive, gatewayInfo.address, gatewayInfo.port);
+        sendConnect(gatewayInfo.address, gatewayInfo.port, par("willFlag"), par("cleanSessionFlag"), keepAlive);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
@@ -560,7 +560,7 @@ void MqttSNClient::checkGatewaysAvailability()
     }
 }
 
-void MqttSNClient::updateActiveGateways(uint8_t gatewayId, uint16_t duration, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::updateActiveGateways(inet::L3Address srcAddress, int srcPort, uint8_t gatewayId, uint16_t duration)
 {
     auto it = activeGateways.find(gatewayId);
 
