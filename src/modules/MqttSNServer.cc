@@ -365,15 +365,15 @@ bool MqttSNServer::isGatewayCongested()
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
-bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, ClientState* currentState)
+bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, ClientInfo* clientInfo)
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
 
     if (clientIterator != clients.end()) {
         // if the client exists, update the reference and return true
-        if (currentState != nullptr) {
-            *currentState = clientIterator->second.currentState;
+        if (clientInfo != nullptr) {
+            *clientInfo = clientIterator->second;
         }
 
         return true;
@@ -384,8 +384,8 @@ bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, Clien
 
 bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState)
 {
-    ClientState currentState;
-    return (isClientExists(srcAddress, srcPort, &currentState) && currentState == clientState);
+    ClientInfo clientInfo;
+    return (isClientExists(srcAddress, srcPort, &clientInfo) && clientInfo.currentState == clientState);
 }
 
 MqttSNServer::~MqttSNServer()
