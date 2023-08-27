@@ -110,6 +110,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     switch(header->getMsgType()) {
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
+        case MsgType::PINGREQ:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -135,6 +136,10 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
         case MsgType::WILLMSG:
             processWillMsg(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PINGREQ:
+            processPingReq(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -232,6 +237,12 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
+}
+
+void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    // TO DO -> aggiungere un timing di ultimo aggiornamento
+    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -365,7 +376,7 @@ bool MqttSNServer::isGatewayCongested()
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
-bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, ClientInfo* clientInfo)
+bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, ClientInfo *clientInfo)
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));

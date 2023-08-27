@@ -284,7 +284,12 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             }
             break;
 
-        // TO DO -> add the other case where require connection
+        case MsgType::PINGRESP:
+            if (!isConnectedGateway(srcAddress, srcPort)) {
+                delete pk;
+                return;
+            }
+            break;
 
         default:
             break;
@@ -313,6 +318,10 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 
         case MsgType::WILLMSGREQ:
             processWillMsgReq(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PINGRESP:
+            processPingResp(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -397,6 +406,11 @@ void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddr
 void MqttSNClient::processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
+}
+
+void MqttSNClient::processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
 }
 
 void MqttSNClient::sendSearchGw()
@@ -535,8 +549,8 @@ void MqttSNClient::handleCheckConnectionEvent()
 
 void MqttSNClient::handlePingEvent()
 {
-    //
-    EV << "Ping Active" << std::endl;
+    MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port);
+
     scheduleClockEventAfter(keepAlive, pingEvent);
 }
 

@@ -1,6 +1,7 @@
 #include "MqttSNApp.h"
 #include "types/MsgType.h"
 #include "messages/MqttSNGwInfo.h"
+#include "messages/MqttSNPingReq.h"
 
 namespace mqttsn {
 
@@ -34,6 +35,23 @@ void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
+}
+
+void MqttSNApp::sendPingReq(inet::L3Address destAddress, int destPort, std::string clientId)
+{
+    const auto& payload = inet::makeShared<MqttSNPingReq>();
+    payload->setMsgType(MsgType::PINGREQ);
+
+    if (!clientId.empty()) {
+        payload->setClientId(clientId);
+    }
+
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet *packet = new inet::Packet("PingReqPacket");
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNApp::sendBase(inet::L3Address destAddress, int destPort, MsgType msgType)

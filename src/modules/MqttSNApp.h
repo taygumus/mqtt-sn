@@ -27,7 +27,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
         // send packets
         virtual void sendGwInfo(uint8_t gatewayId, std::string gatewayAddress = "", uint16_t gatewayPort = 0);
-        //virtual void sendPingReq(inet::L3Address destAddress, int destPort, std::string clientId = "");
+        virtual void sendPingReq(inet::L3Address destAddress, int destPort, std::string clientId = "");
         virtual void sendBase(inet::L3Address destAddress, int destPort, MsgType msgType);
 
         // others
