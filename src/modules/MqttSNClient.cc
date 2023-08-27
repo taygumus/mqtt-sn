@@ -284,6 +284,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             }
             break;
 
+        // packet types that are allowed only from the connected gateway
         case MsgType::PINGRESP:
             if (!isConnectedGateway(srcAddress, srcPort)) {
                 delete pk;

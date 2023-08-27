@@ -18,7 +18,7 @@ simple MqttSNClient like IApp
         double asleepStateInterval @unit(s) = default(2s);
         double awakeStateInterval @unit(s) = default(2s);
         
-        double checkGatewaysInterval @unit(s) = default(1s); // active gateways check in the map
+        double checkGatewaysInterval @unit(s) = default(500ms); // check interval for active gateways in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE (NADV)
         
         double searchGatewayMaxDelay @unit(s) = default(5s); // random number upper bound (TSEARCHGW)

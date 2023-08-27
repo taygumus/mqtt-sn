@@ -37,6 +37,9 @@ void MqttSNServer::initialize(int stage)
             throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
         }
         gatewayId = gatewayIdCounter;
+
+        activeClientsCheckInterval = par("activeClientsCheckInterval");
+        activeClientsCheckEvent = new inet::ClockEvent("activeClientsCheckTimer");
     }
 }
 
@@ -44,6 +47,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
 {
     if (msg == advertiseEvent) {
         handleAdvertiseEvent();
+    }
+    else if (msg == activeClientsCheckEvent) {
+        handleActiveClientsCheckEvent();
     }
     else {
         socket.processMessage(msg);
@@ -76,17 +82,23 @@ void MqttSNServer::handleStartOperation(inet::LifecycleOperation *operation)
     else {
         activeGateway = false;
     }
+
+    scheduleClockEventAt(activeClientsCheckInterval, activeClientsCheckEvent);
 }
 
 void MqttSNServer::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(advertiseEvent);
+    cancelEvent(activeClientsCheckEvent);
+
     socket.close();
 }
 
 void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 {
     cancelClockEvent(advertiseEvent);
+    cancelClockEvent(activeClientsCheckEvent);
+
     socket.destroy();
 }
 
@@ -241,7 +253,15 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
 
 void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
-    // TO DO -> aggiungere un timing di ultimo aggiornamento
+    ClientInfo clientInfo;
+    clientInfo.lastPingTime = getClockTime();
+
+    ClientInfoUpdates updates;
+    updates.lastPingTime = true;
+
+    // update client information
+    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
@@ -316,6 +336,12 @@ void MqttSNServer::handleAdvertiseEvent()
     }
 }
 
+void MqttSNServer::handleActiveClientsCheckEvent()
+{
+    //
+    EV << "Hello world" << std::endl;
+}
+
 void MqttSNServer::updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates)
 {
     auto key = std::make_pair(srcAddress, srcPort);
@@ -368,6 +394,9 @@ void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, Client
     if (updates.currentState) {
         existingClientInfo.currentState = newClientInfo.currentState;
     }
+    if (updates.lastPingTime) {
+        existingClientInfo.lastPingTime = newClientInfo.lastPingTime;
+    }
 }
 
 bool MqttSNServer::isGatewayCongested()
@@ -402,6 +431,7 @@ bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, Clie
 MqttSNServer::~MqttSNServer()
 {
     cancelAndDelete(advertiseEvent);
+    cancelAndDelete(activeClientsCheckEvent);
 }
 
 } /* namespace mqttsn */

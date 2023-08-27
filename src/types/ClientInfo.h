@@ -13,6 +13,7 @@ struct ClientInfo {
     bool cleanSessionFlag = false;
     TopicIdType topicIdTypeFlag = TopicIdType::TOPIC_NAME;
     ClientState currentState = ClientState::DISCONNECTED;
+    inet::clocktime_t lastPingTime = 0;
 };
 
 #endif /* TYPES_CLIENTINFO_H_ */

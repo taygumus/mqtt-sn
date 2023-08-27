@@ -19,6 +19,7 @@ class MqttSNServer : public MqttSNApp
         inet::clocktime_t startAdvertise;
         inet::clocktime_t stopAdvertise;
         uint16_t advertiseInterval;
+        double activeClientsCheckInterval;
 
         // state
         inet::ClockEvent *advertiseEvent = nullptr;
@@ -29,6 +30,8 @@ class MqttSNServer : public MqttSNApp
         uint8_t gatewayId;
 
         std::map<std::pair<inet::L3Address, int>, ClientInfo> clients;
+
+        inet::ClockEvent *activeClientsCheckEvent = nullptr;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -57,6 +60,7 @@ class MqttSNServer : public MqttSNApp
 
         // event handlers
         virtual void handleAdvertiseEvent();
+        virtual void handleActiveClientsCheckEvent();
 
         // others
         virtual void updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
