@@ -88,7 +88,6 @@ class MqttSNClient : public MqttSNApp
         virtual void handlePingEvent();
 
         // others
-        virtual void checkGatewaysAvailability();
         virtual void updateActiveGateways(inet::L3Address srcAddress, int srcPort, uint8_t gatewayId, uint16_t duration);
         virtual bool isSelectedGateway(inet::L3Address srcAddress, int srcPort);
         virtual bool isConnectedGateway(inet::L3Address srcAddress, int srcPort);

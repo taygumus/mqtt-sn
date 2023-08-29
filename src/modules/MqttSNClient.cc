@@ -513,18 +513,34 @@ void MqttSNClient::sendBaseWithWillMsg(inet::L3Address destAddress, int destPort
 
 void MqttSNClient::handleCheckGatewaysEvent()
 {
-    checkGatewaysAvailability();
+    inet::clocktime_t currentTime = getClockTime();
+
+    for (auto it = activeGateways.begin(); it != activeGateways.end();) {
+        const GatewayInfo& gatewayInfo = it->second;
+
+        // check if the elapsed time exceeds the threshold
+        if ((currentTime - gatewayInfo.lastUpdatedTime) >= ((int) par("nadv") * gatewayInfo.duration)) {
+            // gateway is considered unavailable
+            it = activeGateways.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
     scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
 }
 
 void MqttSNClient::handleSearchGatewayEvent()
 {
+    // check if a search for gateways is needed
     if (searchGateway) {
+        // send a search gateway message
         sendSearchGw();
 
         if (!maxIntervalReached) {
             double maxInterval = par("maxSearchGatewayInterval");
-
+            // increase search interval exponentially, with a maximum limit
             searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
             maxIntervalReached = (searchGatewayInterval == maxInterval);
         }
@@ -563,26 +579,6 @@ void MqttSNClient::handlePingEvent()
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port);
 
     scheduleClockEventAfter(keepAlive, pingEvent);
-}
-
-void MqttSNClient::checkGatewaysAvailability()
-{
-    int nadv = par("nadv");
-    inet::clocktime_t currentTime = getClockTime();
-
-    for (auto it = activeGateways.begin(); it != activeGateways.end();) {
-
-        const GatewayInfo& gatewayInfo = it->second;
-        inet::clocktime_t elapsedTime = currentTime - gatewayInfo.lastUpdatedTime;
-
-        if (elapsedTime >= (nadv * gatewayInfo.duration)) {
-            // gateway is considered unavailable
-            it = activeGateways.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
 }
 
 void MqttSNClient::updateActiveGateways(inet::L3Address srcAddress, int srcPort, uint8_t gatewayId, uint16_t duration)
