@@ -367,8 +367,8 @@ void MqttSNServer::handleActiveClientsCheckEvent()
 {
     inet::clocktime_t currentTime = getClockTime();
 
-    for (auto index = 0u; index < clients.size(); ++index) {
-        ClientInfo& clientInfo = std::next(clients.begin(), index)->second;
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
+        ClientInfo& clientInfo = it->second;
 
         // check if the client is ACTIVE and if the elapsed time from last received message is beyond the keep alive duration
         if (clientInfo.currentState == ClientState::ACTIVE &&
@@ -381,9 +381,9 @@ void MqttSNServer::handleActiveClientsCheckEvent()
             }
             else {
                 // send a solicitation ping request to the expired client
-                const std::pair<inet::L3Address, int> clientKey = std::next(clients.begin(), index)->first;
-                MqttSNApp::sendPingReq(clientKey.first, clientKey.second);
+                const std::pair<inet::L3Address, int> clientKey = it->first;
 
+                MqttSNApp::sendPingReq(clientKey.first, clientKey.second);
                 clientInfo.sentPingReq = true;
             }
         }
