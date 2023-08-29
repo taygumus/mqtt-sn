@@ -48,12 +48,12 @@ class MqttSNServer : public MqttSNApp
 
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;
-        virtual void processSearchGw(inet::Packet *pk);
+        virtual void processSearchGw();
         virtual void processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processWillTopic(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
+        virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendAdvertise();

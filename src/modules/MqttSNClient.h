@@ -66,13 +66,13 @@ class MqttSNClient : public MqttSNApp
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;
         virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processSearchGw(inet::Packet *pk);
+        virtual void processSearchGw();
         virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processConnAck(inet::Packet *pk);
-        virtual void processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processWillTopicReq(inet::L3Address srcAddress, int srcPort);
+        virtual void processWillMsgReq(inet::L3Address srcAddress, int srcPort);
+        virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
+        virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendSearchGw();

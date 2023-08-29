@@ -303,7 +303,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::SEARCHGW:
-            processSearchGw(pk);
+            processSearchGw();
             break;
 
         case MsgType::GWINFO:
@@ -315,19 +315,19 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::WILLTOPICREQ:
-            processWillTopicReq(pk, srcAddress, srcPort);
+            processWillTopicReq(srcAddress, srcPort);
             break;
 
         case MsgType::WILLMSGREQ:
-            processWillMsgReq(pk, srcAddress, srcPort);
+            processWillMsgReq(srcAddress, srcPort);
             break;
 
         case MsgType::PINGREQ:
-            processPingReq(pk, srcAddress, srcPort);
+            processPingReq(srcAddress, srcPort);
             break;
 
         case MsgType::PINGRESP:
-            processPingResp(pk, srcAddress, srcPort);
+            processPingResp(srcAddress, srcPort);
             break;
 
         default:
@@ -347,7 +347,7 @@ void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress
     updateActiveGateways(srcAddress, srcPort, gatewayId, duration);
 }
 
-void MqttSNClient::processSearchGw(inet::Packet *pk)
+void MqttSNClient::processSearchGw()
 {
     // no need for this client to send again the search gateway message
     if (searchGateway) {
@@ -404,22 +404,22 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
     bubble(str.str().c_str());
 }
 
-void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processWillTopicReq(inet::L3Address srcAddress, int srcPort)
 {
     sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
 }
 
-void MqttSNClient::processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processWillMsgReq(inet::L3Address srcAddress, int srcPort)
 {
     sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
 }
 
-void MqttSNClient::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processPingReq(inet::L3Address srcAddress, int srcPort)
 {
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
-void MqttSNClient::processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
 {
     EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
 }

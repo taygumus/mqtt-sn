@@ -118,7 +118,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
-    // packet types that require an active client state
+    // packet types that require an ACTIVE client state
     switch(header->getMsgType()) {
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
@@ -136,7 +136,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
     switch(header->getMsgType()) {
         case MsgType::SEARCHGW:
-            processSearchGw(pk);
+            processSearchGw();
             break;
 
         case MsgType::CONNECT:
@@ -152,11 +152,11 @@ void MqttSNServer::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::PINGREQ:
-            processPingReq(pk, srcAddress, srcPort);
+            processPingReq(srcAddress, srcPort);
             break;
 
         case MsgType::PINGRESP:
-            processPingResp(pk, srcAddress, srcPort);
+            processPingResp(srcAddress, srcPort);
             break;
 
         default:
@@ -166,7 +166,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     delete pk;
 }
 
-void MqttSNServer::processSearchGw(inet::Packet *pk)
+void MqttSNServer::processSearchGw()
 {
     MqttSNApp::sendGwInfo(gatewayId);
 }
@@ -262,7 +262,7 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
 }
 
-void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processPingReq(inet::L3Address srcAddress, int srcPort)
 {
     ClientInfo clientInfo;
     clientInfo.lastReceivedMsgTime = getClockTime();
@@ -276,7 +276,7 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
-void MqttSNServer::processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
 {
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 
