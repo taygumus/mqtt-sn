@@ -71,6 +71,7 @@ class MqttSNClient : public MqttSNApp
         virtual void processConnAck(inet::Packet *pk);
         virtual void processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 
         // send packets

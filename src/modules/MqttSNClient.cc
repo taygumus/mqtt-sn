@@ -285,6 +285,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
 
         // packet types that are allowed only from the connected gateway
+        case MsgType::PINGREQ:
         case MsgType::PINGRESP:
             if (!isConnectedGateway(srcAddress, srcPort)) {
                 delete pk;
@@ -319,6 +320,10 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 
         case MsgType::WILLMSGREQ:
             processWillMsgReq(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PINGREQ:
+            processPingReq(pk, srcAddress, srcPort);
             break;
 
         case MsgType::PINGRESP:
@@ -407,6 +412,11 @@ void MqttSNClient::processWillTopicReq(inet::Packet *pk, inet::L3Address srcAddr
 void MqttSNClient::processWillMsgReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
+}
+
+void MqttSNClient::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
 void MqttSNClient::processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)

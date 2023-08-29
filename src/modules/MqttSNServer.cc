@@ -123,6 +123,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
         case MsgType::PINGREQ:
+        case MsgType::PINGRESP:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -152,6 +153,10 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
         case MsgType::PINGREQ:
             processPingReq(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PINGRESP:
+            processPingResp(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -191,6 +196,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     clientInfo.willFlag = willFlag;
     clientInfo.cleanSessionFlag = payload->getCleanSessionFlag();
     clientInfo.currentState = ClientState::ACTIVE;
+    clientInfo.lastReceivedMsgTime = getClockTime();
 
     // specify which fields to update
     ClientInfoUpdates updates;
@@ -199,6 +205,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     updates.willFlag = true;
     updates.cleanSessionFlag = true;
     updates.currentState = true;
+    updates.lastReceivedMsgTime = true;
 
     // update or save client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
@@ -220,12 +227,14 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
     clientInfo.qosFlag = (QoS) payload->getQoSFlag();
     clientInfo.retainFlag = payload->getRetainFlag();
     clientInfo.willTopic = payload->getWillTopic();
+    clientInfo.lastReceivedMsgTime = getClockTime();
 
     // specify which fields to update
     ClientInfoUpdates updates;
     updates.qosFlag = true;
     updates.retainFlag = true;
     updates.willTopic = true;
+    updates.lastReceivedMsgTime = true;
 
     // update client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
@@ -240,10 +249,12 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
     // prepare client information
     ClientInfo clientInfo;
     clientInfo.willMsg = payload->getWillMsg();
+    clientInfo.lastReceivedMsgTime = getClockTime();
 
     // specify which fields to update
     ClientInfoUpdates updates;
     updates.willMsg = true;
+    updates.lastReceivedMsgTime = true;
 
     // update client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
@@ -254,15 +265,31 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
 void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     ClientInfo clientInfo;
-    clientInfo.lastPingTime = getClockTime();
+    clientInfo.lastReceivedMsgTime = getClockTime();
 
     ClientInfoUpdates updates;
-    updates.lastPingTime = true;
+    updates.lastReceivedMsgTime = true;
 
     // update client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
+}
+
+void MqttSNServer::processPingResp(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+{
+    EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
+
+    ClientInfo clientInfo;
+    clientInfo.lastReceivedMsgTime = getClockTime();
+    clientInfo.sentPingReq = false;
+
+    ClientInfoUpdates updates;
+    updates.lastReceivedMsgTime = true;
+    updates.sentPingReq = true;
+
+    // update client information
+    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -338,8 +365,31 @@ void MqttSNServer::handleAdvertiseEvent()
 
 void MqttSNServer::handleActiveClientsCheckEvent()
 {
-    //
-    EV << "Hello world" << std::endl;
+    inet::clocktime_t currentTime = getClockTime();
+
+    for (auto index = 0u; index < clients.size(); ++index) {
+        ClientInfo& clientInfo = std::next(clients.begin(), index)->second;
+
+        // check if the client is ACTIVE and if the elapsed time from last received message is beyond the keep alive duration
+        if (clientInfo.currentState == ClientState::ACTIVE &&
+            (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.duration) {
+
+            if (clientInfo.sentPingReq) {
+                // change the expired client state and activate the Will feature
+                clientInfo.currentState = ClientState::LOST;
+                // TO DO -> Will feature activation
+            }
+            else {
+                // send a solicitation ping request to the expired client
+                const std::pair<inet::L3Address, int> clientKey = std::next(clients.begin(), index)->first;
+                MqttSNApp::sendPingReq(clientKey.first, clientKey.second);
+
+                clientInfo.sentPingReq = true;
+            }
+        }
+    }
+
+    scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
 }
 
 void MqttSNServer::updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates)
@@ -394,8 +444,11 @@ void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, Client
     if (updates.currentState) {
         existingClientInfo.currentState = newClientInfo.currentState;
     }
-    if (updates.lastPingTime) {
-        existingClientInfo.lastPingTime = newClientInfo.lastPingTime;
+    if (updates.lastReceivedMsgTime) {
+        existingClientInfo.lastReceivedMsgTime = newClientInfo.lastReceivedMsgTime;
+    }
+    if (updates.sentPingReq) {
+        existingClientInfo.sentPingReq = newClientInfo.sentPingReq;
     }
 }
 

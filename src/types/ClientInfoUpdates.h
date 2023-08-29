@@ -13,7 +13,8 @@ struct ClientInfoUpdates {
     bool cleanSessionFlag = false;
     bool topicIdTypeFlag = false;
     bool currentState = false;
-    bool lastPingTime = false;
+    bool lastReceivedMsgTime = false;
+    bool sentPingReq = false;
 };
 
 #endif /* TYPES_CLIENTINFOUPDATES_H_ */
