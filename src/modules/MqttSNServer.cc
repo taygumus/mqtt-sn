@@ -106,7 +106,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 {
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
 
-    if (!activeGateway || isSelfBroadcastAddress(srcAddress)) {
+    if (!activeGateway || MqttSNApp::isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
     }
@@ -114,7 +114,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     EV << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     const auto& header = pk->peekData<MqttSNBase>();
-    checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+    MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 

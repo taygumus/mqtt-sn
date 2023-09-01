@@ -27,7 +27,7 @@ void MqttSNClient::initialize(int stage)
         checkGatewaysInterval = par("checkGatewaysInterval");
         checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
 
-        searchGatewayInterval = uniform(0, par("searchGatewayMaxDelay"));
+        searchGatewayInterval = uniform(1.1, par("searchGatewayMaxDelay"));
         searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
 
         temporaryDuration = par("temporaryDuration");
@@ -100,11 +100,7 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
 void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(stateChangeEvent);
-    cancelEvent(checkGatewaysEvent);
-    cancelEvent(searchGatewayEvent);
-    cancelEvent(gatewayInfoEvent);
-    cancelEvent(checkConnectionEvent);
-    cancelEvent(pingEvent);
+    cancelActiveStateEvents();
 
     socket.close();
 }
@@ -163,6 +159,19 @@ void MqttSNClient::performStateTransition(ClientState currentState, ClientState 
                 case ClientState::DISCONNECTED:
                     fromActiveToDisconnected();
                     break;
+                case ClientState::LOST:
+                    fromActiveToLost();
+                    break;
+                default:
+                    break;
+            }
+            break;
+
+        case ClientState::LOST:
+            switch (nextState) {
+                case ClientState::ACTIVE:
+                    fromLostToActive();
+                    break;
                 default:
                     break;
             }
@@ -175,19 +184,51 @@ void MqttSNClient::performStateTransition(ClientState currentState, ClientState 
     }
 }
 
-void MqttSNClient::fromDisconnectedToActive()
+void MqttSNClient::scheduleActiveStateEvents()
 {
-    EV << "Disconnected -> Active" << std::endl;
+    activeGateways.clear();
+
+    maxIntervalReached = false;
+    searchGateway = true;
+    isConnected = false;
 
     scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
     scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
+void MqttSNClient::cancelActiveStateEvents()
+{
+    cancelEvent(checkGatewaysEvent);
+    cancelEvent(searchGatewayEvent);
+    cancelEvent(gatewayInfoEvent);
+    cancelEvent(checkConnectionEvent);
+    cancelEvent(pingEvent);
+}
+
+void MqttSNClient::fromDisconnectedToActive()
+{
+    EV << "Disconnected -> Active" << std::endl;
+    scheduleActiveStateEvents();
+}
+
 void MqttSNClient::fromActiveToDisconnected()
 {
     EV << "Active -> Disconnected" << std::endl;
     // TO DO
+    cancelActiveStateEvents();
+}
+
+void MqttSNClient::fromActiveToLost()
+{
+    EV << "Active -> Lost" << std::endl;
+    cancelActiveStateEvents();
+}
+
+void MqttSNClient::fromLostToActive()
+{
+    EV << "Lost -> Active" << std::endl;
+    scheduleActiveStateEvents();
 }
 
 double MqttSNClient::getStateInterval(ClientState currentState)
@@ -232,6 +273,7 @@ std::string MqttSNClient::getClientState()
     }
 }
 
+/*
 std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState) {
     // get the possible next states based on the current state
     switch (currentState) {
@@ -251,6 +293,30 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::ASLEEP, ClientState::ACTIVE, ClientState::DISCONNECTED};
     }
 }
+*/
+
+// TO DO
+std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState) {
+    // get the possible next states based on the current state
+    switch (currentState) {
+        case ClientState::DISCONNECTED:
+            return {ClientState::ACTIVE};
+
+        case ClientState::ACTIVE:
+            return {ClientState::LOST};
+
+        case ClientState::LOST:
+            return {ClientState::ACTIVE};
+
+        /*
+        case ClientState::ASLEEP:
+            return {ClientState::LOST, ClientState::ACTIVE, ClientState::AWAKE};
+
+        case ClientState::AWAKE:
+            return {ClientState::ASLEEP, ClientState::ACTIVE, ClientState::DISCONNECTED};
+        */
+    }
+}
 
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
@@ -261,7 +327,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
 
-    if (isSelfBroadcastAddress(srcAddress)) {
+    if (MqttSNApp::isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
     }
@@ -269,7 +335,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     const auto& header = pk->peekData<MqttSNBase>();
-    checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+    MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
@@ -519,7 +585,7 @@ void MqttSNClient::handleCheckGatewaysEvent()
         const GatewayInfo& gatewayInfo = it->second;
 
         // check if the elapsed time exceeds the threshold
-        if ((currentTime - gatewayInfo.lastUpdatedTime) >= ((int) par("nadv") * gatewayInfo.duration)) {
+        if ((currentTime - gatewayInfo.lastUpdatedTime) > ((int) par("nadv") * gatewayInfo.duration)) {
             // gateway is considered unavailable
             it = activeGateways.erase(it);
         }
@@ -540,6 +606,7 @@ void MqttSNClient::handleSearchGatewayEvent()
 
         if (!maxIntervalReached) {
             double maxInterval = par("maxSearchGatewayInterval");
+
             // increase search interval exponentially, with a maximum limit
             searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
             maxIntervalReached = (searchGatewayInterval == maxInterval);
@@ -557,7 +624,7 @@ void MqttSNClient::handleGatewayInfoEvent()
     GatewayInfo gatewayInfo = gateway.second;
 
     // client answers with a gwInfo message
-    sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
+    MqttSNApp::sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
 }
 
 void MqttSNClient::handleCheckConnectionEvent()
