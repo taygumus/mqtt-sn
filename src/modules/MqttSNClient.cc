@@ -215,8 +215,14 @@ void MqttSNClient::fromDisconnectedToActive()
 void MqttSNClient::fromActiveToDisconnected()
 {
     EV << "Active -> Disconnected" << std::endl;
-    // TO DO
-    cancelActiveStateEvents();
+
+    if (!isConnected) {
+        return;
+    }
+
+    MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
+
+    //cancelActiveStateEvents();
 }
 
 void MqttSNClient::fromActiveToLost()
@@ -303,10 +309,12 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::ACTIVE};
 
         case ClientState::ACTIVE:
-            return {ClientState::LOST};
+            return {ClientState::DISCONNECTED};
 
+        /*
         case ClientState::LOST:
             return {ClientState::ACTIVE};
+        */
 
         /*
         case ClientState::ASLEEP:

@@ -2,6 +2,7 @@
 #include "types/MsgType.h"
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNPingReq.h"
+#include "messages/MqttSNDisconnect.h"
 
 namespace mqttsn {
 
@@ -80,6 +81,23 @@ void MqttSNApp::sendBase(inet::L3Address destAddress, int destPort, MsgType msgT
     }
 
     inet::Packet *packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
+void MqttSNApp::sendDisconnect(inet::L3Address destAddress, int destPort, uint16_t duration)
+{
+    const auto& payload = inet::makeShared<MqttSNDisconnect>();
+    payload->setMsgType(MsgType::DISCONNECT);
+
+    if (duration != 0) {
+        payload->setDuration(duration);
+    }
+
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet *packet = new inet::Packet("DisconnectPacket");
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);
