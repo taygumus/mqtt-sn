@@ -312,6 +312,8 @@ void MqttSNServer::processDisconnect(inet::L3Address srcAddress, int srcPort)
 
     // ack with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort);
+
+    // TO DO -> not affect existing subscriptions
 }
 
 void MqttSNServer::sendAdvertise()
