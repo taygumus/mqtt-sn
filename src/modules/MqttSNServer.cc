@@ -124,6 +124,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
         case MsgType::WILLMSG:
         case MsgType::PINGREQ:
         case MsgType::PINGRESP:
+        case MsgType::DISCONNECT:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -157,6 +158,10 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
         case MsgType::PINGRESP:
             processPingResp(srcAddress, srcPort);
+            break;
+
+        case MsgType::DISCONNECT:
+            processDisconnect(srcAddress, srcPort);
             break;
 
         default:
@@ -290,6 +295,23 @@ void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
 
     // update client information
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+}
+
+void MqttSNServer::processDisconnect(inet::L3Address srcAddress, int srcPort)
+{
+    ClientInfo clientInfo;
+    clientInfo.currentState = ClientState::DISCONNECTED;
+    clientInfo.lastReceivedMsgTime = getClockTime();
+
+    ClientInfoUpdates updates;
+    updates.currentState = true;
+    updates.lastReceivedMsgTime = true;
+
+    // update client information
+    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+
+    // ack with disconnect message
+    MqttSNApp::sendDisconnect(srcAddress, srcPort);
 }
 
 void MqttSNServer::sendAdvertise()

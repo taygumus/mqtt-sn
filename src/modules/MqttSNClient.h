@@ -53,16 +53,17 @@ class MqttSNClient : public MqttSNApp
 
         // client state management
         virtual void handleStateChangeEvent();
-        virtual void performStateTransition(ClientState currentState, ClientState nextState);
         virtual void scheduleActiveStateEvents();
         virtual void cancelActiveStateEvents();
+        virtual void updateCurrentState(ClientState nextState);
 
-        virtual void fromDisconnectedToActive();
-        virtual void fromActiveToDisconnected();
-        virtual void fromActiveToLost();
-        virtual void fromLostToActive();
+        virtual bool fromDisconnectedToActive();
+        virtual bool fromActiveToDisconnected();
+        virtual bool fromActiveToLost();
+        virtual bool fromLostToActive();
         // TO DO -> to complete
 
+        virtual bool performStateTransition(ClientState currentState, ClientState nextState);
         virtual double getStateInterval(ClientState currentState);
         virtual std::string getClientState();
         virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);
@@ -77,6 +78,7 @@ class MqttSNClient : public MqttSNApp
         virtual void processWillMsgReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
+        virtual void processDisconnect();
 
         // send packets
         virtual void sendSearchGw();

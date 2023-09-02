@@ -132,55 +132,9 @@ void MqttSNClient::handleStateChangeEvent()
         scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
     }
 
-    // perform state transition functions based on current and next states
-    performStateTransition(currentState, nextState);
-
-    // update the current state
-    currentState = nextState;
-    EV << "Current client state: " << getClientState() << std::endl;
-}
-
-void MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
-{
-    // calls the appropriate state transition function based on current and next states
-    switch (currentState) {
-        case ClientState::DISCONNECTED:
-            switch (nextState) {
-                case ClientState::ACTIVE:
-                    fromDisconnectedToActive();
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        case ClientState::ACTIVE:
-            switch (nextState) {
-                case ClientState::DISCONNECTED:
-                    fromActiveToDisconnected();
-                    break;
-                case ClientState::LOST:
-                    fromActiveToLost();
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        case ClientState::LOST:
-            switch (nextState) {
-                case ClientState::ACTIVE:
-                    fromLostToActive();
-                    break;
-                default:
-                    break;
-            }
-            break;
-
-        default:
-            break;
-
-        // TO DO -> Add other cases
+    // perform state transition functions based on the current and next states and return true if the transition is successful
+    if (performStateTransition(currentState, nextState)) {
+        updateCurrentState(nextState);
     }
 }
 
@@ -197,6 +151,13 @@ void MqttSNClient::scheduleActiveStateEvents()
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
+void MqttSNClient::updateCurrentState(ClientState nextState)
+{
+    // update the current state
+    currentState = nextState;
+    EV << "Current client state: " << getClientState() << std::endl;
+}
+
 void MqttSNClient::cancelActiveStateEvents()
 {
     cancelEvent(checkGatewaysEvent);
@@ -206,35 +167,83 @@ void MqttSNClient::cancelActiveStateEvents()
     cancelEvent(pingEvent);
 }
 
-void MqttSNClient::fromDisconnectedToActive()
+bool MqttSNClient::fromDisconnectedToActive()
 {
     EV << "Disconnected -> Active" << std::endl;
     scheduleActiveStateEvents();
+
+    return true;
 }
 
-void MqttSNClient::fromActiveToDisconnected()
+bool MqttSNClient::fromActiveToDisconnected()
 {
     EV << "Active -> Disconnected" << std::endl;
 
     if (!isConnected) {
-        return;
+        return true;
     }
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
-    //cancelActiveStateEvents();
+    return false;
 }
 
-void MqttSNClient::fromActiveToLost()
+bool MqttSNClient::fromActiveToLost()
 {
     EV << "Active -> Lost" << std::endl;
     cancelActiveStateEvents();
+
+    return true;
 }
 
-void MqttSNClient::fromLostToActive()
+bool MqttSNClient::fromLostToActive()
 {
     EV << "Lost -> Active" << std::endl;
     scheduleActiveStateEvents();
+
+    return true;
+}
+
+bool MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
+{
+    // calls the appropriate state transition function based on current and next states
+    switch (currentState) {
+        case ClientState::DISCONNECTED:
+            switch (nextState) {
+                case ClientState::ACTIVE:
+                    return fromDisconnectedToActive();
+                default:
+                    break;
+            }
+            break;
+
+        case ClientState::ACTIVE:
+            switch (nextState) {
+                case ClientState::DISCONNECTED:
+                    return fromActiveToDisconnected();
+                case ClientState::LOST:
+                    return fromActiveToLost();
+                default:
+                    break;
+            }
+            break;
+
+        case ClientState::LOST:
+            switch (nextState) {
+                case ClientState::ACTIVE:
+                    return fromLostToActive();
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
+
+        // TO DO -> Add other cases
+    }
+
+    return false;
 }
 
 double MqttSNClient::getStateInterval(ClientState currentState)
@@ -361,6 +370,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
         // packet types that are allowed only from the connected gateway
         case MsgType::PINGREQ:
         case MsgType::PINGRESP:
+        case MsgType::DISCONNECT:
             if (!isConnectedGateway(srcAddress, srcPort)) {
                 delete pk;
                 return;
@@ -402,6 +412,10 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 
         case MsgType::PINGRESP:
             processPingResp(srcAddress, srcPort);
+            break;
+
+        case MsgType::DISCONNECT:
+            processDisconnect();
             break;
 
         default:
@@ -496,6 +510,12 @@ void MqttSNClient::processPingReq(inet::L3Address srcAddress, int srcPort)
 void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
 {
     EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
+}
+
+void MqttSNClient::processDisconnect()
+{
+    cancelActiveStateEvents();
+    updateCurrentState(ClientState::DISCONNECTED);
 }
 
 void MqttSNClient::sendSearchGw()
