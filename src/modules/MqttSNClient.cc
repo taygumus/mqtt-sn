@@ -177,9 +177,8 @@ bool MqttSNClient::fromDisconnectedToActive()
 
 bool MqttSNClient::fromActiveToDisconnected()
 {
-    EV << "Active -> Disconnected" << std::endl;
-
     if (!isConnected) {
+        EV << "Active -> Disconnected" << std::endl;
         return true;
     }
 
@@ -514,6 +513,7 @@ void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
 
 void MqttSNClient::processDisconnect()
 {
+    EV << "Active -> Disconnected" << std::endl;
     cancelActiveStateEvents();
     updateCurrentState(ClientState::DISCONNECTED);
 }
