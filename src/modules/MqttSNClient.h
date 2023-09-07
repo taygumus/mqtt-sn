@@ -61,6 +61,7 @@ class MqttSNClient : public MqttSNApp
         virtual bool fromActiveToDisconnected();
         virtual bool fromActiveToLost();
         virtual bool fromLostToActive();
+        virtual bool fromActiveToAsleep();
         // TO DO -> to complete
 
         virtual bool performStateTransition(ClientState currentState, ClientState nextState);
@@ -78,7 +79,7 @@ class MqttSNClient : public MqttSNApp
         virtual void processWillMsgReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
-        virtual void processDisconnect();
+        virtual void processDisconnect(inet::Packet *pk);
 
         // send packets
         virtual void sendSearchGw();

@@ -11,6 +11,7 @@
 #include "messages/MqttSNBaseWithReturnCode.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
+#include "messages/MqttSNDisconnect.h"
 
 namespace mqttsn {
 
@@ -203,6 +204,33 @@ bool MqttSNClient::fromLostToActive()
     return true;
 }
 
+bool MqttSNClient::fromActiveToAsleep()
+{
+    if (!isConnected) {
+        EV << "Active -> Asleep" << std::endl;
+        return true;
+    }
+
+    double asleepStateInterval = par("asleepStateInterval");
+    uint16_t sleepDuration = 0;
+
+    if (asleepStateInterval == -1) {
+        // if the interval is -1, set duration to the maximum value for uint16_t
+        sleepDuration = UINT16_MAX;
+    }
+    else if (asleepStateInterval > 0 && asleepStateInterval <= UINT16_MAX) {
+        // if the interval is within the valid range, proceed
+        sleepDuration = std::round(asleepStateInterval);
+    }
+    else {
+        throw omnetpp::cRuntimeError("Invalid asleep state interval value");
+    }
+
+    MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port, sleepDuration);
+
+    return false;
+}
+
 bool MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
 {
     // calls the appropriate state transition function based on current and next states
@@ -222,6 +250,8 @@ bool MqttSNClient::performStateTransition(ClientState currentState, ClientState 
                     return fromActiveToDisconnected();
                 case ClientState::LOST:
                     return fromActiveToLost();
+                case ClientState::ASLEEP:
+                    return fromActiveToAsleep();
                 default:
                     break;
             }
@@ -317,7 +347,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::ACTIVE};
 
         case ClientState::ACTIVE:
-            return {ClientState::DISCONNECTED};
+            return {ClientState::ASLEEP};
 
         /*
         case ClientState::LOST:
@@ -414,7 +444,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::DISCONNECT:
-            processDisconnect();
+            processDisconnect(pk);
             break;
 
         default:
@@ -511,11 +541,23 @@ void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
     EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
 }
 
-void MqttSNClient::processDisconnect()
+void MqttSNClient::processDisconnect(inet::Packet *pk)
 {
-    EV << "Active -> Disconnected" << std::endl;
+    const auto& payload = pk->peekData<MqttSNDisconnect>();
+    uint16_t sleepDuration = payload->getDuration();
+
     cancelActiveStateEvents();
-    updateCurrentState(ClientState::DISCONNECTED);
+
+    if (sleepDuration > 0) {
+        EV << "Active -> Asleep" << std::endl;
+        updateCurrentState(ClientState::ASLEEP);
+    }
+    else {
+        EV << "Active -> Disconnected" << std::endl;
+        updateCurrentState(ClientState::DISCONNECTED);
+    }
+
+    EV << sleepDuration << std::endl;
 }
 
 void MqttSNClient::sendSearchGw()

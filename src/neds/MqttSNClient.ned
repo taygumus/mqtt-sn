@@ -15,7 +15,7 @@ simple MqttSNClient like IApp
         double disconnectedStateInterval @unit(s) = default(30s);
         double activeStateInterval @unit(s) = default(30s);
         double lostStateInterval @unit(s) = default(30s);
-        double asleepStateInterval @unit(s) = default(30s);
+        double asleepStateInterval @unit(s) = default(30s); // linked to sleep duration field; range between 0..65535 seconds
         double awakeStateInterval @unit(s) = default(30s);
         
         double checkGatewaysInterval @unit(s) = default(500ms); // check interval for active gateways in the map

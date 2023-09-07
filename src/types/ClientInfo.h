@@ -5,7 +5,8 @@ struct ClientInfo {
     std::string clientId = "";
     std::string willTopic = "";
     std::string willMsg = "";
-    uint16_t duration = 0;
+    uint16_t duration = 0; // keep alive duration
+    uint16_t sleepDuration = 0;
     bool dupFlag = false;
     QoS qosFlag = QoS::QOS_ZERO;
     bool retainFlag = false;

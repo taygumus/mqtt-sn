@@ -91,7 +91,7 @@ void MqttSNApp::sendDisconnect(inet::L3Address destAddress, int destPort, uint16
     const auto& payload = inet::makeShared<MqttSNDisconnect>();
     payload->setMsgType(MsgType::DISCONNECT);
 
-    if (duration != 0) {
+    if (duration > 0) {
         payload->setDuration(duration);
     }
 

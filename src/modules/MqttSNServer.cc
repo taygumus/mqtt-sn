@@ -9,6 +9,7 @@
 #include "messages/MqttSNBaseWithReturnCode.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
+#include "messages/MqttSNDisconnect.h"
 
 namespace mqttsn {
 
@@ -161,7 +162,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::DISCONNECT:
-            processDisconnect(srcAddress, srcPort);
+            processDisconnect(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -297,13 +298,25 @@ void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 }
 
-void MqttSNServer::processDisconnect(inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processDisconnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
+    const auto& payload = pk->peekData<MqttSNDisconnect>();
+    uint16_t sleepDuration = payload->getDuration();
+
     ClientInfo clientInfo;
-    clientInfo.currentState = ClientState::DISCONNECTED;
+    clientInfo.sleepDuration = sleepDuration;
+
+    if (sleepDuration > 0) {
+        clientInfo.currentState = ClientState::ASLEEP;
+    }
+    else {
+        clientInfo.currentState = ClientState::DISCONNECTED;
+    }
+
     clientInfo.lastReceivedMsgTime = getClockTime();
 
     ClientInfoUpdates updates;
+    updates.sleepDuration = true;
     updates.currentState = true;
     updates.lastReceivedMsgTime = true;
 
@@ -311,9 +324,10 @@ void MqttSNServer::processDisconnect(inet::L3Address srcAddress, int srcPort)
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
     // ack with disconnect message
-    MqttSNApp::sendDisconnect(srcAddress, srcPort);
+    MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
 
     // TO DO -> not affect existing subscriptions
+    // TO DO -> manage disconnect with sleep duration field
 }
 
 void MqttSNServer::sendAdvertise()
@@ -446,6 +460,9 @@ void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, Client
     }
     if (updates.duration) {
         existingClientInfo.duration = newClientInfo.duration;
+    }
+    if (updates.sleepDuration) {
+        existingClientInfo.sleepDuration = newClientInfo.sleepDuration;
     }
     if (updates.dupFlag) {
         existingClientInfo.dupFlag = newClientInfo.dupFlag;
