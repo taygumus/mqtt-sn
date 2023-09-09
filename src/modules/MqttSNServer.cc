@@ -198,7 +198,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     // prepare client information
     ClientInfo clientInfo;
     clientInfo.clientId = payload->getClientId();
-    clientInfo.duration = payload->getDuration();
+    clientInfo.keepAliveDuration = payload->getDuration();
     clientInfo.willFlag = willFlag;
     clientInfo.cleanSessionFlag = payload->getCleanSessionFlag();
     clientInfo.currentState = ClientState::ACTIVE;
@@ -207,7 +207,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     // specify which fields to update
     ClientInfoUpdates updates;
     updates.clientId = true;
-    updates.duration = true;
+    updates.keepAliveDuration = true;
     updates.willFlag = true;
     updates.cleanSessionFlag = true;
     updates.currentState = true;
@@ -326,8 +326,8 @@ void MqttSNServer::processDisconnect(inet::Packet *pk, inet::L3Address srcAddres
     // ack with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
 
-    // TO DO -> not affect existing subscriptions
-    // TO DO -> manage disconnect with sleep duration field
+    // TO DO -> not affect existing subscriptions (6.12)
+    // TO DO -> manage disconnect with sleep duration field (6.14)
 }
 
 void MqttSNServer::sendAdvertise()
@@ -410,7 +410,7 @@ void MqttSNServer::handleActiveClientsCheckEvent()
 
         // check if the client is ACTIVE and if the elapsed time from last received message is beyond the keep alive duration
         if (clientInfo.currentState == ClientState::ACTIVE &&
-            (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.duration) {
+            (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.keepAliveDuration) {
 
             if (clientInfo.sentPingReq) {
                 // change the expired client state and activate the Will feature
@@ -458,8 +458,8 @@ void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, Client
     if (updates.willMsg) {
         existingClientInfo.willMsg = newClientInfo.willMsg;
     }
-    if (updates.duration) {
-        existingClientInfo.duration = newClientInfo.duration;
+    if (updates.keepAliveDuration) {
+        existingClientInfo.keepAliveDuration = newClientInfo.keepAliveDuration;
     }
     if (updates.sleepDuration) {
         existingClientInfo.sleepDuration = newClientInfo.sleepDuration;

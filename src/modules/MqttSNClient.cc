@@ -556,8 +556,6 @@ void MqttSNClient::processDisconnect(inet::Packet *pk)
         EV << "Active -> Disconnected" << std::endl;
         updateCurrentState(ClientState::DISCONNECTED);
     }
-
-    EV << sleepDuration << std::endl;
 }
 
 void MqttSNClient::sendSearchGw()

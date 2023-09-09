@@ -5,7 +5,7 @@ struct ClientInfoUpdates {
     bool clientId = false;
     bool willTopic = false;
     bool willMsg = false;
-    bool duration = false;
+    bool keepAliveDuration = false;
     bool sleepDuration = false;
     bool dupFlag = false;
     bool qosFlag = false;
