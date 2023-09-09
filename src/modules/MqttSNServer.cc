@@ -41,6 +41,9 @@ void MqttSNServer::initialize(int stage)
 
         activeClientsCheckInterval = par("activeClientsCheckInterval");
         activeClientsCheckEvent = new inet::ClockEvent("activeClientsCheckTimer");
+
+        asleepClientsCheckInterval = par("asleepClientsCheckInterval");
+        asleepClientsCheckEvent = new inet::ClockEvent("asleepClientsCheckTimer");
     }
 }
 
@@ -51,6 +54,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage *msg)
     }
     else if (msg == activeClientsCheckEvent) {
         handleActiveClientsCheckEvent();
+    }
+    else if (msg == asleepClientsCheckEvent) {
+        handleAsleepClientsCheckEvent();
     }
     else {
         socket.processMessage(msg);
@@ -85,12 +91,14 @@ void MqttSNServer::handleStartOperation(inet::LifecycleOperation *operation)
     }
 
     scheduleClockEventAt(activeClientsCheckInterval, activeClientsCheckEvent);
+    scheduleClockEventAt(asleepClientsCheckInterval, asleepClientsCheckEvent);
 }
 
 void MqttSNServer::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(advertiseEvent);
     cancelEvent(activeClientsCheckEvent);
+    cancelEvent(asleepClientsCheckEvent);
 
     socket.close();
 }
@@ -99,6 +107,7 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 {
     cancelClockEvent(advertiseEvent);
     cancelClockEvent(activeClientsCheckEvent);
+    cancelClockEvent(asleepClientsCheckEvent);
 
     socket.destroy();
 }
@@ -430,6 +439,27 @@ void MqttSNServer::handleActiveClientsCheckEvent()
     scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
 }
 
+void MqttSNServer::handleAsleepClientsCheckEvent()
+{
+    inet::clocktime_t currentTime = getClockTime();
+
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
+        ClientInfo& clientInfo = it->second;
+
+        // check if the client is ASLEEP and if the elapsed time from last received message is beyond the sleep duration
+        if (clientInfo.currentState == ClientState::ASLEEP &&
+            (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.sleepDuration) {
+
+            // change the expired client state and activate the Will feature
+            clientInfo.currentState = ClientState::LOST;
+            // TO DO -> Will feature activation
+            // TO DO -> Buffering of messages to send
+        }
+    }
+
+    scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
+}
+
 void MqttSNServer::updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates)
 {
     auto key = std::make_pair(srcAddress, srcPort);
@@ -526,6 +556,7 @@ MqttSNServer::~MqttSNServer()
 {
     cancelAndDelete(advertiseEvent);
     cancelAndDelete(activeClientsCheckEvent);
+    cancelAndDelete(asleepClientsCheckEvent);
 }
 
 } /* namespace mqttsn */

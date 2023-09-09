@@ -152,13 +152,6 @@ void MqttSNClient::scheduleActiveStateEvents()
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
 }
 
-void MqttSNClient::updateCurrentState(ClientState nextState)
-{
-    // update the current state
-    currentState = nextState;
-    EV << "Current client state: " << getClientState() << std::endl;
-}
-
 void MqttSNClient::cancelActiveStateEvents()
 {
     cancelEvent(checkGatewaysEvent);
@@ -166,6 +159,13 @@ void MqttSNClient::cancelActiveStateEvents()
     cancelEvent(gatewayInfoEvent);
     cancelEvent(checkConnectionEvent);
     cancelEvent(pingEvent);
+}
+
+void MqttSNClient::updateCurrentState(ClientState nextState)
+{
+    // update the current state
+    currentState = nextState;
+    EV << "Current client state: " << getClientState() << std::endl;
 }
 
 bool MqttSNClient::fromDisconnectedToActive()
@@ -231,6 +231,22 @@ bool MqttSNClient::fromActiveToAsleep()
     return false;
 }
 
+bool MqttSNClient::fromAsleepToLost()
+{
+    EV << "Asleep -> Lost" << std::endl;
+    cancelActiveStateEvents();
+
+    return true;
+}
+
+bool MqttSNClient::fromAsleepToActive()
+{
+    EV << "Asleep -> Active" << std::endl;
+    scheduleActiveStateEvents();
+
+    return true;
+}
+
 bool MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
 {
     // calls the appropriate state transition function based on current and next states
@@ -265,6 +281,17 @@ bool MqttSNClient::performStateTransition(ClientState currentState, ClientState 
                     break;
             }
             break;
+
+       case ClientState::ASLEEP:
+           switch (nextState) {
+               case ClientState::LOST:
+                   return fromAsleepToLost();
+               case ClientState::ACTIVE:
+                   return fromAsleepToActive();
+               default:
+                   break;
+           }
+           break;
 
         default:
             break;
@@ -349,10 +376,8 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
         case ClientState::ACTIVE:
             return {ClientState::ASLEEP};
 
-        /*
-        case ClientState::LOST:
+        case ClientState::ASLEEP:
             return {ClientState::ACTIVE};
-        */
 
         /*
         case ClientState::ASLEEP:

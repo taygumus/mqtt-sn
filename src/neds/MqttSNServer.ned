@@ -18,6 +18,7 @@ simple MqttSNServer like IApp
         int maximumClients = default(10); // maximum clients before congestion
         
         double activeClientsCheckInterval @unit(s) = default(500ms); // check interval for verifying active clients
+        double asleepClientsCheckInterval @unit(s) = default(500ms); // check interval for verifying asleep clients
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNServer);
