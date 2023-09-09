@@ -54,7 +54,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processWillTopic(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
+        virtual void processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
         virtual void processDisconnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
 

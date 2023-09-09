@@ -247,6 +247,14 @@ bool MqttSNClient::fromAsleepToActive()
     return true;
 }
 
+bool MqttSNClient::fromAsleepToAwake()
+{
+    EV << "Asleep -> Awake" << std::endl;
+    MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port, clientId);
+
+    return true;
+}
+
 bool MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
 {
     // calls the appropriate state transition function based on current and next states
@@ -288,6 +296,8 @@ bool MqttSNClient::performStateTransition(ClientState currentState, ClientState 
                    return fromAsleepToLost();
                case ClientState::ACTIVE:
                    return fromAsleepToActive();
+               case ClientState::AWAKE:
+                   return fromAsleepToAwake();
                default:
                    break;
            }
@@ -319,7 +329,7 @@ double MqttSNClient::getStateInterval(ClientState currentState)
             return par("asleepStateInterval");
 
         case ClientState::AWAKE:
-            return par("awakeStateInterval");
+            return -1;
     }
 }
 
@@ -377,7 +387,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::ASLEEP};
 
         case ClientState::ASLEEP:
-            return {ClientState::ACTIVE};
+            return {ClientState::AWAKE};
 
         /*
         case ClientState::ASLEEP:

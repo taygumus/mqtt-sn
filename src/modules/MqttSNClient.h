@@ -64,6 +64,7 @@ class MqttSNClient : public MqttSNApp
         virtual bool fromActiveToAsleep();
         virtual bool fromAsleepToLost();
         virtual bool fromAsleepToActive();
+        virtual bool fromAsleepToAwake();
         // TO DO -> to complete
 
         virtual bool performStateTransition(ClientState currentState, ClientState nextState);

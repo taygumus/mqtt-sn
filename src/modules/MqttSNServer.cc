@@ -10,6 +10,7 @@
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNDisconnect.h"
+#include "messages/MqttSNPingReq.h"
 
 namespace mqttsn {
 
@@ -128,14 +129,22 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
-    // packet types that require an ACTIVE client state
     switch(header->getMsgType()) {
+        // packet types that require an ACTIVE client state
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
-        case MsgType::PINGREQ:
         case MsgType::PINGRESP:
         case MsgType::DISCONNECT:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
+                delete pk;
+                return;
+            }
+            break;
+
+        // packet types that require an ACTIVE or ASLEEP client state
+        case MsgType::PINGREQ:
+            if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE) &&
+                !isClientInState(srcAddress, srcPort, ClientState::ASLEEP)) {
                 delete pk;
                 return;
             }
@@ -163,7 +172,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
             break;
 
         case MsgType::PINGREQ:
-            processPingReq(srcAddress, srcPort);
+            processPingReq(pk, srcAddress, srcPort);
             break;
 
         case MsgType::PINGRESP:
@@ -277,18 +286,38 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
 }
 
-void MqttSNServer::processPingReq(inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
+    const auto& payload = pk->peekData<MqttSNPingReq>();
+
     ClientInfo clientInfo;
     clientInfo.lastReceivedMsgTime = getClockTime();
 
     ClientInfoUpdates updates;
     updates.lastReceivedMsgTime = true;
 
-    // update client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    if (!payload->getClientId().empty()) {
+        // transition from ASLEEP to AWAKE states
+        clientInfo.currentState = ClientState::AWAKE;
+        updates.currentState = true;
+        updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
-    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
+        // TO DO -> send buffered messages to the client
+        // TO DO -> this part can be improved e.g. check if there are buffered messages otherwise do not change state
+
+        MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
+
+        // transition from AWAKE to ASLEEP states
+        clientInfo.currentState = ClientState::ASLEEP;
+        updates.currentState = true;
+        updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    }
+    else {
+        // update client information
+        updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+
+        MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
+    }
 }
 
 void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
