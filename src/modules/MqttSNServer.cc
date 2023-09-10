@@ -125,11 +125,13 @@ void MqttSNServer::processPacket(inet::Packet *pk)
     EV << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     const auto& header = pk->peekData<MqttSNBase>();
+
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+    MsgType msgType = header->getMsgType();
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
-    switch(header->getMsgType()) {
+    switch(msgType) {
         // packet types that require an ACTIVE client state
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
@@ -154,7 +156,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
             break;
     }
 
-    switch(header->getMsgType()) {
+    switch(msgType) {
         case MsgType::SEARCHGW:
             processSearchGw();
             break;

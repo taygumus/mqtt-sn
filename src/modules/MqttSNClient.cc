@@ -413,14 +413,24 @@ void MqttSNClient::processPacket(inet::Packet *pk)
         return;
     }
 
-    EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
-
     const auto& header = pk->peekData<MqttSNBase>();
+
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+    MsgType msgType = header->getMsgType();
+
+    std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
+    if (currentState == ClientState::AWAKE &&
+        std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
+        // delete the packet if the message type is not in the allowed list while the client is AWAKE
+        delete pk;
+        return;
+    }
+
+    EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
-    switch(header->getMsgType()) {
+    switch(msgType) {
         // packet types that are allowed only from the selected gateway
         case MsgType::CONNACK:
         case MsgType::WILLTOPICREQ:
@@ -445,7 +455,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             break;
     }
 
-    switch(header->getMsgType()) {
+    switch(msgType) {
         case MsgType::ADVERTISE:
             processAdvertise(pk, srcAddress, srcPort);
             break;
