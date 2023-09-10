@@ -401,7 +401,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
 
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
-    if (currentState != ClientState::ACTIVE) {
+    if (currentState != ClientState::ACTIVE && currentState != ClientState::AWAKE) {
         delete pk;
         return;
     }
@@ -573,7 +573,17 @@ void MqttSNClient::processPingReq(inet::L3Address srcAddress, int srcPort)
 
 void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
 {
-    EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
+    if (currentState == ClientState::AWAKE) {
+        // transition to ASLEEP state
+        EV << "Awake -> Asleep" << std::endl;
+        updateCurrentState(ClientState::ASLEEP);
+
+        // schedule the state change
+        scheduleClockEventAfter(getStateInterval(currentState), stateChangeEvent);
+    }
+    else {
+        EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
+    }
 }
 
 void MqttSNClient::processDisconnect(inet::Packet *pk)

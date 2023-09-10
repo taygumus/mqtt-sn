@@ -297,9 +297,11 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     ClientInfoUpdates updates;
     updates.lastReceivedMsgTime = true;
 
+    // update client information
+    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+
     if (!clientId.empty()) {
         // check if the client ID matches the expected client ID
-        ClientInfo clientInfo;
         if (!isClientExists(srcAddress, srcPort, &clientInfo) || clientInfo.clientId != clientId) {
             return;
         }
@@ -315,10 +317,6 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
         // transition from AWAKE to ASLEEP states
         clientInfo.currentState = ClientState::ASLEEP;
         updates.currentState = true;
-        updateClientInfo(srcAddress, srcPort, clientInfo, updates);
-    }
-    else {
-        // update client information
         updateClientInfo(srcAddress, srcPort, clientInfo, updates);
     }
 
