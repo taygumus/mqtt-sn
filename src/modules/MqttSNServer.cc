@@ -289,6 +289,7 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
 void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNPingReq>();
+    std::string clientId = payload->getClientId();
 
     ClientInfo clientInfo;
     clientInfo.lastReceivedMsgTime = getClockTime();
@@ -296,7 +297,13 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     ClientInfoUpdates updates;
     updates.lastReceivedMsgTime = true;
 
-    if (!payload->getClientId().empty()) {
+    if (!clientId.empty()) {
+        // check if the client ID matches the expected client ID
+        ClientInfo clientInfo;
+        if (!isClientExists(srcAddress, srcPort, &clientInfo) || clientInfo.clientId != clientId) {
+            return;
+        }
+
         // transition from ASLEEP to AWAKE states
         clientInfo.currentState = ClientState::AWAKE;
         updates.currentState = true;
@@ -304,8 +311,6 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
 
         // TO DO -> send buffered messages to the client
         // TO DO -> this part can be improved e.g. check if there are buffered messages otherwise do not change state
-
-        MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 
         // transition from AWAKE to ASLEEP states
         clientInfo.currentState = ClientState::ASLEEP;
@@ -315,9 +320,9 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     else {
         // update client information
         updateClientInfo(srcAddress, srcPort, clientInfo, updates);
-
-        MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
     }
+
+    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
 void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
