@@ -255,6 +255,18 @@ bool MqttSNClient::fromAsleepToAwake()
     return true;
 }
 
+bool MqttSNClient::fromAsleepToDisconnected()
+{
+    if (!isConnected) {
+        EV << "Asleep -> Disconnected" << std::endl;
+        return true;
+    }
+
+    MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
+
+    return false;
+}
+
 bool MqttSNClient::performStateTransition(ClientState currentState, ClientState nextState)
 {
     // calls the appropriate state transition function based on current and next states
@@ -298,6 +310,8 @@ bool MqttSNClient::performStateTransition(ClientState currentState, ClientState 
                    return fromAsleepToActive();
                case ClientState::AWAKE:
                    return fromAsleepToAwake();
+               case ClientState::DISCONNECTED:
+                   return fromAsleepToDisconnected();
                default:
                    break;
            }
@@ -387,7 +401,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::ASLEEP};
 
         case ClientState::ASLEEP:
-            return {ClientState::AWAKE};
+            return {ClientState::DISCONNECTED};
 
         /*
         case ClientState::ASLEEP:
@@ -401,7 +415,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
 
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
-    if (currentState != ClientState::ACTIVE && currentState != ClientState::AWAKE) {
+    if (currentState == ClientState::DISCONNECTED || currentState == ClientState::LOST) {
         delete pk;
         return;
     }
@@ -417,6 +431,14 @@ void MqttSNClient::processPacket(inet::Packet *pk)
 
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
     MsgType msgType = header->getMsgType();
+
+    std::vector<MsgType> allowedAsleepMsgTypes = {MsgType::DISCONNECT};
+    if (currentState == ClientState::ASLEEP &&
+        std::find(allowedAsleepMsgTypes.begin(), allowedAsleepMsgTypes.end(), msgType) == allowedAsleepMsgTypes.end()) {
+        // delete the packet if the message type is not in the allowed list while the client is ASLEEP
+        delete pk;
+        return;
+    }
 
     std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
     if (currentState == ClientState::AWAKE &&
@@ -608,7 +630,13 @@ void MqttSNClient::processDisconnect(inet::Packet *pk)
         updateCurrentState(ClientState::ASLEEP);
     }
     else {
-        EV << "Active -> Disconnected" << std::endl;
+        if (currentState == ClientState::ASLEEP) {
+            EV << "Asleep -> Disconnected" << std::endl;
+        }
+        else {
+            EV << "Active -> Disconnected" << std::endl;
+        }
+
         updateCurrentState(ClientState::DISCONNECTED);
     }
 }

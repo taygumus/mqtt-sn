@@ -136,7 +136,6 @@ void MqttSNServer::processPacket(inet::Packet *pk)
         case MsgType::WILLTOPIC:
         case MsgType::WILLMSG:
         case MsgType::PINGRESP:
-        case MsgType::DISCONNECT:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -145,6 +144,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 
         // packet types that require an ACTIVE or ASLEEP client state
         case MsgType::PINGREQ:
+        case MsgType::DISCONNECT:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE) &&
                 !isClientInState(srcAddress, srcPort, ClientState::ASLEEP)) {
                 delete pk;
