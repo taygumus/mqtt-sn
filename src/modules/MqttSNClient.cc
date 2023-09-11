@@ -2,7 +2,6 @@
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
-#include "types/MsgType.h"
 #include "types/Length.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
@@ -28,12 +27,14 @@ void MqttSNClient::initialize(int stage)
         checkGatewaysInterval = par("checkGatewaysInterval");
         checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
 
-        searchGatewayInterval = uniform(1.1, par("searchGatewayMaxDelay"));
+        searchGatewayMaxDelay = par("searchGatewayMaxDelay");
+        searchGatewayInterval = uniform(1.1, searchGatewayMaxDelay);
         searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
 
         temporaryDuration = par("temporaryDuration");
 
-        gatewayInfoInterval = uniform(0, par("gatewayInfoMaxDelay"));
+        gatewayInfoMaxDelay = par("gatewayInfoMaxDelay");
+        gatewayInfoInterval = uniform(0, gatewayInfoMaxDelay);
         gatewayInfoEvent = new inet::ClockEvent("gatewayInfoTimer");
 
         checkConnectionInterval = par("checkConnectionInterval");
@@ -141,6 +142,9 @@ void MqttSNClient::handleStateChangeEvent()
 
 void MqttSNClient::scheduleActiveStateEvents()
 {
+    searchGatewayInterval = uniform(1.1, searchGatewayMaxDelay);
+    gatewayInfoInterval = uniform(0, gatewayInfoMaxDelay);
+
     activeGateways.clear();
 
     maxIntervalReached = false;
@@ -180,6 +184,8 @@ bool MqttSNClient::fromActiveToDisconnected()
 {
     if (!isConnected) {
         EV << "Active -> Disconnected" << std::endl;
+        cancelActiveStateEvents();
+
         return true;
     }
 
@@ -208,6 +214,8 @@ bool MqttSNClient::fromActiveToAsleep()
 {
     if (!isConnected) {
         EV << "Active -> Asleep" << std::endl;
+        cancelActiveStateEvents();
+
         return true;
     }
 
@@ -319,8 +327,6 @@ bool MqttSNClient::performStateTransition(ClientState currentState, ClientState 
 
         default:
             break;
-
-        // TO DO -> Add other cases
     }
 
     return false;
@@ -368,7 +374,6 @@ std::string MqttSNClient::getClientState()
     }
 }
 
-/*
 std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState) {
     // get the possible next states based on the current state
     switch (currentState) {
@@ -382,34 +387,10 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::ACTIVE};
 
         case ClientState::ASLEEP:
-            return {ClientState::LOST, ClientState::ACTIVE, ClientState::AWAKE};
+            return {ClientState::LOST, ClientState::ACTIVE, ClientState::AWAKE, ClientState::DISCONNECTED};
 
-        case ClientState::AWAKE:
-            return {ClientState::ASLEEP, ClientState::ACTIVE, ClientState::DISCONNECTED};
-    }
-}
-*/
-
-// TO DO
-std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState) {
-    // get the possible next states based on the current state
-    switch (currentState) {
-        case ClientState::DISCONNECTED:
-            return {ClientState::ACTIVE};
-
-        case ClientState::ACTIVE:
-            return {ClientState::ASLEEP};
-
-        case ClientState::ASLEEP:
-            return {ClientState::DISCONNECTED};
-
-        /*
-        case ClientState::ASLEEP:
-            return {ClientState::LOST, ClientState::ACTIVE, ClientState::AWAKE};
-
-        case ClientState::AWAKE:
-            return {ClientState::ASLEEP, ClientState::ACTIVE, ClientState::DISCONNECTED};
-        */
+        default:
+            return {};
     }
 }
 

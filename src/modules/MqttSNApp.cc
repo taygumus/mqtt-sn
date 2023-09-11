@@ -1,5 +1,4 @@
 #include "MqttSNApp.h"
-#include "types/MsgType.h"
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNPingReq.h"
 #include "messages/MqttSNDisconnect.h"

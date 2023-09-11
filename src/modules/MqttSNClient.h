@@ -14,8 +14,10 @@ class MqttSNClient : public MqttSNApp
     protected:
         // parameters
         double checkGatewaysInterval;
+        double searchGatewayMaxDelay;
         double searchGatewayInterval;
         uint16_t temporaryDuration;
+        double gatewayInfoMaxDelay;
         double gatewayInfoInterval;
         double checkConnectionInterval;
         uint16_t keepAlive;
@@ -24,7 +26,7 @@ class MqttSNClient : public MqttSNApp
         inet::ClockEvent *stateChangeEvent = nullptr;
         ClientState currentState;
 
-        // active state
+        // active client state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
         std::map<uint8_t, GatewayInfo> activeGateways;
 
