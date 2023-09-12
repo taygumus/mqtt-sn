@@ -12,6 +12,9 @@ namespace mqttsn {
 class MqttSNClient : public MqttSNApp
 {
     protected:
+        // constants
+        static constexpr double SEARCH_GATEWAY_MIN_DELAY = 1.1;
+
         // parameters
         double checkGatewaysInterval;
         double searchGatewayMaxDelay;

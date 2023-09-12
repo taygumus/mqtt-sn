@@ -28,7 +28,7 @@ void MqttSNClient::initialize(int stage)
         checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
 
         searchGatewayMaxDelay = par("searchGatewayMaxDelay");
-        searchGatewayInterval = uniform(1.1, searchGatewayMaxDelay);
+        searchGatewayInterval = uniform(SEARCH_GATEWAY_MIN_DELAY, searchGatewayMaxDelay);
         searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
 
         temporaryDuration = par("temporaryDuration");
@@ -142,7 +142,7 @@ void MqttSNClient::handleStateChangeEvent()
 
 void MqttSNClient::scheduleActiveStateEvents()
 {
-    searchGatewayInterval = uniform(1.1, searchGatewayMaxDelay);
+    searchGatewayInterval = uniform(SEARCH_GATEWAY_MIN_DELAY, searchGatewayMaxDelay);
     gatewayInfoInterval = uniform(0, gatewayInfoMaxDelay);
 
     activeGateways.clear();
@@ -267,6 +267,8 @@ bool MqttSNClient::fromAsleepToDisconnected()
 {
     if (!isConnected) {
         EV << "Asleep -> Disconnected" << std::endl;
+        cancelActiveStateEvents();
+
         return true;
     }
 
@@ -732,20 +734,22 @@ void MqttSNClient::handleCheckGatewaysEvent()
 void MqttSNClient::handleSearchGatewayEvent()
 {
     // check if a search for gateways is needed
-    if (searchGateway) {
-        // send a search gateway message
-        sendSearchGw();
-
-        if (!maxIntervalReached) {
-            double maxInterval = par("maxSearchGatewayInterval");
-
-            // increase search interval exponentially, with a maximum limit
-            searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
-            maxIntervalReached = (searchGatewayInterval == maxInterval);
-        }
-
-        scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
+    if (!searchGateway) {
+        return;
     }
+
+    // send a search gateway message
+    sendSearchGw();
+
+    if (!maxIntervalReached) {
+        double maxInterval = par("maxSearchGatewayInterval");
+
+        // increase search interval exponentially, with a maximum limit
+        searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
+        maxIntervalReached = (searchGatewayInterval == maxInterval);
+    }
+
+    scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
 }
 
 void MqttSNClient::handleGatewayInfoEvent()
