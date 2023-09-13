@@ -132,13 +132,7 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation *operation)
 void MqttSNServer::handleStateChangeEvent()
 {
     // get the possible next state based on the current state
-    GatewayState nextState;
-    if (currentState == GatewayState::ONLINE) {
-        nextState = GatewayState::OFFLINE;
-    }
-    else {
-        nextState = GatewayState::ONLINE;
-    }
+    GatewayState nextState = (currentState == GatewayState::ONLINE) ? GatewayState::OFFLINE : GatewayState::ONLINE;
 
     // get the interval for the next state
     double nextStateInterval = getStateInterval(nextState);
@@ -146,7 +140,7 @@ void MqttSNServer::handleStateChangeEvent()
         scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
     }
 
-    // perform state transition functions based on the current and next state and return true if the transition is successful
+    // perform state transition and update if successful
     if (performStateTransition(currentState, nextState)) {
         updateCurrentState(nextState);
     }
