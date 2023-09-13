@@ -74,7 +74,7 @@ class MqttSNClient : public MqttSNApp
 
         virtual bool performStateTransition(ClientState currentState, ClientState nextState);
         virtual double getStateInterval(ClientState currentState);
-        virtual std::string getClientState();
+        virtual std::string getClientStateAsString();
         virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);
 
         // process received packets

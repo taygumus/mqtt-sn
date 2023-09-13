@@ -91,7 +91,7 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
-    EV << "Current client state: " << getClientState() << std::endl;
+    EV << "Current client state: " << getClientStateAsString() << std::endl;
 
     double currentStateInterval = getStateInterval(currentState);
     if (currentStateInterval != -1) {
@@ -169,7 +169,7 @@ void MqttSNClient::updateCurrentState(ClientState nextState)
 {
     // update the current state
     currentState = nextState;
-    EV << "Current client state: " << getClientState() << std::endl;
+    EV << "Current client state: " << getClientStateAsString() << std::endl;
 }
 
 bool MqttSNClient::fromDisconnectedToActive()
@@ -355,7 +355,7 @@ double MqttSNClient::getStateInterval(ClientState currentState)
     }
 }
 
-std::string MqttSNClient::getClientState()
+std::string MqttSNClient::getClientStateAsString()
 {
     // get current client state as a string
     switch (currentState) {
@@ -392,7 +392,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
             return {ClientState::LOST, ClientState::ACTIVE, ClientState::AWAKE, ClientState::DISCONNECTED};
 
         default:
-            return {};
+            return {ClientState::DISCONNECTED};
     }
 }
 
