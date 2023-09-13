@@ -2,6 +2,7 @@
 #define MODULES_MQTTSNSERVER_H_
 
 #include "MqttSNApp.h"
+#include "types/GatewayState.h"
 #include "types/MsgType.h"
 #include "types/ReturnCode.h"
 #include "types/QoS.h"
@@ -22,7 +23,11 @@ class MqttSNServer : public MqttSNApp
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
 
-        // state
+        // gateway state management
+        inet::ClockEvent *stateChangeEvent = nullptr;
+        GatewayState currentState;
+
+        // online gateway state
         inet::ClockEvent *advertiseEvent = nullptr;
         bool lastAdvertise = false;
         bool activeGateway = true;
@@ -47,6 +52,17 @@ class MqttSNServer : public MqttSNApp
         virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
+
+        // gateway state management
+        virtual void handleStateChangeEvent();
+        virtual void updateCurrentState(GatewayState nextState);
+
+        virtual bool fromOfflineToOnline();
+        virtual bool fromOnlineToOffline();
+
+        virtual bool performStateTransition(GatewayState currentState, GatewayState nextState);
+        virtual double getStateInterval(GatewayState currentState);
+        virtual std::string getGatewayStateAsString();
 
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;

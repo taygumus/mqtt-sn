@@ -11,6 +11,10 @@ simple MqttSNServer like IApp
         int localPort = default(-1);
         int destPort = default(-1);
         
+        // time intervals for each state, -1s means forever
+        double offlineStateInterval @unit(s) = default(30s);
+        double onlineStateInterval @unit(s) = default(30s);
+        
         double startAdvertise @unit(s) = default(this.advertiseInterval);
         double stopAdvertise @unit(s) = default(-1s);
         int advertiseInterval @unit(s); // range between 0..65535 seconds (TADV)
