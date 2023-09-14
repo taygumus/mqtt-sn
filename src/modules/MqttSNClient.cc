@@ -755,6 +755,10 @@ void MqttSNClient::handleSearchGatewayEvent()
 
 void MqttSNClient::handleGatewayInfoEvent()
 {
+    if (activeGateways.empty()) {
+        return;
+    }
+
     std::pair<uint8_t, GatewayInfo> gateway = selectGateway();
 
     uint8_t gatewayId = gateway.first;
