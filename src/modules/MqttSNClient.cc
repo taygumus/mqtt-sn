@@ -521,7 +521,7 @@ void MqttSNClient::processSearchGw()
         searchGateway = false;
     }
 
-    if (!activeGateways.empty()) {
+    if (!activeGateways.empty() && !gatewayInfoEvent->isScheduled()) {
         // delay sending of gwInfo message for a random time
         scheduleClockEventAfter(gatewayInfoInterval, gatewayInfoEvent);
     }
