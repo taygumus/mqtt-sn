@@ -25,13 +25,7 @@ void MqttSNServer::initialize(int stage)
         stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
         currentState = GatewayState::OFFLINE;
 
-        startAdvertise = par("startAdvertise");
-        stopAdvertise = par("stopAdvertise");
         advertiseInterval = par("advertiseInterval");
-
-        if (stopAdvertise >= inet::CLOCKTIME_ZERO && stopAdvertise < startAdvertise) {
-            throw omnetpp::cRuntimeError("Invalid startAdvertise/stopAdvertise parameters");
-        }
         advertiseEvent = new inet::ClockEvent("advertiseTimer");
 
         if (gatewayIdCounter < UINT8_MAX) {
@@ -88,19 +82,6 @@ void MqttSNServer::handleStartOperation(inet::LifecycleOperation *operation)
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
-    /*
-    inet::clocktime_t start = std::max(startAdvertise, getClockTime());
-    if ((stopAdvertise < inet::CLOCKTIME_ZERO) || (start < stopAdvertise) || (start == stopAdvertise && startAdvertise == stopAdvertise)) {
-        scheduleClockEventAt(start, advertiseEvent);
-    }
-    else {
-        activeGateway = false;
-    }
-
-    scheduleClockEventAt(activeClientsCheckInterval, activeClientsCheckEvent);
-    scheduleClockEventAt(asleepClientsCheckInterval, asleepClientsCheckEvent);
-    */
-
     EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
 
     double currentStateInterval = getStateInterval(currentState);
@@ -112,9 +93,7 @@ void MqttSNServer::handleStartOperation(inet::LifecycleOperation *operation)
 void MqttSNServer::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(stateChangeEvent);
-    cancelEvent(advertiseEvent);
-    cancelEvent(activeClientsCheckEvent);
-    cancelEvent(asleepClientsCheckEvent);
+    cancelOnlineStateEvents();
 
     socket.close();
 }
@@ -146,6 +125,20 @@ void MqttSNServer::handleStateChangeEvent()
     }
 }
 
+void MqttSNServer::scheduleOnlineStateEvents()
+{
+    scheduleClockEventAfter(advertiseInterval, advertiseEvent);
+    scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
+    scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
+}
+
+void MqttSNServer::cancelOnlineStateEvents()
+{
+    cancelEvent(advertiseEvent);
+    cancelEvent(activeClientsCheckEvent);
+    cancelEvent(asleepClientsCheckEvent);
+}
+
 void MqttSNServer::updateCurrentState(GatewayState nextState)
 {
     // update the current state
@@ -156,8 +149,7 @@ void MqttSNServer::updateCurrentState(GatewayState nextState)
 bool MqttSNServer::fromOfflineToOnline()
 {
     EV << "Offline -> Online" << std::endl;
-
-    // TO DO
+    scheduleOnlineStateEvents();
 
     return true;
 }
@@ -165,37 +157,33 @@ bool MqttSNServer::fromOfflineToOnline()
 bool MqttSNServer::fromOnlineToOffline()
 {
     EV << "Online -> Offline" << std::endl;
-
-    // TO DO
+    cancelOnlineStateEvents();
 
     return true;
 }
 
-bool MqttSNServer::performStateTransition(GatewayState currentState, GatewayState nextState)
-{
-    // calls the appropriate state transition function based on current and next states
+bool MqttSNServer::performStateTransition(GatewayState currentState, GatewayState nextState) {
+    // determine the transition function based on current and next states
     switch (currentState) {
         case GatewayState::OFFLINE:
-            switch (nextState) {
-                case GatewayState::ONLINE:
-                    return fromOfflineToOnline();
-                default:
-                    break;
+            if (nextState == GatewayState::ONLINE) {
+                return fromOfflineToOnline();
             }
             break;
 
         case GatewayState::ONLINE:
-            switch (nextState) {
-                case GatewayState::OFFLINE:
-                    return fromOnlineToOffline();
-                default:
-                    break;
+            if (nextState == GatewayState::OFFLINE) {
+                return fromOnlineToOffline();
             }
+            break;
+
+        default:
             break;
     }
 
     return false;
 }
+
 
 double MqttSNServer::getStateInterval(GatewayState currentState)
 {
@@ -225,7 +213,7 @@ void MqttSNServer::processPacket(inet::Packet *pk)
 {
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
 
-    if (!activeGateway || MqttSNApp::isSelfBroadcastAddress(srcAddress)) {
+    if (currentState == GatewayState::OFFLINE || MqttSNApp::isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
     }
@@ -532,24 +520,9 @@ void MqttSNServer::sendBaseWithReturnCode(inet::L3Address destAddress, int destP
 
 void MqttSNServer::handleAdvertiseEvent()
 {
-    if (!lastAdvertise) {
-        sendAdvertise();
-    }
+    sendAdvertise();
 
-    if ((stopAdvertise < inet::CLOCKTIME_ZERO) || (getClockTime() + advertiseInterval < stopAdvertise)) {
-        scheduleClockEventAfter(advertiseInterval, advertiseEvent);
-    }
-    else {
-        inet::clocktime_t remainingTime = stopAdvertise - getClockTime();
-        // keep gateway active for the remaining time but without sending an advertise message
-        if (remainingTime > inet::CLOCKTIME_ZERO) {
-            scheduleClockEventAfter(remainingTime, advertiseEvent);
-            lastAdvertise = true;
-        }
-        else {
-            activeGateway = false;
-        }
-    }
+    scheduleClockEventAfter(advertiseInterval, advertiseEvent);
 }
 
 void MqttSNServer::handleActiveClientsCheckEvent()

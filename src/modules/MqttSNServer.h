@@ -17,8 +17,6 @@ class MqttSNServer : public MqttSNApp
 {
     protected:
         // parameters
-        inet::clocktime_t startAdvertise;
-        inet::clocktime_t stopAdvertise;
         uint16_t advertiseInterval;
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
@@ -29,8 +27,6 @@ class MqttSNServer : public MqttSNApp
 
         // online gateway state
         inet::ClockEvent *advertiseEvent = nullptr;
-        bool lastAdvertise = false;
-        bool activeGateway = true;
 
         static int gatewayIdCounter;
         uint8_t gatewayId;
@@ -55,6 +51,8 @@ class MqttSNServer : public MqttSNApp
 
         // gateway state management
         virtual void handleStateChangeEvent();
+        virtual void scheduleOnlineStateEvents();
+        virtual void cancelOnlineStateEvents();
         virtual void updateCurrentState(GatewayState nextState);
 
         virtual bool fromOfflineToOnline();

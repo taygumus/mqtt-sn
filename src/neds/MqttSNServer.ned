@@ -15,8 +15,6 @@ simple MqttSNServer like IApp
         double offlineStateInterval @unit(s) = default(30s);
         double onlineStateInterval @unit(s) = default(30s);
         
-        double startAdvertise @unit(s) = default(this.advertiseInterval);
-        double stopAdvertise @unit(s) = default(-1s);
         int advertiseInterval @unit(s); // range between 0..65535 seconds (TADV)
         
         int maximumClients = default(10); // maximum clients before congestion

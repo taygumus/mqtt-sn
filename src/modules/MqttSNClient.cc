@@ -535,9 +535,10 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     std::string gatewayAddress = payload->getGwAdd();
     uint16_t gatewayPort = payload->getGwPort();
 
-    if (gatewayAddress != "" && gatewayPort > 0) {
+    if (!gatewayAddress.empty() && gatewayPort > 0) {
         // gwInfo from other client
-        updateActiveGateways(inet::L3Address(gatewayAddress), (int) gatewayPort, gatewayId, 0);
+        inet::L3Address ipAddress = inet::L3AddressResolver().resolve(gatewayAddress.c_str());
+        updateActiveGateways(ipAddress, (int) gatewayPort, gatewayId, 0);
     }
     else {
         // gwInfo from a server
