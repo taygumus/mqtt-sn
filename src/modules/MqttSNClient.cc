@@ -24,8 +24,6 @@ void MqttSNClient::initialize(int stage)
         stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
         currentState = ClientState::DISCONNECTED;
 
-        retransmissionInterval = par("retransmissionInterval");
-
         checkGatewaysInterval = par("checkGatewaysInterval");
         checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
 
@@ -46,6 +44,8 @@ void MqttSNClient::initialize(int stage)
 
         keepAlive = par("keepAlive");
         pingEvent = new inet::ClockEvent("pingTimer");
+
+        retransmissionInterval = par("retransmissionInterval");
     }
 }
 
@@ -55,7 +55,7 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
         handleStateChangeEvent();
     }
     else if (msg->hasPar("isRetransmissionEvent")) {
-        handleRetransmissionEvent();
+        handleRetransmissionEvent(msg);
     }
     else if (msg == checkGatewaysEvent) {
         handleCheckGatewaysEvent();
@@ -401,44 +401,6 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
     }
 }
 
-void MqttSNClient::handleRetransmissionEvent()
-{
-    // TO DO
-}
-
-void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, std::string msgName, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters)
-{
-    // check if a message of the same type is already scheduled for retransmission
-    if (retransmissions.find(msgType) != retransmissions.end()) {
-        // exit without doing anything
-        return;
-    }
-
-    // create a new structure for this message type
-    UnicastMessageInfo newInfo;
-    newInfo.name = msgName;
-    newInfo.retransmissionEvent = new inet::ClockEvent("retransmissionTimer");
-    newInfo.retransmissionCounter = 1;
-    newInfo.destAddress = destAddress;
-    newInfo.destPort = destPort;
-
-    // add other dynamic parameters to the timer
-    if (parameters != nullptr) {
-        for (const auto& param : *parameters) {
-            newInfo.retransmissionEvent->addPar(param.first.c_str()).setStringValue(param.second.c_str());
-        }
-    }
-
-    // flag to identify this event as a retransmission message
-    newInfo.retransmissionEvent->addPar("isRetransmissionEvent");
-
-    // add the timer and information to the retransmissions map
-    retransmissions[msgType] = newInfo;
-
-    // start the timer
-    scheduleClockEventAt(retransmissionInterval, newInfo.retransmissionEvent);
-}
-
 void MqttSNClient::processPacket(inet::Packet *pk)
 {
     if (currentState == ClientState::DISCONNECTED || currentState == ClientState::LOST) {
@@ -620,7 +582,7 @@ void MqttSNClient::processWillTopicReq(inet::L3Address srcAddress, int srcPort)
     sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
 
     // TO DO
-    scheduleMsgRetransmission(MsgType::WILLTOPIC, "WillTopic", srcAddress, srcPort);
+    scheduleMsgRetransmission(MsgType::WILLTOPIC, srcAddress, srcPort);
 }
 
 void MqttSNClient::processWillMsgReq(inet::L3Address srcAddress, int srcPort)
@@ -924,6 +886,72 @@ QoS MqttSNClient::intToQoS(int value)
         default:
             throw omnetpp::cRuntimeError("Invalid QoS value: %d", value);
     }
+}
+
+void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
+{
+    // get the message type from the message parameter
+    MsgType msgType = static_cast<MsgType>(msg->par("messageType").longValue());
+
+    auto it = retransmissions.find(msgType);
+
+    // check the message type in the map
+    if (it == retransmissions.end()) {
+        // if not found, exit the function
+        return;
+    }
+
+    UnicastMessageInfo unicastMessageInfo = it->second;
+
+    switch (msgType) {
+        case MsgType::WILLTOPIC:
+            retransmitWillTopic(msg, unicastMessageInfo);
+            break;
+
+         // TO DO
+
+        default:
+            break;
+    }
+}
+
+void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters)
+{
+    // check if a message of the same type is already scheduled for retransmission
+    if (retransmissions.find(msgType) != retransmissions.end()) {
+        // exit without doing anything
+        return;
+    }
+
+    // create a new structure for this message type
+    UnicastMessageInfo newInfo;
+    newInfo.retransmissionEvent = new inet::ClockEvent("retransmissionTimer");
+    newInfo.retransmissionCounter = 1;
+    newInfo.destAddress = destAddress;
+    newInfo.destPort = destPort;
+
+    // add other dynamic parameters to the timer
+    if (parameters != nullptr) {
+        for (const auto& param : *parameters) {
+            newInfo.retransmissionEvent->addPar(param.first.c_str()).setStringValue(param.second.c_str());
+        }
+    }
+
+    // flag to identify this event as a retransmission message
+    newInfo.retransmissionEvent->addPar("isRetransmissionEvent");
+    // set the message type as a parameter
+    newInfo.retransmissionEvent->addPar("messageType").setLongValue(static_cast<long>(msgType));
+
+    // add the timer and information to the retransmissions map
+    retransmissions[msgType] = newInfo;
+
+    // start the timer
+    scheduleClockEventAt(retransmissionInterval, newInfo.retransmissionEvent);
+}
+
+void MqttSNClient::retransmitWillTopic(omnetpp::cMessage *msg, UnicastMessageInfo& unicastMsgInfo)
+{
+    // TO DO
 }
 
 MqttSNClient::~MqttSNClient()

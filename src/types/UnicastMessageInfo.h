@@ -2,7 +2,6 @@
 #define TYPES_UNICASTMESSAGEINFO_H_
 
 struct UnicastMessageInfo {
-    std::string name;
     inet::ClockEvent *retransmissionEvent = nullptr;
     int retransmissionCounter = 0;
     inet::L3Address destAddress;

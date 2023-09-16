@@ -17,7 +17,6 @@ class MqttSNClient : public MqttSNApp
         static constexpr double SEARCH_GATEWAY_MIN_DELAY = 1.1;
 
         // parameters
-        double retransmissionInterval;
         double checkGatewaysInterval;
         double searchGatewayMaxDelay;
         double searchGatewayInterval;
@@ -26,13 +25,11 @@ class MqttSNClient : public MqttSNApp
         double gatewayInfoInterval;
         double checkConnectionInterval;
         uint16_t keepAlive;
+        double retransmissionInterval;
 
         // client state management
         inet::ClockEvent *stateChangeEvent = nullptr;
         ClientState currentState;
-
-        // retransmissions management
-        std::map<MsgType, UnicastMessageInfo> retransmissions;
 
         // active client state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
@@ -50,6 +47,9 @@ class MqttSNClient : public MqttSNApp
         GatewayInfo selectedGateway;
 
         inet::ClockEvent *pingEvent = nullptr;
+
+        // retransmissions management
+        std::map<MsgType, UnicastMessageInfo> retransmissions;
 
     protected:
         virtual void initialize(int stage) override;
@@ -81,10 +81,6 @@ class MqttSNClient : public MqttSNApp
         virtual double getStateInterval(ClientState currentState);
         virtual std::string getClientStateAsString();
         virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);
-
-        // retransmissions management
-        virtual void handleRetransmissionEvent();
-        virtual void scheduleMsgRetransmission(MsgType msgType, std::string msgName, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters = nullptr);
 
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;
@@ -118,6 +114,13 @@ class MqttSNClient : public MqttSNApp
         virtual std::string generateClientId();
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual QoS intToQoS(int value);
+
+        // retransmissions management
+        virtual void handleRetransmissionEvent(omnetpp::cMessage *msg);
+        virtual void scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters = nullptr);
+
+        // TO DO -> right order
+        virtual void retransmitWillTopic(omnetpp::cMessage *msg, UnicastMessageInfo& unicastMsgInfo);
 
     public:
         MqttSNClient() {};
