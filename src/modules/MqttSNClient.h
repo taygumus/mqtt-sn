@@ -6,6 +6,7 @@
 #include "types/MsgType.h"
 #include "types/GatewayInfo.h"
 #include "types/QoS.h"
+#include "types/UnicastMessageInfo.h"
 
 namespace mqttsn {
 
@@ -16,6 +17,7 @@ class MqttSNClient : public MqttSNApp
         static constexpr double SEARCH_GATEWAY_MIN_DELAY = 1.1;
 
         // parameters
+        double retransmissionInterval;
         double checkGatewaysInterval;
         double searchGatewayMaxDelay;
         double searchGatewayInterval;
@@ -28,6 +30,9 @@ class MqttSNClient : public MqttSNApp
         // client state management
         inet::ClockEvent *stateChangeEvent = nullptr;
         ClientState currentState;
+
+        // retransmissions management
+        std::map<MsgType, UnicastMessageInfo> retransmissions;
 
         // active client state
         inet::ClockEvent *checkGatewaysEvent = nullptr;
@@ -76,6 +81,10 @@ class MqttSNClient : public MqttSNApp
         virtual double getStateInterval(ClientState currentState);
         virtual std::string getClientStateAsString();
         virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);
+
+        // retransmissions management
+        virtual void handleRetransmissionEvent();
+        virtual void scheduleMsgRetransmission(MsgType msgType, std::string msgName, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters = nullptr);
 
         // process received packets
         virtual void processPacket(inet::Packet *pk) override;

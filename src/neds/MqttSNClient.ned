@@ -17,6 +17,9 @@ simple MqttSNClient like IApp
         double lostStateInterval @unit(s) = default(30s);
         double asleepStateInterval @unit(s) = default(30s); // linked to sleep duration field; range between 0..65535 seconds
         
+        double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (Tretry)
+        int retransmissionCounter = default(3); // retransmission retry counter (Nretry)
+        
         double checkGatewaysInterval @unit(s) = default(500ms); // check interval for active gateways in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE (NADV)
         
