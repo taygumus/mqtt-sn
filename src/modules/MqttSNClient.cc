@@ -888,33 +888,6 @@ QoS MqttSNClient::intToQoS(int value)
     }
 }
 
-void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
-{
-    // get the message type from the message parameter
-    MsgType msgType = static_cast<MsgType>(msg->par("messageType").longValue());
-
-    auto it = retransmissions.find(msgType);
-
-    // check the message type in the map
-    if (it == retransmissions.end()) {
-        // if not found, exit the function
-        return;
-    }
-
-    UnicastMessageInfo unicastMessageInfo = it->second;
-
-    switch (msgType) {
-        case MsgType::WILLTOPIC:
-            retransmitWillTopic(msg, unicastMessageInfo);
-            break;
-
-         // TO DO
-
-        default:
-            break;
-    }
-}
-
 void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
@@ -949,7 +922,41 @@ void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address de
     scheduleClockEventAt(retransmissionInterval, newInfo.retransmissionEvent);
 }
 
-void MqttSNClient::retransmitWillTopic(omnetpp::cMessage *msg, UnicastMessageInfo& unicastMsgInfo)
+void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
+{
+    // get the message type from the message parameter
+    MsgType msgType = static_cast<MsgType>(msg->par("messageType").longValue());
+
+    auto it = retransmissions.find(msgType);
+
+    // check the message type in the map
+    if (it == retransmissions.end()) {
+        // if not found, exit the function
+        return;
+    }
+
+    UnicastMessageInfo *unicastMessageInfo = &it->second;
+
+    // if the number of retries equals the threshold, remove and exit
+    if (unicastMessageInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
+        // stop further retransmissions
+        retransmissions.erase(it);
+        return;
+    }
+
+    switch (msgType) {
+        case MsgType::WILLTOPIC:
+            retransmitWillTopic(msg, unicastMessageInfo);
+            break;
+
+         // TO DO
+
+        default:
+            break;
+    }
+}
+
+void MqttSNClient::retransmitWillTopic(omnetpp::cMessage *msg, UnicastMessageInfo *unicastMessageInfo)
 {
     // TO DO
 }
