@@ -66,6 +66,7 @@ class MqttSNClient : public MqttSNApp
         virtual void scheduleActiveStateEvents();
         virtual void cancelActiveStateEvents();
         virtual void updateCurrentState(ClientState nextState);
+        virtual void returnToSleep();
 
         virtual bool fromDisconnectedToActive();
         virtual bool fromActiveToDisconnected();
@@ -120,7 +121,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleRetransmissionEvent(omnetpp::cMessage *msg);
 
         // TO DO -> right order
-        virtual void retransmitWillTopic(omnetpp::cMessage *msg, UnicastMessageInfo *unicastMessageInfo);
+        virtual void retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
 
     public:
         MqttSNClient() {};

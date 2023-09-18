@@ -12,10 +12,10 @@ simple MqttSNClient like IApp
         int destPort = default(-1);
         
         // time intervals for each state, -1s means forever
-        double disconnectedStateInterval @unit(s) = default(30s);
-        double activeStateInterval @unit(s) = default(30s);
-        double lostStateInterval @unit(s) = default(30s);
-        double asleepStateInterval @unit(s) = default(30s); // linked to sleep duration field; range between 0..65535 seconds
+        double disconnectedStateInterval @unit(s) = default(5s);
+        double activeStateInterval @unit(s) = default(120s);
+        double lostStateInterval @unit(s) = default(5s);
+        double asleepStateInterval @unit(s) = default(5s); // linked to sleep duration field; range between 0..65535 seconds
         
         double checkGatewaysInterval @unit(s) = default(500ms); // check interval for active gateways in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE (NADV)
@@ -32,7 +32,7 @@ simple MqttSNClient like IApp
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
         
-        int keepAlive @unit(s) = default(5s); // up to a maximum of 65535 seconds, approximately 18 hours
+        int keepAlive @unit(s) = default(60s); // up to a maximum of 65535 seconds, approximately 18 hours
         
         bool dupFlag = default(false);
         int qosFlag = default(0); // valid qos values: 0, 1, 2 and -1

@@ -177,6 +177,16 @@ void MqttSNClient::updateCurrentState(ClientState nextState)
     EV << "Current client state: " << getClientStateAsString() << std::endl;
 }
 
+void MqttSNClient::returnToSleep()
+{
+    // transition to ASLEEP state
+    EV << "Awake -> Asleep" << std::endl;
+    updateCurrentState(ClientState::ASLEEP);
+
+    // schedule the state change
+    scheduleClockEventAfter(getStateInterval(currentState), stateChangeEvent);
+}
+
 bool MqttSNClient::fromDisconnectedToActive()
 {
     EV << "Disconnected -> Active" << std::endl;
@@ -264,6 +274,11 @@ bool MqttSNClient::fromAsleepToAwake()
 {
     EV << "Asleep -> Awake" << std::endl;
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port, clientId);
+
+    // schedule message retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["clientId"] = clientId;
+    scheduleMsgRetransmission(MsgType::PINGREQ, selectedGateway.address, selectedGateway.port, &parameters);
 
     return true;
 }
@@ -580,9 +595,6 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 void MqttSNClient::processWillTopicReq(inet::L3Address srcAddress, int srcPort)
 {
     sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
-
-    // TO DO
-    scheduleMsgRetransmission(MsgType::WILLTOPIC, srcAddress, srcPort);
 }
 
 void MqttSNClient::processWillMsgReq(inet::L3Address srcAddress, int srcPort)
@@ -598,12 +610,7 @@ void MqttSNClient::processPingReq(inet::L3Address srcAddress, int srcPort)
 void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
 {
     if (currentState == ClientState::AWAKE) {
-        // transition to ASLEEP state
-        EV << "Awake -> Asleep" << std::endl;
-        updateCurrentState(ClientState::ASLEEP);
-
-        // schedule the state change
-        scheduleClockEventAfter(getStateInterval(currentState), stateChangeEvent);
+        returnToSleep();
     }
     else {
         EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
@@ -794,6 +801,9 @@ void MqttSNClient::handlePingEvent()
 {
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port);
 
+    // schedule message retransmission
+    scheduleMsgRetransmission(MsgType::PINGREQ, selectedGateway.address, selectedGateway.port);
+
     scheduleClockEventAfter(keepAlive, pingEvent);
 }
 
@@ -899,7 +909,7 @@ void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address de
     // create a new structure for this message type
     UnicastMessageInfo newInfo;
     newInfo.retransmissionEvent = new inet::ClockEvent("retransmissionTimer");
-    newInfo.retransmissionCounter = 1;
+    newInfo.retransmissionCounter = 0;
     newInfo.destAddress = destAddress;
     newInfo.destPort = destPort;
 
@@ -919,7 +929,7 @@ void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address de
     retransmissions[msgType] = newInfo;
 
     // start the timer
-    scheduleClockEventAt(retransmissionInterval, newInfo.retransmissionEvent);
+    scheduleClockEventAfter(retransmissionInterval, newInfo.retransmissionEvent);
 }
 
 void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
@@ -937,16 +947,18 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
 
     UnicastMessageInfo *unicastMessageInfo = &it->second;
 
-    // if the number of retries equals the threshold, remove and exit
+    bool retransmission = true;
+    // check if the number of retries equals the threshold
     if (unicastMessageInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
         // stop further retransmissions
+        cancelEvent(unicastMessageInfo->retransmissionEvent);
         retransmissions.erase(it);
-        return;
+        retransmission = false;
     }
 
     switch (msgType) {
-        case MsgType::WILLTOPIC:
-            retransmitWillTopic(msg, unicastMessageInfo);
+        case MsgType::PINGREQ:
+            retransmitPingReq(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
             break;
 
          // TO DO
@@ -954,11 +966,30 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
         default:
             break;
     }
+
+    if (retransmission) {
+        unicastMessageInfo->retransmissionCounter++;
+        scheduleClockEventAfter(retransmissionInterval, unicastMessageInfo->retransmissionEvent);
+    }
 }
 
-void MqttSNClient::retransmitWillTopic(omnetpp::cMessage *msg, UnicastMessageInfo *unicastMessageInfo)
+void MqttSNClient::retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission)
 {
-    // TO DO
+    if (!retransmission) {
+        if (msg->hasPar("clientId")) {
+            returnToSleep();
+        }
+        else {
+            isConnected = false;
+            cancelEvent(pingEvent);
+        }
+    }
+    else if (msg->hasPar("clientId")) {
+        MqttSNApp::sendPingReq(destAddress, destPort, msg->par("clientId").stringValue());
+    }
+    else {
+        MqttSNApp::sendPingReq(destAddress, destPort);
+    }
 }
 
 MqttSNClient::~MqttSNClient()
