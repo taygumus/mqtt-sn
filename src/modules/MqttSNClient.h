@@ -118,6 +118,7 @@ class MqttSNClient : public MqttSNApp
 
         // retransmissions management
         virtual void scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters = nullptr);
+        virtual void unscheduleMsgRetransmission(MsgType msgType);
         virtual void handleRetransmissionEvent(omnetpp::cMessage *msg);
 
         // TO DO -> right order

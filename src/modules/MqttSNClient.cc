@@ -615,6 +615,8 @@ void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
     else {
         EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
     }
+
+    unscheduleMsgRetransmission(MsgType::PINGREQ);
 }
 
 void MqttSNClient::processDisconnect(inet::Packet *pk)
@@ -930,6 +932,22 @@ void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address de
 
     // start the timer
     scheduleClockEventAfter(retransmissionInterval, newInfo.retransmissionEvent);
+}
+
+void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
+{
+    // find the element in the map with the specified message type
+    auto it = retransmissions.find(msgType);
+
+    // check if the element is found in the map
+    if (it != retransmissions.end()) {
+        UnicastMessageInfo& unicastMessageInfo = it->second;
+        // cancel the event inside the struct
+        cancelAndDelete(unicastMessageInfo.retransmissionEvent);
+
+        // remove the element from the map
+        retransmissions.erase(it);
+    }
 }
 
 void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
