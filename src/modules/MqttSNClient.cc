@@ -108,7 +108,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(stateChangeEvent);
     cancelActiveStateEvents();
-    clearRetransmissions();
+    //clearRetransmissions();
 
     socket.close();
 }
@@ -122,7 +122,7 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
     cancelClockEvent(checkConnectionEvent);
     cancelClockEvent(pingEvent);
 
-    clearRetransmissions();
+    //clearRetransmissions();
 
     socket.destroy();
 }
@@ -158,6 +158,8 @@ void MqttSNClient::scheduleActiveStateEvents()
     maxIntervalReached = false;
     searchGateway = true;
     isConnected = false;
+
+    //clearRetransmissions();
 
     scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
     scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
@@ -233,6 +235,7 @@ bool MqttSNClient::fromActiveToAsleep()
     if (!isConnected) {
         EV << "Active -> Asleep" << std::endl;
         cancelActiveStateEvents();
+        //clearRetransmissions();
 
         return true;
     }
@@ -635,6 +638,7 @@ void MqttSNClient::processDisconnect(inet::Packet *pk)
     if (sleepDuration > 0) {
         EV << "Active -> Asleep" << std::endl;
         updateCurrentState(ClientState::ASLEEP);
+        //clearRetransmissions();
     }
     else {
         if (currentState == ClientState::ASLEEP) {
@@ -962,7 +966,6 @@ void MqttSNClient::clearRetransmissions()
     for (auto it = retransmissions.begin(); it != retransmissions.end(); ++it) {
         // cancel all associated events in the map
         cancelAndDelete(it->second.retransmissionEvent);
-
         retransmissions.erase(it);
     }
 }
@@ -1038,7 +1041,7 @@ MqttSNClient::~MqttSNClient()
     cancelAndDelete(checkConnectionEvent);
     cancelAndDelete(pingEvent);
 
-    clearRetransmissions();
+    //clearRetransmissions();
 }
 
 } /* namespace mqttsn */
