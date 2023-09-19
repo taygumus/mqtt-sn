@@ -108,6 +108,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 {
     cancelEvent(stateChangeEvent);
     cancelActiveStateEvents();
+    clearRetransmissions();
 
     socket.close();
 }
@@ -120,6 +121,8 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
     cancelClockEvent(gatewayInfoEvent);
     cancelClockEvent(checkConnectionEvent);
     cancelClockEvent(pingEvent);
+
+    clearRetransmissions();
 
     socket.destroy();
 }
@@ -953,6 +956,17 @@ void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
     }
 }
 
+void MqttSNClient::clearRetransmissions()
+{
+    // clear the map to remove all elements
+    for (auto it = retransmissions.begin(); it != retransmissions.end(); ++it) {
+        // cancel all associated events in the map
+        cancelAndDelete(it->second.retransmissionEvent);
+
+        retransmissions.erase(it);
+    }
+}
+
 void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
 {
     // get the message type from the message parameter
@@ -1023,6 +1037,8 @@ MqttSNClient::~MqttSNClient()
     cancelAndDelete(gatewayInfoEvent);
     cancelAndDelete(checkConnectionEvent);
     cancelAndDelete(pingEvent);
+
+    clearRetransmissions();
 }
 
 } /* namespace mqttsn */
