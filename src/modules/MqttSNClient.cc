@@ -964,13 +964,11 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
     }
 
     UnicastMessageInfo *unicastMessageInfo = &it->second;
-
     bool retransmission = true;
+
     // check if the number of retries equals the threshold
     if (unicastMessageInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
         // stop further retransmissions
-        cancelEvent(unicastMessageInfo->retransmissionEvent);
-        retransmissions.erase(it);
         retransmission = false;
     }
 
@@ -988,6 +986,10 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
     if (retransmission) {
         unicastMessageInfo->retransmissionCounter++;
         scheduleClockEventAfter(retransmissionInterval, unicastMessageInfo->retransmissionEvent);
+    }
+    else {
+        cancelAndDelete(unicastMessageInfo->retransmissionEvent);
+        retransmissions.erase(it);
     }
 }
 

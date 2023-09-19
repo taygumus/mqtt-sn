@@ -418,7 +418,7 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
         updateClientInfo(srcAddress, srcPort, clientInfo, updates);
     }
 
-    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
+    //MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
 void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
