@@ -584,6 +584,9 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
 
     // client is connected
     isConnected = true;
+
+    // reschedule the ping event
+    cancelEvent(pingEvent);
     scheduleClockEventAfter(keepAlive, pingEvent);
 
     std::ostringstream str;
