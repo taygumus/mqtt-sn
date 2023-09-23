@@ -444,14 +444,7 @@ void MqttSNServer::processDisconnect(inet::Packet *pk, inet::L3Address srcAddres
 
     ClientInfo clientInfo;
     clientInfo.sleepDuration = sleepDuration;
-
-    if (sleepDuration > 0) {
-        clientInfo.currentState = ClientState::ASLEEP;
-    }
-    else {
-        clientInfo.currentState = ClientState::DISCONNECTED;
-    }
-
+    clientInfo.currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
     clientInfo.lastReceivedMsgTime = getClockTime();
 
     ClientInfoUpdates updates;
