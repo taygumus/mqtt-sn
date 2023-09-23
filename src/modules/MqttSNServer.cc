@@ -141,7 +141,6 @@ void MqttSNServer::cancelOnlineStateEvents()
 
 void MqttSNServer::updateCurrentState(GatewayState nextState)
 {
-    // update the current state
     currentState = nextState;
     EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
 }

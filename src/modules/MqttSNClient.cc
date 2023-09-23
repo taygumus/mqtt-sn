@@ -177,7 +177,6 @@ void MqttSNClient::cancelActiveStateEvents()
 
 void MqttSNClient::updateCurrentState(ClientState nextState)
 {
-    // update the current state
     currentState = nextState;
     EV << "Current client state: " << getClientStateAsString() << std::endl;
 }
