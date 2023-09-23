@@ -122,7 +122,7 @@ class MqttSNClient : public MqttSNApp
         virtual void clearRetransmissions();
         virtual void handleRetransmissionEvent(omnetpp::cMessage *msg);
 
-        // TO DO -> right order
+        virtual void retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
         virtual void retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
 
     public:

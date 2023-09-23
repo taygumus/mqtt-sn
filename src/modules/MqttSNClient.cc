@@ -133,17 +133,17 @@ void MqttSNClient::handleStateChangeEvent()
     std::vector<ClientState> possibleNextStates = getNextPossibleStates(currentState);
 
     // randomly select one of the possible next states
-    uint16_t nextStateIndex = intuniform(0, possibleNextStates.size() - 1);
+    uint16_t nextStateIndex = uniform(0, possibleNextStates.size());
     ClientState nextState = possibleNextStates[nextStateIndex];
-
-    // get the interval for the next state
-    double nextStateInterval = getStateInterval(nextState);
-    if (nextStateInterval != -1) {
-        scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
-    }
 
     // perform state transition functions based on the current and next states and return true if the transition is successful
     if (performStateTransition(currentState, nextState)) {
+        // get the interval for the next state
+        double nextStateInterval = getStateInterval(nextState);
+        if (nextStateInterval != -1) {
+            scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
+        }
+
         updateCurrentState(nextState);
     }
 }
@@ -211,6 +211,9 @@ bool MqttSNClient::fromActiveToDisconnected()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
+    // schedule message retransmission
+    scheduleMsgRetransmission(MsgType::DISCONNECT, selectedGateway.address, selectedGateway.port);
+
     return false;
 }
 
@@ -257,6 +260,11 @@ bool MqttSNClient::fromActiveToAsleep()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port, sleepDuration);
 
+    // schedule message retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["sleepDuration"] = std::to_string(sleepDuration);
+    scheduleMsgRetransmission(MsgType::DISCONNECT, selectedGateway.address, selectedGateway.port, &parameters);
+
     return false;
 }
 
@@ -299,6 +307,9 @@ bool MqttSNClient::fromAsleepToDisconnected()
     }
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
+
+    // schedule message retransmission
+    scheduleMsgRetransmission(MsgType::DISCONNECT, selectedGateway.address, selectedGateway.port);
 
     return false;
 }
@@ -633,22 +644,34 @@ void MqttSNClient::processDisconnect(inet::Packet *pk)
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
 
-    cancelActiveStateEvents();
+    double nextStateInterval;
 
     if (sleepDuration > 0) {
+        // message with duration field
         EV << "Active -> Asleep" << std::endl;
+        cancelActiveStateEvents();
+
         updateCurrentState(ClientState::ASLEEP);
+        nextStateInterval = getStateInterval(ClientState::ASLEEP);
+
         clearRetransmissions();
     }
     else {
+        // message without duration field
         if (currentState == ClientState::ASLEEP) {
             EV << "Asleep -> Disconnected" << std::endl;
         }
         else {
             EV << "Active -> Disconnected" << std::endl;
+            cancelActiveStateEvents();
         }
 
         updateCurrentState(ClientState::DISCONNECTED);
+        nextStateInterval = getStateInterval(ClientState::DISCONNECTED);
+    }
+
+    if (nextStateInterval != -1) {
+        scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
     }
 }
 
@@ -993,6 +1016,10 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
     }
 
     switch (msgType) {
+        case MsgType::DISCONNECT:
+            retransmitDisconnect(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
+            break;
+
         case MsgType::PINGREQ:
             retransmitPingReq(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
             break;
@@ -1010,6 +1037,19 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
     else {
         cancelAndDelete(unicastMessageInfo->retransmissionEvent);
         retransmissions.erase(it);
+    }
+}
+
+void MqttSNClient::retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission)
+{
+    if (!retransmission) {
+        scheduleClockEventAfter(0.5, stateChangeEvent);
+    }
+    else if (msg->hasPar("sleepDuration")) {
+        MqttSNApp::sendDisconnect(destAddress, destPort, std::stoul(msg->par("sleepDuration").stringValue()));
+    }
+    else {
+        MqttSNApp::sendDisconnect(destAddress, destPort);
     }
 }
 
