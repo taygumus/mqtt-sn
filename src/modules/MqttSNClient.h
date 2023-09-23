@@ -4,9 +4,9 @@
 #include "MqttSNApp.h"
 #include "types/ClientState.h"
 #include "types/MsgType.h"
-#include "types/GatewayInfo.h"
 #include "types/QoS.h"
-#include "types/UnicastMessageInfo.h"
+#include "types/client/GatewayInfo.h"
+#include "types/client/UnicastMessageInfo.h"
 
 namespace mqttsn {
 

@@ -2,14 +2,14 @@
 #define MODULES_MQTTSNSERVER_H_
 
 #include "MqttSNApp.h"
-#include "types/GatewayState.h"
 #include "types/MsgType.h"
 #include "types/ReturnCode.h"
 #include "types/QoS.h"
 #include "types/TopicIdType.h"
 #include "types/ClientState.h"
-#include "types/ClientInfo.h"
-#include "types/ClientInfoUpdates.h"
+#include "types/server/GatewayState.h"
+#include "types/server/ClientInfo.h"
+#include "types/server/ClientInfoUpdates.h"
 
 namespace mqttsn {
 

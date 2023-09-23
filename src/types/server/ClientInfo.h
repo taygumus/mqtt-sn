@@ -1,5 +1,5 @@
-#ifndef TYPES_CLIENTINFO_H_
-#define TYPES_CLIENTINFO_H_
+#ifndef TYPES_SERVER_CLIENTINFO_H_
+#define TYPES_SERVER_CLIENTINFO_H_
 
 struct ClientInfo {
     std::string clientId = "";
@@ -18,4 +18,4 @@ struct ClientInfo {
     bool sentPingReq = false;
 };
 
-#endif /* TYPES_CLIENTINFO_H_ */
+#endif /* TYPES_SERVER_CLIENTINFO_H_ */

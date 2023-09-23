@@ -1,5 +1,5 @@
-#ifndef TYPES_UNICASTMESSAGEINFO_H_
-#define TYPES_UNICASTMESSAGEINFO_H_
+#ifndef TYPES_CLIENT_UNICASTMESSAGEINFO_H_
+#define TYPES_CLIENT_UNICASTMESSAGEINFO_H_
 
 struct UnicastMessageInfo {
     inet::ClockEvent *retransmissionEvent = nullptr;
@@ -8,4 +8,4 @@ struct UnicastMessageInfo {
     int destPort;
 };
 
-#endif /* TYPES_UNICASTMESSAGEINFO_H_ */
+#endif /* TYPES_CLIENT_UNICASTMESSAGEINFO_H_ */

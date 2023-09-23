@@ -1,5 +1,5 @@
-#ifndef TYPES_GATEWAYINFO_H_
-#define TYPES_GATEWAYINFO_H_
+#ifndef TYPES_CLIENT_GATEWAYINFO_H_
+#define TYPES_CLIENT_GATEWAYINFO_H_
 
 struct GatewayInfo {
     inet::L3Address address;
@@ -8,4 +8,4 @@ struct GatewayInfo {
     inet::clocktime_t lastUpdatedTime;
 };
 
-#endif /* TYPES_GATEWAYINFO_H_ */
+#endif /* TYPES_CLIENT_GATEWAYINFO_H_ */

@@ -1,5 +1,5 @@
-#ifndef TYPES_CLIENTINFOUPDATES_H_
-#define TYPES_CLIENTINFOUPDATES_H_
+#ifndef TYPES_SERVER_CLIENTINFOUPDATES_H_
+#define TYPES_SERVER_CLIENTINFOUPDATES_H_
 
 struct ClientInfoUpdates {
     bool clientId = false;
@@ -18,4 +18,4 @@ struct ClientInfoUpdates {
     bool sentPingReq = false;
 };
 
-#endif /* TYPES_CLIENTINFOUPDATES_H_ */
+#endif /* TYPES_SERVER_CLIENTINFOUPDATES_H_ */
