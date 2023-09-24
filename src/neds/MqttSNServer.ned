@@ -17,10 +17,12 @@ simple MqttSNServer like IApp
         
         int advertiseInterval @unit(s); // range between 0..65535 seconds (TADV)
         
-        int maximumClients = default(10); // maximum clients before congestion
-        
         double activeClientsCheckInterval @unit(s) = default(500ms); // check interval for verifying active clients
         double asleepClientsCheckInterval @unit(s) = default(500ms); // check interval for verifying asleep clients
+        
+        int maximumClients = default(10); // maximum clients before congestion
+        double clientsClearInterval @unit(s) = default(120s); // clear interval for lost and disconnected clients
+        double maximumInactivityTime @unit(s) = default(60s);
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNServer);
