@@ -22,7 +22,7 @@ simple MqttSNServer like IApp
         
         int maximumClients = default(10); // maximum clients before congestion
         double clientsClearInterval @unit(s) = default(120s); // clear interval for lost and disconnected clients
-        double maximumInactivityTime @unit(s) = default(60s);
+        double maximumInactivityTime @unit(s) = default(90s);
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNServer);
