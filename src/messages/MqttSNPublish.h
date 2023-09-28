@@ -2,8 +2,8 @@
 #define MESSAGES_MQTTSNPUBLISH_H_
 
 #include "MqttSNMsgIdWithTopicId.h"
-#include "types/QoS.h"
-#include "types/TopicIdType.h"
+#include "types/shared/QoS.h"
+#include "types/shared/TopicIdType.h"
 
 namespace mqttsn {
 

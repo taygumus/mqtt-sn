@@ -2,7 +2,7 @@
 #define MESSAGES_MQTTSNBASEWITHRETURNCODE_H_
 
 #include "MqttSNBase.h"
-#include "types/ReturnCode.h"
+#include "types/shared/ReturnCode.h"
 
 namespace mqttsn {
 

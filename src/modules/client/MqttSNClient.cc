@@ -2,7 +2,7 @@
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
-#include "types/Length.h"
+#include "types/shared/Length.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
 #include "messages/MqttSNGwInfo.h"

@@ -1,12 +1,12 @@
-#ifndef MODULES_MQTTSNSERVER_H_
-#define MODULES_MQTTSNSERVER_H_
+#ifndef MODULES_SERVER_MQTTSNSERVER_H_
+#define MODULES_SERVER_MQTTSNSERVER_H_
 
-#include "MqttSNApp.h"
-#include "types/MsgType.h"
-#include "types/ReturnCode.h"
-#include "types/QoS.h"
-#include "types/TopicIdType.h"
-#include "types/ClientState.h"
+#include "../shared/MqttSNApp.h"
+#include "types/shared/MsgType.h"
+#include "types/shared/ReturnCode.h"
+#include "types/shared/QoS.h"
+#include "types/shared/TopicIdType.h"
+#include "types/shared/ClientState.h"
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
 #include "types/server/ClientInfoUpdates.h"
@@ -99,4 +99,4 @@ class MqttSNServer : public MqttSNApp
 
 } /* namespace mqttsn */
 
-#endif /* MODULES_MQTTSNSERVER_H_ */
+#endif /* MODULES_SERVER_MQTTSNSERVER_H_ */

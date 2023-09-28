@@ -1,10 +1,10 @@
-#ifndef MODULES_MQTTSNAPP_H_
-#define MODULES_MQTTSNAPP_H_
+#ifndef MODULES_SHARED_MQTTSNAPP_H_
+#define MODULES_SHARED_MQTTSNAPP_H_
 
 #include "inet/applications/base/ApplicationBase.h"
 #include "inet/common/clock/ClockUserModuleMixin.h"
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
-#include "types/MsgType.h"
+#include "types/shared/MsgType.h"
 
 extern template class inet::ClockUserModuleMixin<inet::ApplicationBase>;
 
@@ -42,4 +42,4 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
 } /* namespace mqttsn */
 
-#endif /* MODULES_MQTTSNAPP_H_ */
+#endif /* MODULES_SHARED_MQTTSNAPP_H_ */

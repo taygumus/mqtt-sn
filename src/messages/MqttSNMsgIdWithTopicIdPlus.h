@@ -2,7 +2,7 @@
 #define MESSAGES_MQTTSNMSGIDWITHTOPICIDPLUS_H_
 
 #include "MqttSNMsgIdWithTopicId.h"
-#include "types/ReturnCode.h"
+#include "types/shared/ReturnCode.h"
 
 namespace mqttsn {
 

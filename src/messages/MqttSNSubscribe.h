@@ -2,7 +2,7 @@
 #define MESSAGES_MQTTSNSUBSCRIBE_H_
 
 #include "MqttSNUnsubscribe.h"
-#include "types/QoS.h"
+#include "types/shared/QoS.h"
 
 namespace mqttsn {
 

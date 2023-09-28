@@ -1,4 +1,4 @@
-package mqttsn.neds;
+package mqttsn.neds.server;
 
 import inet.applications.contract.IApp;
 

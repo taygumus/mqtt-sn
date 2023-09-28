@@ -2,7 +2,7 @@
 #define MESSAGES_MQTTSNBASEWITHWILLTOPIC_H_
 
 #include "MqttSNBase.h"
-#include "types/QoS.h"
+#include "types/shared/QoS.h"
 
 namespace mqttsn {
 

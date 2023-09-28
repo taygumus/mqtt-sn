@@ -1,6 +1,6 @@
 #include "MqttSNBase.h"
-#include "types/MsgTypesMap.h"
-#include "types/Length.h"
+#include "types/shared/MsgTypesMap.h"
+#include "types/shared/Length.h"
 #include "cxxabi.h"
 
 namespace mqttsn {

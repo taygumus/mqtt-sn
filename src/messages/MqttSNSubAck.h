@@ -2,7 +2,7 @@
 #define MESSAGES_MQTTSNSUBACK_H_
 
 #include "MqttSNMsgIdWithTopicIdPlus.h"
-#include "types/QoS.h"
+#include "types/shared/QoS.h"
 
 namespace mqttsn {
 

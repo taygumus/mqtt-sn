@@ -9,11 +9,11 @@ import inet.node.inet.WirelessHost;
 
 network WifiNetwork
 {
-    @display("bgb=713,380");
+    @display("bgb=713,411");
 
     submodules:
         accessPoint: AccessPoint {
-            @display("p=370,42");
+            @display("p=415,35");
         }
         radioMedium: Ieee80211RadioMedium {
             @display("p=60,42");
@@ -21,20 +21,26 @@ network WifiNetwork
         configurator: Ipv4NetworkConfigurator {
             @display("p=60,111");
         }
-        client1: WirelessHost {
-            @display("p=201,132");
+        publisher1: WirelessHost {
+            @display("p=207,139");
         }
-        client2: WirelessHost {
-            @display("p=201,219");
+        publisher2: WirelessHost {
+            @display("p=207,252");
         }
-        client3: WirelessHost {
-            @display("p=201,311");
+        subscriber1: WirelessHost {
+            @display("p=633,132");
+        }
+        subscriber2: WirelessHost {
+            @display("p=633,219");
+        }
+        subscriber3: WirelessHost {
+            @display("p=633,310");
         }
         server1: WirelessHost {
-            @display("p=492,132");
+            @display("p=409,139");
         }
         server2: WirelessHost {
-            @display("p=641,132");
+            @display("p=409,219");
         }
 }
 

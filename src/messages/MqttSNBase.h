@@ -2,8 +2,8 @@
 #define MESSAGES_MQTTSNBASE_H_
 
 #include "inet/common/packet/chunk/Chunk_m.h"
-#include "types/MsgType.h"
-#include "types/Flag.h"
+#include "types/shared/MsgType.h"
+#include "types/shared/Flag.h"
 
 namespace mqttsn {
 

@@ -1,10 +1,10 @@
-#ifndef MODULES_MQTTSNCLIENT_H_
-#define MODULES_MQTTSNCLIENT_H_
+#ifndef MODULES_CLIENT_MQTTSNCLIENT_H_
+#define MODULES_CLIENT_MQTTSNCLIENT_H_
 
-#include "MqttSNApp.h"
-#include "types/ClientState.h"
-#include "types/MsgType.h"
-#include "types/QoS.h"
+#include "../shared/MqttSNApp.h"
+#include "types/shared/ClientState.h"
+#include "types/shared/MsgType.h"
+#include "types/shared/QoS.h"
 #include "types/client/GatewayInfo.h"
 #include "types/client/UnicastMessageInfo.h"
 
@@ -132,4 +132,4 @@ class MqttSNClient : public MqttSNApp
 
 } /* namespace mqttsn */
 
-#endif /* MODULES_MQTTSNCLIENT_H_ */
+#endif /* MODULES_CLIENT_MQTTSNCLIENT_H_ */

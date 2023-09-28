@@ -1,6 +1,6 @@
 #include "MqttSNConnect.h"
-#include "types/Length.h"
-#include "types/Flag.h"
+#include "types/shared/Length.h"
+#include "types/shared/Flag.h"
 
 namespace mqttsn {
 

@@ -1,5 +1,5 @@
 #include "MqttSNPublish.h"
-#include "types/Length.h"
+#include "types/shared/Length.h"
 
 namespace mqttsn {
 

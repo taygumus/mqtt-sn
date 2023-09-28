@@ -2,7 +2,7 @@
 #define MESSAGES_MQTTSNUNSUBSCRIBE_H_
 
 #include "MqttSNBaseWithMsgId.h"
-#include "types/TopicIdType.h"
+#include "types/shared/TopicIdType.h"
 
 namespace mqttsn {
 
