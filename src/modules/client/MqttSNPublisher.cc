@@ -38,7 +38,7 @@ void MqttSNPublisher::processPacketCustom(MsgType msgType, inet::Packet *pk, ine
         // packet types that are allowed only from the selected gateway
         case MsgType::WILLTOPICREQ:
         case MsgType::WILLMSGREQ:
-            if (!isSelectedGateway(srcAddress, srcPort)) {
+            if (!MqttSNClient::isSelectedGateway(srcAddress, srcPort)) {
                 return;
             }
             break;
