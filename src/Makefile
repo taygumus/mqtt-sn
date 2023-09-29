@@ -53,11 +53,11 @@ OBJS = \
     $O/messages/MqttSNSubAck.o \
     $O/messages/MqttSNSubscribe.o \
     $O/messages/MqttSNUnsubscribe.o \
+    $O/modules/MqttSNApp.o \
     $O/modules/client/MqttSNClient.o \
     $O/modules/client/MqttSNPublisher.o \
     $O/modules/client/MqttSNSubscriber.o \
-    $O/modules/server/MqttSNServer.o \
-    $O/modules/shared/MqttSNApp.o
+    $O/modules/server/MqttSNServer.o
 
 # Message files
 MSGFILES =

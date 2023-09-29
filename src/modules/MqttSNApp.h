@@ -1,5 +1,5 @@
-#ifndef MODULES_SHARED_MQTTSNAPP_H_
-#define MODULES_SHARED_MQTTSNAPP_H_
+#ifndef MODULES_MQTTSNAPP_H_
+#define MODULES_MQTTSNAPP_H_
 
 #include "inet/applications/base/ApplicationBase.h"
 #include "inet/common/clock/ClockUserModuleMixin.h"
@@ -31,7 +31,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void sendBase(inet::L3Address destAddress, int destPort, MsgType msgType);
         virtual void sendDisconnect(inet::L3Address destAddress, int destPort, uint16_t duration = 0);
 
-        // others
+        // other functions
         virtual void checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength);
         virtual bool isSelfBroadcastAddress(inet::L3Address address);
 
@@ -42,4 +42,4 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
 } /* namespace mqttsn */
 
-#endif /* MODULES_SHARED_MQTTSNAPP_H_ */
+#endif /* MODULES_MQTTSNAPP_H_ */

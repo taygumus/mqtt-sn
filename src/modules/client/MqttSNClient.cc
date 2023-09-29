@@ -8,13 +8,9 @@
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
-#include "messages/MqttSNBaseWithWillTopic.h"
-#include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNDisconnect.h"
 
 namespace mqttsn {
-
-Define_Module(MqttSNClient);
 
 void MqttSNClient::initialize(int stage)
 {
@@ -46,6 +42,8 @@ void MqttSNClient::initialize(int stage)
         pingEvent = new inet::ClockEvent("pingTimer");
 
         retransmissionInterval = par("retransmissionInterval");
+
+        initializeCustom();
     }
 }
 
@@ -72,7 +70,7 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
     else if (msg == pingEvent) {
         handlePingEvent();
     }
-    else {
+    else if (!handleMessageWhenUpCustom(msg)) {
         socket.processMessage(msg);
     }
 }
@@ -115,13 +113,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
 
 void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
 {
-    cancelClockEvent(stateChangeEvent);
-    cancelClockEvent(checkGatewaysEvent);
-    cancelClockEvent(searchGatewayEvent);
-    cancelClockEvent(gatewayInfoEvent);
-    cancelClockEvent(checkConnectionEvent);
-    cancelClockEvent(pingEvent);
-
+    cancelActiveStateClockEvents();
     clearRetransmissions();
 
     socket.destroy();
@@ -164,6 +156,8 @@ void MqttSNClient::scheduleActiveStateEvents()
     scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
     scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
+
+    scheduleActiveStateEventsCustom();
 }
 
 void MqttSNClient::cancelActiveStateEvents()
@@ -173,6 +167,20 @@ void MqttSNClient::cancelActiveStateEvents()
     cancelEvent(gatewayInfoEvent);
     cancelEvent(checkConnectionEvent);
     cancelEvent(pingEvent);
+
+    cancelActiveStateEventsCustom();
+}
+
+void MqttSNClient::cancelActiveStateClockEvents()
+{
+    cancelClockEvent(stateChangeEvent);
+    cancelClockEvent(checkGatewaysEvent);
+    cancelClockEvent(searchGatewayEvent);
+    cancelClockEvent(gatewayInfoEvent);
+    cancelClockEvent(checkConnectionEvent);
+    cancelClockEvent(pingEvent);
+
+    cancelActiveStateClockEventsCustom();
 }
 
 void MqttSNClient::updateCurrentState(ClientState nextState)
@@ -474,8 +482,6 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     switch(msgType) {
         // packet types that are allowed only from the selected gateway
         case MsgType::CONNACK:
-        case MsgType::WILLTOPICREQ:
-        case MsgType::WILLMSGREQ:
             if (!isSelectedGateway(srcAddress, srcPort)) {
                 delete pk;
                 return;
@@ -513,14 +519,6 @@ void MqttSNClient::processPacket(inet::Packet *pk)
             processConnAck(pk);
             break;
 
-        case MsgType::WILLTOPICREQ:
-            processWillTopicReq(srcAddress, srcPort);
-            break;
-
-        case MsgType::WILLMSGREQ:
-            processWillMsgReq(srcAddress, srcPort);
-            break;
-
         case MsgType::PINGREQ:
             processPingReq(srcAddress, srcPort);
             break;
@@ -536,6 +534,8 @@ void MqttSNClient::processPacket(inet::Packet *pk)
         default:
             break;
     }
+
+    processPacketCustom(msgType, pk, srcAddress, srcPort);
 
     delete pk;
 }
@@ -609,16 +609,6 @@ void MqttSNClient::processConnAck(inet::Packet *pk)
     str << "Client connected to: " << selectedGateway.address.str() << ":" << selectedGateway.port;
     EV_INFO << str.str() << std::endl;
     bubble(str.str().c_str());
-}
-
-void MqttSNClient::processWillTopicReq(inet::L3Address srcAddress, int srcPort)
-{
-    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
-}
-
-void MqttSNClient::processWillMsgReq(inet::L3Address srcAddress, int srcPort)
-{
-    sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
 }
 
 void MqttSNClient::processPingReq(inet::L3Address srcAddress, int srcPort)
@@ -703,64 +693,6 @@ void MqttSNClient::sendConnect(inet::L3Address destAddress, int destPort, bool w
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNClient::sendBaseWithWillTopic(inet::L3Address destAddress, int destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic)
-{
-    const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
-    payload->setMsgType(msgType);
-    payload->setQoSFlag(qosFlag);
-    payload->setRetainFlag(retainFlag);
-    payload->setWillTopic(willTopic);
-    payload->setChunkLength(inet::B(payload->getLength()));
-
-    std::string packetName;
-
-    switch(msgType) {
-        case MsgType::WILLTOPIC:
-            packetName = "WillTopicPacket";
-            break;
-
-        case MsgType::WILLTOPICUPD:
-            packetName = "WillTopicUpdPacket";
-            break;
-
-        default:
-            packetName = "BaseWithWillTopicPacket";
-    }
-
-    inet::Packet *packet = new inet::Packet(packetName.c_str());
-    packet->insertAtBack(payload);
-
-    socket.sendTo(packet, destAddress, destPort);
-}
-
-void MqttSNClient::sendBaseWithWillMsg(inet::L3Address destAddress, int destPort, MsgType msgType, std::string willMsg)
-{
-    const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
-    payload->setMsgType(msgType);
-    payload->setWillMsg(willMsg);
-    payload->setChunkLength(inet::B(payload->getLength()));
-
-    std::string packetName;
-
-    switch(msgType) {
-        case MsgType::WILLMSG:
-            packetName = "WillMsgPacket";
-            break;
-
-        case MsgType::WILLMSGUPD:
-            packetName = "WillMsgUpdPacket";
-            break;
-
-        default:
-            packetName = "BaseWithWillMsgPacket";
-    }
-
-    inet::Packet *packet = new inet::Packet(packetName.c_str());
-    packet->insertAtBack(payload);
-
-    socket.sendTo(packet, destAddress, destPort);
-}
-
 void MqttSNClient::handleCheckGatewaysEvent()
 {
     inet::clocktime_t currentTime = getClockTime();
@@ -825,7 +757,7 @@ void MqttSNClient::handleCheckConnectionEvent()
         GatewayInfo gatewayInfo = gateway.second;
         selectedGateway = gatewayInfo;
 
-        sendConnect(gatewayInfo.address, gatewayInfo.port, par("willFlag"), par("cleanSessionFlag"), keepAlive);
+        handleCheckConnectionEventCustom(gatewayInfo.address, gatewayInfo.port);
     }
 
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
@@ -1023,11 +955,11 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
             retransmitPingReq(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
             break;
 
-         // TO DO
-
         default:
             break;
     }
+
+    handleRetransmissionEventCustom(msgType, unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
 
     if (retransmission) {
         unicastMessageInfo->retransmissionCounter++;

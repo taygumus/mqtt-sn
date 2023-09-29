@@ -1,7 +1,7 @@
 #ifndef MODULES_CLIENT_MQTTSNCLIENT_H_
 #define MODULES_CLIENT_MQTTSNCLIENT_H_
 
-#include "../shared/MqttSNApp.h"
+#include "../MqttSNApp.h"
 #include "types/shared/ClientState.h"
 #include "types/shared/MsgType.h"
 #include "types/shared/QoS.h"
@@ -65,6 +65,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleStateChangeEvent();
         virtual void scheduleActiveStateEvents();
         virtual void cancelActiveStateEvents();
+        virtual void cancelActiveStateClockEvents();
         virtual void updateCurrentState(ClientState nextState);
         virtual void returnToSleep();
 
@@ -89,8 +90,6 @@ class MqttSNClient : public MqttSNApp
         virtual void processSearchGw();
         virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
         virtual void processConnAck(inet::Packet *pk);
-        virtual void processWillTopicReq(inet::L3Address srcAddress, int srcPort);
-        virtual void processWillMsgReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
         virtual void processDisconnect(inet::Packet *pk);
@@ -98,8 +97,6 @@ class MqttSNClient : public MqttSNApp
         // send packets
         virtual void sendSearchGw();
         virtual void sendConnect(inet::L3Address destAddress, int destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration);
-        virtual void sendBaseWithWillTopic(inet::L3Address destAddress, int destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);
-        virtual void sendBaseWithWillMsg(inet::L3Address destAddress, int destPort, MsgType msgType, std::string willMsg);
 
         // event handlers
         virtual void handleCheckGatewaysEvent();
@@ -108,7 +105,7 @@ class MqttSNClient : public MqttSNApp
         virtual void handleCheckConnectionEvent();
         virtual void handlePingEvent();
 
-        // others
+        // other functions
         virtual void updateActiveGateways(inet::L3Address srcAddress, int srcPort, uint8_t gatewayId, uint16_t duration);
         virtual bool isSelectedGateway(inet::L3Address srcAddress, int srcPort);
         virtual bool isConnectedGateway(inet::L3Address srcAddress, int srcPort);
@@ -124,6 +121,16 @@ class MqttSNClient : public MqttSNApp
 
         virtual void retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
         virtual void retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
+
+        // pure virtual functions
+        virtual void initializeCustom() = 0;
+        virtual bool handleMessageWhenUpCustom(omnetpp::cMessage *msg) = 0;
+        virtual void scheduleActiveStateEventsCustom() = 0;
+        virtual void cancelActiveStateEventsCustom() = 0;
+        virtual void cancelActiveStateClockEventsCustom() = 0;
+        virtual void processPacketCustom(MsgType msgType, inet::Packet *pk, inet::L3Address srcAddress, int srcPort) = 0;
+        virtual void handleCheckConnectionEventCustom(inet::L3Address destAddress, int destPort) = 0;
+        virtual void handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true) = 0;
 
     public:
         MqttSNClient() {};

@@ -1,7 +1,7 @@
 #ifndef MODULES_SERVER_MQTTSNSERVER_H_
 #define MODULES_SERVER_MQTTSNSERVER_H_
 
-#include "../shared/MqttSNApp.h"
+#include "../MqttSNApp.h"
 #include "types/shared/MsgType.h"
 #include "types/shared/ReturnCode.h"
 #include "types/shared/QoS.h"
@@ -85,7 +85,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleAsleepClientsCheckEvent();
         virtual void handleClientsClearEvent();
 
-        // others
+        // other functions
         virtual void updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
         virtual void applyClientInfoUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
         virtual bool isGatewayCongested();
