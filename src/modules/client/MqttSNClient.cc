@@ -459,15 +459,21 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
     MsgType msgType = header->getMsgType();
 
-    std::vector<MsgType> allowedAsleepMsgTypes = {MsgType::DISCONNECT};
-    if (currentState == ClientState::ASLEEP &&
-        std::find(allowedAsleepMsgTypes.begin(), allowedAsleepMsgTypes.end(), msgType) == allowedAsleepMsgTypes.end()) {
-        // delete the packet if the message type is not in the allowed list while the client is ASLEEP
+    // delete packet if client is ASLEEP and message type is not DISCONNECT
+    if (currentState == ClientState::ASLEEP && msgType != MsgType::DISCONNECT) {
+        delete pk;
+        return;
+    }
+
+    // delete packet if client is AWAKE and message type is not PINGRESP
+    if (currentState == ClientState::AWAKE && msgType != MsgType::PINGRESP) {
         delete pk;
         return;
     }
 
     std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
+    // TO DO -> pure virtual function -> the subscriber implementation will add into the vector the PUBLISH message
+
     if (currentState == ClientState::AWAKE &&
         std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
         // delete the packet if the message type is not in the allowed list while the client is AWAKE

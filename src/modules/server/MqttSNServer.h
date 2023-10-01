@@ -10,6 +10,8 @@
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
 #include "types/server/ClientInfoUpdates.h"
+#include "types/server/PublisherInfo.h"
+#include "types/server/SubscriberInfo.h"
 
 namespace mqttsn {
 
@@ -38,6 +40,9 @@ class MqttSNServer : public MqttSNApp
         inet::ClockEvent *asleepClientsCheckEvent = nullptr;
 
         inet::ClockEvent *clientsClearEvent = nullptr;
+
+        std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
+        std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
 
         // statistics
         int numAdvertiseSent = 0;
