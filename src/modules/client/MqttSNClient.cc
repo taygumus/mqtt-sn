@@ -465,15 +465,8 @@ void MqttSNClient::processPacket(inet::Packet *pk)
         return;
     }
 
-    // delete packet if client is AWAKE and message type is not PINGRESP
-    if (currentState == ClientState::AWAKE && msgType != MsgType::PINGRESP) {
-        delete pk;
-        return;
-    }
-
     std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
     // TO DO -> pure virtual function -> the subscriber implementation will add into the vector the PUBLISH message
-
     if (currentState == ClientState::AWAKE &&
         std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
         // delete the packet if the message type is not in the allowed list while the client is AWAKE
