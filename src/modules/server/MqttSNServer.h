@@ -94,8 +94,8 @@ class MqttSNServer : public MqttSNApp
         virtual void updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
         virtual void applyClientInfoUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
         virtual bool isGatewayCongested();
-        virtual bool isClientExists(inet::L3Address srcAddress, int srcPort, ClientInfo *clientInfo = nullptr);
         virtual bool isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState);
+        virtual ClientInfo* getClientInfo(inet::L3Address srcAddress, int srcPort);
 
     public:
         MqttSNServer() {};

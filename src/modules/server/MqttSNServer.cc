@@ -312,7 +312,7 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     }
 
     // prevent new client connections when the gateway is congested
-    if (isGatewayCongested() && !isClientExists(srcAddress, srcPort)) {
+    if (isGatewayCongested() && getClientInfo(srcAddress, srcPort) == nullptr) {
         sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
         return;
     }
@@ -407,8 +407,11 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     updateClientInfo(srcAddress, srcPort, clientInfo, updates);
 
     if (!clientId.empty()) {
+        // TO DO -> aggiornare con il nuovo meccanismo
+
         // check if the client ID matches the expected client ID
-        if (!isClientExists(srcAddress, srcPort, &clientInfo) || clientInfo.clientId != clientId) {
+        ClientInfo* clientInfo_ = getClientInfo(srcAddress, srcPort);
+        if (clientInfo_ == nullptr || clientInfo_->clientId != clientId) {
             return;
         }
 
@@ -666,27 +669,25 @@ bool MqttSNServer::isGatewayCongested()
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
-bool MqttSNServer::isClientExists(inet::L3Address srcAddress, int srcPort, ClientInfo *clientInfo)
+bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState)
+{
+    // get client information with the specified IP address and port
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+
+    // return true if the client is found and its state matches the requested state, otherwise return false
+    return (clientInfo != nullptr && clientInfo->currentState == clientState);
+}
+
+ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort)
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
 
     if (clientIterator != clients.end()) {
-        // if the client exists, update the reference and return true
-        if (clientInfo != nullptr) {
-            *clientInfo = clientIterator->second;
-        }
-
-        return true;
+        return &clientIterator->second;
     }
-    // client not found, return false
-    return false;
-}
 
-bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState)
-{
-    ClientInfo clientInfo;
-    return (isClientExists(srcAddress, srcPort, &clientInfo) && clientInfo.currentState == clientState);
+    return nullptr;
 }
 
 MqttSNServer::~MqttSNServer()
