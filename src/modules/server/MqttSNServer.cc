@@ -311,34 +311,24 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
         return;
     }
 
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+
     // prevent new client connections when the gateway is congested
-    if (isGatewayCongested() && getClientInfo(srcAddress, srcPort) == nullptr) {
+    if (isGatewayCongested() && clientInfo->isNew) {
         sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
         return;
     }
 
     bool willFlag = payload->getWillFlag();
 
-    // prepare client information
-    ClientInfo clientInfo;
-    clientInfo.clientId = payload->getClientId();
-    clientInfo.keepAliveDuration = payload->getDuration();
-    clientInfo.willFlag = willFlag;
-    clientInfo.cleanSessionFlag = payload->getCleanSessionFlag();
-    clientInfo.currentState = ClientState::ACTIVE;
-    clientInfo.lastReceivedMsgTime = getClockTime();
-
-    // specify which fields to update
-    ClientInfoUpdates updates;
-    updates.clientId = true;
-    updates.keepAliveDuration = true;
-    updates.willFlag = true;
-    updates.cleanSessionFlag = true;
-    updates.currentState = true;
-    updates.lastReceivedMsgTime = true;
-
-    // update or save client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    // update client information
+    clientInfo->isNew = false;
+    clientInfo->clientId = payload->getClientId();
+    clientInfo->keepAliveDuration = payload->getDuration();
+    clientInfo->willFlag = willFlag;
+    clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
+    clientInfo->currentState = ClientState::ACTIVE;
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     if (willFlag) {
         MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLTOPICREQ);
@@ -352,22 +342,12 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
-    // prepare client information
-    ClientInfo clientInfo;
-    clientInfo.qosFlag = (QoS) payload->getQoSFlag();
-    clientInfo.retainFlag = payload->getRetainFlag();
-    clientInfo.willTopic = payload->getWillTopic();
-    clientInfo.lastReceivedMsgTime = getClockTime();
-
-    // specify which fields to update
-    ClientInfoUpdates updates;
-    updates.qosFlag = true;
-    updates.retainFlag = true;
-    updates.willTopic = true;
-    updates.lastReceivedMsgTime = true;
-
     // update client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    clientInfo->qosFlag = (QoS) payload->getQoSFlag();
+    clientInfo->retainFlag = payload->getRetainFlag();
+    clientInfo->willTopic = payload->getWillTopic();
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
 }
@@ -376,18 +356,10 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
-    // prepare client information
-    ClientInfo clientInfo;
-    clientInfo.willMsg = payload->getWillMsg();
-    clientInfo.lastReceivedMsgTime = getClockTime();
-
-    // specify which fields to update
-    ClientInfoUpdates updates;
-    updates.willMsg = true;
-    updates.lastReceivedMsgTime = true;
-
     // update client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    clientInfo->willMsg = payload->getWillMsg();
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
 }
@@ -397,36 +369,21 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     const auto& payload = pk->peekData<MqttSNPingReq>();
     std::string clientId = payload->getClientId();
 
-    ClientInfo clientInfo;
-    clientInfo.lastReceivedMsgTime = getClockTime();
-
-    ClientInfoUpdates updates;
-    updates.lastReceivedMsgTime = true;
-
-    // update client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     if (!clientId.empty()) {
-        // TO DO -> aggiornare con il nuovo meccanismo
-
         // check if the client ID matches the expected client ID
-        ClientInfo* clientInfo_ = getClientInfo(srcAddress, srcPort);
-        if (clientInfo_ == nullptr || clientInfo_->clientId != clientId) {
+        if (clientInfo->clientId != clientId) {
             return;
         }
 
-        // transition from ASLEEP to AWAKE states
-        clientInfo.currentState = ClientState::AWAKE;
-        updates.currentState = true;
-        updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+        clientInfo->currentState = ClientState::AWAKE;
 
         // TO DO -> send buffered messages to the client
         // TO DO -> this part can be improved e.g. check if there are buffered messages otherwise do not change state
 
-        // transition from AWAKE to ASLEEP states
-        clientInfo.currentState = ClientState::ASLEEP;
-        updates.currentState = true;
-        updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+        clientInfo->currentState = ClientState::ASLEEP;
     }
 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
@@ -436,16 +393,9 @@ void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
 {
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 
-    ClientInfo clientInfo;
-    clientInfo.lastReceivedMsgTime = getClockTime();
-    clientInfo.sentPingReq = false;
-
-    ClientInfoUpdates updates;
-    updates.lastReceivedMsgTime = true;
-    updates.sentPingReq = true;
-
-    // update client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+    clientInfo->sentPingReq = false;
 }
 
 void MqttSNServer::processDisconnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
@@ -453,18 +403,10 @@ void MqttSNServer::processDisconnect(inet::Packet *pk, inet::L3Address srcAddres
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
 
-    ClientInfo clientInfo;
-    clientInfo.sleepDuration = sleepDuration;
-    clientInfo.currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
-    clientInfo.lastReceivedMsgTime = getClockTime();
-
-    ClientInfoUpdates updates;
-    updates.sleepDuration = true;
-    updates.currentState = true;
-    updates.lastReceivedMsgTime = true;
-
-    // update client information
-    updateClientInfo(srcAddress, srcPort, clientInfo, updates);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    clientInfo->sleepDuration = sleepDuration;
+    clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     // ack with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
@@ -600,69 +542,6 @@ void MqttSNServer::handleClientsClearEvent()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
-void MqttSNServer::updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates)
-{
-    auto key = std::make_pair(srcAddress, srcPort);
-    auto it = clients.find(key);
-
-    if (it == clients.end()) {
-        ClientInfo newClientInfo;
-        applyClientInfoUpdates(newClientInfo, clientInfo, updates);
-
-        clients[key] = newClientInfo;
-    }
-    else {
-        ClientInfo& existingClientInfo = it->second;
-        applyClientInfoUpdates(existingClientInfo, clientInfo, updates);
-    }
-}
-
-void MqttSNServer::applyClientInfoUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates)
-{
-    if (updates.clientId) {
-        existingClientInfo.clientId = newClientInfo.clientId;
-    }
-    if (updates.willTopic) {
-        existingClientInfo.willTopic = newClientInfo.willTopic;
-    }
-    if (updates.willMsg) {
-        existingClientInfo.willMsg = newClientInfo.willMsg;
-    }
-    if (updates.keepAliveDuration) {
-        existingClientInfo.keepAliveDuration = newClientInfo.keepAliveDuration;
-    }
-    if (updates.sleepDuration) {
-        existingClientInfo.sleepDuration = newClientInfo.sleepDuration;
-    }
-    if (updates.dupFlag) {
-        existingClientInfo.dupFlag = newClientInfo.dupFlag;
-    }
-    if (updates.qosFlag) {
-        existingClientInfo.qosFlag = newClientInfo.qosFlag;
-    }
-    if (updates.retainFlag) {
-        existingClientInfo.retainFlag = newClientInfo.retainFlag;
-    }
-    if (updates.willFlag) {
-        existingClientInfo.willFlag = newClientInfo.willFlag;
-    }
-    if (updates.cleanSessionFlag) {
-        existingClientInfo.cleanSessionFlag = newClientInfo.cleanSessionFlag;
-    }
-    if (updates.topicIdTypeFlag) {
-        existingClientInfo.topicIdTypeFlag = newClientInfo.topicIdTypeFlag;
-    }
-    if (updates.currentState) {
-        existingClientInfo.currentState = newClientInfo.currentState;
-    }
-    if (updates.lastReceivedMsgTime) {
-        existingClientInfo.lastReceivedMsgTime = newClientInfo.lastReceivedMsgTime;
-    }
-    if (updates.sentPingReq) {
-        existingClientInfo.sentPingReq = newClientInfo.sentPingReq;
-    }
-}
-
 bool MqttSNServer::isGatewayCongested()
 {
     // check for gateway congestion based on clients count
@@ -678,13 +557,21 @@ bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, Clie
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
 }
 
-ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort)
+ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound)
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
 
     if (clientIterator != clients.end()) {
         return &clientIterator->second;
+    }
+
+    if (insertIfNotFound) {
+        // insert a new empty clientInfo
+        ClientInfo newClientInfo;
+        clients[std::make_pair(srcAddress, srcPort)] = newClientInfo;
+
+        return &clients[std::make_pair(srcAddress, srcPort)];
     }
 
     return nullptr;

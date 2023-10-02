@@ -9,7 +9,6 @@
 #include "types/shared/ClientState.h"
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
-#include "types/server/ClientInfoUpdates.h"
 #include "types/server/PublisherInfo.h"
 #include "types/server/SubscriberInfo.h"
 
@@ -91,11 +90,9 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // other functions
-        virtual void updateClientInfo(inet::L3Address srcAddress, int srcPort, ClientInfo& clientInfo, ClientInfoUpdates& updates);
-        virtual void applyClientInfoUpdates(ClientInfo& existingClientInfo, ClientInfo& newClientInfo, ClientInfoUpdates& updates);
         virtual bool isGatewayCongested();
         virtual bool isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState);
-        virtual ClientInfo* getClientInfo(inet::L3Address srcAddress, int srcPort);
+        virtual ClientInfo* getClientInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound = false);
 
     public:
         MqttSNServer() {};
