@@ -863,7 +863,7 @@ QoS MqttSNClient::intToQoS(int value)
     }
 }
 
-void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters)
+void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string> *parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
     if (retransmissions.find(msgType) != retransmissions.end()) {

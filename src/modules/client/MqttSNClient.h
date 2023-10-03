@@ -114,7 +114,7 @@ class MqttSNClient : public MqttSNApp
         virtual QoS intToQoS(int value);
 
         // retransmissions management
-        virtual void scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters = nullptr);
+        virtual void scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string> *parameters = nullptr);
         virtual void unscheduleMsgRetransmission(MsgType msgType);
         virtual void clearRetransmissions();
         virtual void handleRetransmissionEvent(omnetpp::cMessage *msg);
