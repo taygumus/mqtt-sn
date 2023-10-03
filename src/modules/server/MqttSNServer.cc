@@ -325,12 +325,15 @@ void MqttSNServer::processConnect(inet::Packet *pk, inet::L3Address srcAddress, 
     clientInfo->isNew = false;
     clientInfo->clientId = payload->getClientId();
     clientInfo->keepAliveDuration = payload->getDuration();
-    clientInfo->willFlag = willFlag;
-    clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
+    ///clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     if (willFlag) {
+        PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
+        // update publisher information
+        publisherInfo->willFlag = willFlag;
+
         MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLTOPICREQ);
     }
     else {
@@ -344,10 +347,13 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
 
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
-    clientInfo->qosFlag = (QoS) payload->getQoSFlag();
-    clientInfo->retainFlag = payload->getRetainFlag();
-    clientInfo->willTopic = payload->getWillTopic();
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
+    // update publisher information
+    publisherInfo->willQosFlag = (QoS) payload->getQoSFlag();
+    publisherInfo->willRetainFlag = payload->getRetainFlag();
+    publisherInfo->willTopic = payload->getWillTopic();
 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
 }
@@ -358,8 +364,11 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
 
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
-    clientInfo->willMsg = payload->getWillMsg();
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
+    // update publisher information
+    publisherInfo->willMsg = payload->getWillMsg();
 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
 }
@@ -575,6 +584,26 @@ ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort,
         clients[std::make_pair(srcAddress, srcPort)] = newClientInfo;
 
         return &clients[std::make_pair(srcAddress, srcPort)];
+    }
+
+    return nullptr;
+}
+
+PublisherInfo* MqttSNServer::getPublisherInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound)
+{
+    // check if the publisher with the specified address and port is present in the data structure
+    auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));
+
+    if (publisherIterator != publishers.end()) {
+        return &publisherIterator->second;
+    }
+
+    if (insertIfNotFound) {
+        // insert a new empty clientInfo
+        PublisherInfo newPublisherInfo;
+        publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
+
+        return &publishers[std::make_pair(srcAddress, srcPort)];
     }
 
     return nullptr;

@@ -93,6 +93,7 @@ class MqttSNServer : public MqttSNApp
         virtual bool isGatewayCongested();
         virtual bool isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound = false);
+        virtual PublisherInfo* getPublisherInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound = false);
 
     public:
         MqttSNServer() {};
