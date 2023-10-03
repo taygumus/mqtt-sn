@@ -17,19 +17,19 @@ class MqttSNPublisher : public MqttSNClient
         virtual void cancelActiveStateClockEventsCustom() override;
 
         // process received packets
-        virtual void processPacketCustom(MsgType msgType, inet::Packet* pk, inet::L3Address srcAddress, int srcPort) override;
-        virtual void processWillTopicReq(inet::L3Address srcAddress, int srcPort);
-        virtual void processWillMsgReq(inet::L3Address srcAddress, int srcPort);
+        virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
+        virtual void processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
-        virtual void sendBaseWithWillTopic(inet::L3Address destAddress, int destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);
-        virtual void sendBaseWithWillMsg(inet::L3Address destAddress, int destPort, MsgType msgType, std::string willMsg);
+        virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);
+        virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::string willMsg);
 
         // event handlers
-        virtual void handleCheckConnectionEventCustom(inet::L3Address destAddress, int destPort) override;
+        virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
 
         // retransmissions management
-        virtual void handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission = true) override;
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission = true) override;
 
     public:
         MqttSNPublisher() {};

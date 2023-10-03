@@ -72,16 +72,16 @@ class MqttSNServer : public MqttSNApp
         // process received packets
         virtual void processPacket(inet::Packet* pk) override;
         virtual void processSearchGw();
-        virtual void processConnect(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processWillTopic(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processWillMsg(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingReq(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
-        virtual void processDisconnect(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processConnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPingResp(const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendAdvertise();
-        virtual void sendBaseWithReturnCode(inet::L3Address destAddress, int destPort, MsgType msgType, ReturnCode returnCode);
+        virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode);
 
         // event handlers
         virtual void handleAdvertiseEvent();
@@ -91,9 +91,9 @@ class MqttSNServer : public MqttSNApp
 
         // other functions
         virtual bool isGatewayCongested();
-        virtual bool isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState);
-        virtual ClientInfo* getClientInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound = false);
-        virtual PublisherInfo* getPublisherInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound = false);
+        virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
+        virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
+        virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
     public:
         MqttSNServer() {};

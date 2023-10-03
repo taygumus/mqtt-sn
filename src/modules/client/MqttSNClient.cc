@@ -534,12 +534,12 @@ void MqttSNClient::processPacket(inet::Packet* pk)
             break;
     }
 
-    processPacketCustom(msgType, pk, srcAddress, srcPort);
+    processPacketCustom(pk, srcAddress, srcPort, msgType);
 
     delete pk;
 }
 
-void MqttSNClient::processAdvertise(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processAdvertise(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNAdvertise>();
 
@@ -562,7 +562,7 @@ void MqttSNClient::processSearchGw()
     }
 }
 
-void MqttSNClient::processGwInfo(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processGwInfo(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNGwInfo>();
 
@@ -610,12 +610,12 @@ void MqttSNClient::processConnAck(inet::Packet* pk)
     bubble(str.str().c_str());
 }
 
-void MqttSNClient::processPingReq(inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processPingReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
-void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processPingResp(const inet::L3Address& srcAddress, const int& srcPort)
 {
     if (currentState == ClientState::AWAKE) {
         returnToSleep();
@@ -676,7 +676,7 @@ void MqttSNClient::sendSearchGw()
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNClient::sendConnect(inet::L3Address destAddress, int destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration)
+void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration)
 {
     const auto& payload = inet::makeShared<MqttSNConnect>();
     payload->setMsgType(MsgType::CONNECT);
@@ -772,7 +772,7 @@ void MqttSNClient::handlePingEvent()
     scheduleClockEventAfter(keepAlive, pingEvent);
 }
 
-void MqttSNClient::updateActiveGateways(inet::L3Address srcAddress, int srcPort, uint8_t gatewayId, uint16_t duration)
+void MqttSNClient::updateActiveGateways(const inet::L3Address& srcAddress, const int& srcPort, uint8_t gatewayId, uint16_t duration)
 {
     auto it = activeGateways.find(gatewayId);
 
@@ -800,13 +800,13 @@ void MqttSNClient::updateActiveGateways(inet::L3Address srcAddress, int srcPort,
     }
 }
 
-bool MqttSNClient::isSelectedGateway(inet::L3Address srcAddress, int srcPort)
+bool MqttSNClient::isSelectedGateway(const inet::L3Address& srcAddress, const int& srcPort)
 {
     // check if the gateway with the specified address and port is the one selected by the client
     return (selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
 }
 
-bool MqttSNClient::isConnectedGateway(inet::L3Address srcAddress, int srcPort)
+bool MqttSNClient::isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort)
 {
     // check if the gateway with the specified address and port is the one connected by the client
     return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
@@ -863,7 +863,7 @@ QoS MqttSNClient::intToQoS(int value)
     }
 }
 
-void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters)
+void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, const inet::L3Address& destAddress, const int& destPort, std::map<std::string, std::string>* parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
     if (retransmissions.find(msgType) != retransmissions.end()) {
@@ -958,7 +958,7 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
             break;
     }
 
-    handleRetransmissionEventCustom(msgType, unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
+    handleRetransmissionEventCustom(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, msgType, retransmission);
 
     if (retransmission) {
         unicastMessageInfo->retransmissionCounter++;
@@ -970,7 +970,7 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
     }
 }
 
-void MqttSNClient::retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
+void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, bool retransmission)
 {
     if (!retransmission) {
         scheduleClockEventAfter(0.5, stateChangeEvent);
@@ -983,7 +983,7 @@ void MqttSNClient::retransmitDisconnect(inet::L3Address destAddress, int destPor
     }
 }
 
-void MqttSNClient::retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
+void MqttSNClient::retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, bool retransmission)
 {
     if (!retransmission) {
         if (msg->hasPar("clientId")) {

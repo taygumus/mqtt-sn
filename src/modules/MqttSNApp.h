@@ -27,13 +27,13 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
         // send packets
         virtual void sendGwInfo(uint8_t gatewayId, std::string gatewayAddress = "", uint16_t gatewayPort = 0);
-        virtual void sendPingReq(inet::L3Address destAddress, int destPort, std::string clientId = "");
-        virtual void sendBase(inet::L3Address destAddress, int destPort, MsgType msgType);
-        virtual void sendDisconnect(inet::L3Address destAddress, int destPort, uint16_t duration = 0);
+        virtual void sendPingReq(const inet::L3Address& destAddress, const int& destPort, std::string clientId = "");
+        virtual void sendBase(const inet::L3Address& destAddress, const int& destPort, MsgType msgType);
+        virtual void sendDisconnect(const inet::L3Address& destAddress, const int& destPort, uint16_t duration = 0);
 
         // other functions
-        virtual void checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength);
-        virtual bool isSelfBroadcastAddress(inet::L3Address address);
+        virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
+        virtual bool isSelfBroadcastAddress(const inet::L3Address& address);
 
     public:
         MqttSNApp() {};

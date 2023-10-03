@@ -25,17 +25,17 @@ void MqttSNSubscriber::cancelActiveStateEventsCustom()
     // TO DO
 }
 
-void MqttSNSubscriber::processPacketCustom(MsgType msgType, inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
 {
     // TO DO
 }
 
-void MqttSNSubscriber::handleCheckConnectionEventCustom(inet::L3Address destAddress, int destPort)
+void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
     MqttSNClient::sendConnect(destAddress, destPort, 0, par("cleanSessionFlag"), keepAlive);
 }
 
-void MqttSNSubscriber::handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
+void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)
 {
     // TO DO
     switch (msgType) {

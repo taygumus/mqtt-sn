@@ -37,7 +37,7 @@ void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNApp::sendPingReq(inet::L3Address destAddress, int destPort, std::string clientId)
+void MqttSNApp::sendPingReq(const inet::L3Address& destAddress, const int& destPort, std::string clientId)
 {
     const auto& payload = inet::makeShared<MqttSNPingReq>();
     payload->setMsgType(MsgType::PINGREQ);
@@ -54,7 +54,7 @@ void MqttSNApp::sendPingReq(inet::L3Address destAddress, int destPort, std::stri
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNApp::sendBase(inet::L3Address destAddress, int destPort, MsgType msgType)
+void MqttSNApp::sendBase(const inet::L3Address& destAddress, const int& destPort, MsgType msgType)
 {
     const auto& payload = inet::makeShared<MqttSNBase>();
     payload->setMsgType(msgType);
@@ -85,7 +85,7 @@ void MqttSNApp::sendBase(inet::L3Address destAddress, int destPort, MsgType msgT
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNApp::sendDisconnect(inet::L3Address destAddress, int destPort, uint16_t duration)
+void MqttSNApp::sendDisconnect(const inet::L3Address& destAddress, const int& destPort, uint16_t duration)
 {
     const auto& payload = inet::makeShared<MqttSNDisconnect>();
     payload->setMsgType(MsgType::DISCONNECT);
@@ -102,7 +102,7 @@ void MqttSNApp::sendDisconnect(inet::L3Address destAddress, int destPort, uint16
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNApp::checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength)
+void MqttSNApp::checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength)
 {
     if (receivedLength != fieldLength) {
         throw omnetpp::cRuntimeError(
@@ -113,7 +113,7 @@ void MqttSNApp::checkPacketIntegrity(inet::B receivedLength, inet::B fieldLength
     }
 }
 
-bool MqttSNApp::isSelfBroadcastAddress(inet::L3Address address)
+bool MqttSNApp::isSelfBroadcastAddress(const inet::L3Address& address)
 {
     inet::L3Address selfBroadcastAddress = inet::L3Address("127.0.0.1");
     return (address == selfBroadcastAddress);

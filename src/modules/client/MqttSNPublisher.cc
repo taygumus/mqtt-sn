@@ -32,7 +32,7 @@ void MqttSNPublisher::cancelActiveStateClockEventsCustom()
     // TO DO
 }
 
-void MqttSNPublisher::processPacketCustom(MsgType msgType, inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
 {
     switch(msgType) {
         // packet types that are allowed only from the selected gateway
@@ -64,17 +64,17 @@ void MqttSNPublisher::processPacketCustom(MsgType msgType, inet::Packet* pk, ine
     }
 }
 
-void MqttSNPublisher::processWillTopicReq(inet::L3Address srcAddress, int srcPort)
+void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
     sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, MqttSNClient::intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
 }
 
-void MqttSNPublisher::processWillMsgReq(inet::L3Address srcAddress, int srcPort)
+void MqttSNPublisher::processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
     sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
 }
 
-void MqttSNPublisher::sendBaseWithWillTopic(inet::L3Address destAddress, int destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic)
+void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
     payload->setMsgType(msgType);
@@ -104,7 +104,7 @@ void MqttSNPublisher::sendBaseWithWillTopic(inet::L3Address destAddress, int des
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNPublisher::sendBaseWithWillMsg(inet::L3Address destAddress, int destPort, MsgType msgType, std::string willMsg)
+void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::string willMsg)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
     payload->setMsgType(msgType);
@@ -132,12 +132,12 @@ void MqttSNPublisher::sendBaseWithWillMsg(inet::L3Address destAddress, int destP
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNPublisher::handleCheckConnectionEventCustom(inet::L3Address destAddress, int destPort)
+void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
     MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), 0, keepAlive);
 }
 
-void MqttSNPublisher::handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
+void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)
 {
     // TO DO
     switch (msgType) {

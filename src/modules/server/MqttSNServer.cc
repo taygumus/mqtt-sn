@@ -301,7 +301,7 @@ void MqttSNServer::processSearchGw()
     MqttSNApp::sendGwInfo(gatewayId);
 }
 
-void MqttSNServer::processConnect(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNConnect>();
 
@@ -341,7 +341,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, inet::L3Address srcAddress, 
     }
 }
 
-void MqttSNServer::processWillTopic(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
@@ -358,7 +358,7 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, inet::L3Address srcAddress
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
 }
 
-void MqttSNServer::processWillMsg(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
@@ -373,7 +373,7 @@ void MqttSNServer::processWillMsg(inet::Packet* pk, inet::L3Address srcAddress, 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
 }
 
-void MqttSNServer::processPingReq(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNPingReq>();
     std::string clientId = payload->getClientId();
@@ -399,7 +399,7 @@ void MqttSNServer::processPingReq(inet::Packet* pk, inet::L3Address srcAddress, 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
-void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int& srcPort)
 {
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 
@@ -409,7 +409,7 @@ void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
     clientInfo->sentPingReq = false;
 }
 
-void MqttSNServer::processDisconnect(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
@@ -444,7 +444,7 @@ void MqttSNServer::sendAdvertise()
     numAdvertiseSent++;
 }
 
-void MqttSNServer::sendBaseWithReturnCode(inet::L3Address destAddress, int destPort, MsgType msgType, ReturnCode returnCode)
+void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithReturnCode>();
     payload->setMsgType(msgType);
@@ -560,7 +560,7 @@ bool MqttSNServer::isGatewayCongested()
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
-bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, ClientState clientState)
+bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState)
 {
     // get client information with the specified IP address and port
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
@@ -569,7 +569,7 @@ bool MqttSNServer::isClientInState(inet::L3Address srcAddress, int srcPort, Clie
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
 }
 
-ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound)
+ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
@@ -589,7 +589,7 @@ ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort,
     return nullptr;
 }
 
-PublisherInfo* MqttSNServer::getPublisherInfo(inet::L3Address srcAddress, int srcPort, bool insertIfNotFound)
+PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
 {
     // check if the publisher with the specified address and port is present in the data structure
     auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));

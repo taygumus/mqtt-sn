@@ -17,13 +17,13 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void cancelActiveStateClockEventsCustom() override;
 
         // process received packets
-        virtual void processPacketCustom(MsgType msgType, inet::Packet* pk, inet::L3Address srcAddress, int srcPort) override;
+        virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
 
         // event handlers
-        virtual void handleCheckConnectionEventCustom(inet::L3Address destAddress, int destPort) override;
+        virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
 
         // retransmissions management
-        virtual void handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission = true) override;
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission = true) override;
 
     public:
         MqttSNSubscriber() {};
