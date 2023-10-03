@@ -28,38 +28,38 @@ class MqttSNClient : public MqttSNApp
         double retransmissionInterval;
 
         // client state management
-        inet::ClockEvent *stateChangeEvent = nullptr;
+        inet::ClockEvent* stateChangeEvent = nullptr;
         ClientState currentState;
 
         // active client state
-        inet::ClockEvent *checkGatewaysEvent = nullptr;
+        inet::ClockEvent* checkGatewaysEvent = nullptr;
         std::map<uint8_t, GatewayInfo> activeGateways;
 
-        inet::ClockEvent *searchGatewayEvent = nullptr;
+        inet::ClockEvent* searchGatewayEvent = nullptr;
         bool maxIntervalReached = false;
         bool searchGateway = true;
 
-        inet::ClockEvent *gatewayInfoEvent = nullptr;
+        inet::ClockEvent* gatewayInfoEvent = nullptr;
 
-        inet::ClockEvent *checkConnectionEvent = nullptr;
+        inet::ClockEvent* checkConnectionEvent = nullptr;
         std::string clientId;
         bool isConnected = false;
         GatewayInfo selectedGateway;
 
-        inet::ClockEvent *pingEvent = nullptr;
+        inet::ClockEvent* pingEvent = nullptr;
 
         // retransmissions management
         std::map<MsgType, UnicastMessageInfo> retransmissions;
 
     protected:
         virtual void initialize(int stage) override;
-        virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
+        virtual void handleMessageWhenUp(omnetpp::cMessage* msg) override;
         virtual void finish() override;
         virtual void refreshDisplay() const override;
 
-        virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
-        virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
-        virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
+        virtual void handleStartOperation(inet::LifecycleOperation* operation) override;
+        virtual void handleStopOperation(inet::LifecycleOperation* operation) override;
+        virtual void handleCrashOperation(inet::LifecycleOperation* operation) override;
 
         // client state management
         virtual void handleStateChangeEvent();
@@ -85,14 +85,14 @@ class MqttSNClient : public MqttSNApp
         virtual std::vector<ClientState> getNextPossibleStates(ClientState currentState);
 
         // process received packets
-        virtual void processPacket(inet::Packet *pk) override;
-        virtual void processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processPacket(inet::Packet* pk) override;
+        virtual void processAdvertise(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
         virtual void processSearchGw();
-        virtual void processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processConnAck(inet::Packet *pk);
+        virtual void processGwInfo(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processConnAck(inet::Packet* pk);
         virtual void processPingReq(inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
-        virtual void processDisconnect(inet::Packet *pk);
+        virtual void processDisconnect(inet::Packet* pk);
 
         // send packets
         virtual void sendSearchGw();
@@ -114,23 +114,23 @@ class MqttSNClient : public MqttSNApp
         virtual QoS intToQoS(int value);
 
         // retransmissions management
-        virtual void scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string> *parameters = nullptr);
+        virtual void scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters = nullptr);
         virtual void unscheduleMsgRetransmission(MsgType msgType);
         virtual void clearRetransmissions();
-        virtual void handleRetransmissionEvent(omnetpp::cMessage *msg);
+        virtual void handleRetransmissionEvent(omnetpp::cMessage* msg);
 
-        virtual void retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
-        virtual void retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true);
+        virtual void retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission = true);
+        virtual void retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission = true);
 
         // pure virtual functions
         virtual void initializeCustom() = 0;
-        virtual bool handleMessageWhenUpCustom(omnetpp::cMessage *msg) = 0;
+        virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) = 0;
         virtual void scheduleActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateClockEventsCustom() = 0;
-        virtual void processPacketCustom(MsgType msgType, inet::Packet *pk, inet::L3Address srcAddress, int srcPort) = 0;
+        virtual void processPacketCustom(MsgType msgType, inet::Packet* pk, inet::L3Address srcAddress, int srcPort) = 0;
         virtual void handleCheckConnectionEventCustom(inet::L3Address destAddress, int destPort) = 0;
-        virtual void handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission = true) = 0;
+        virtual void handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission = true) = 0;
 
     public:
         MqttSNClient() {};

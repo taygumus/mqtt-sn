@@ -5,18 +5,18 @@
 
 namespace mqttsn {
 
-void MqttSNApp::socketDataArrived(inet::UdpSocket *socket, inet::Packet *packet)
+void MqttSNApp::socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet)
 {
     processPacket(packet);
 }
 
-void MqttSNApp::socketErrorArrived(inet::UdpSocket *socket, inet::Indication *indication)
+void MqttSNApp::socketErrorArrived(inet::UdpSocket* socket, inet::Indication* indication)
 {
     EV_WARN << "Ignoring UDP error report " << indication->getName() << std::endl;
     delete indication;
 }
 
-void MqttSNApp::socketClosed(inet::UdpSocket *socket)
+void MqttSNApp::socketClosed(inet::UdpSocket* socket)
 {
     if (operationalState == State::STOPPING_OPERATION)
         startActiveOperationExtraTimeOrFinish(-1);
@@ -31,7 +31,7 @@ void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16
     payload->setGwPort(gatewayPort);
     payload->setChunkLength(inet::B(payload->getLength()));
 
-    inet::Packet *packet = new inet::Packet("GwInfoPacket");
+    inet::Packet* packet = new inet::Packet("GwInfoPacket");
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
@@ -48,7 +48,7 @@ void MqttSNApp::sendPingReq(inet::L3Address destAddress, int destPort, std::stri
 
     payload->setChunkLength(inet::B(payload->getLength()));
 
-    inet::Packet *packet = new inet::Packet("PingReqPacket");
+    inet::Packet* packet = new inet::Packet("PingReqPacket");
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);
@@ -79,7 +79,7 @@ void MqttSNApp::sendBase(inet::L3Address destAddress, int destPort, MsgType msgT
             packetName = "BasePacket";
     }
 
-    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);
@@ -96,7 +96,7 @@ void MqttSNApp::sendDisconnect(inet::L3Address destAddress, int destPort, uint16
 
     payload->setChunkLength(inet::B(payload->getLength()));
 
-    inet::Packet *packet = new inet::Packet("DisconnectPacket");
+    inet::Packet* packet = new inet::Packet("DisconnectPacket");
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);

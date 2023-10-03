@@ -18,12 +18,12 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
     protected:
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
 
-        virtual void socketDataArrived(inet::UdpSocket *socket, inet::Packet *packet) override;
-        virtual void socketErrorArrived(inet::UdpSocket *socket, inet::Indication *indication) override;
-        virtual void socketClosed(inet::UdpSocket *socket) override;
+        virtual void socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet) override;
+        virtual void socketErrorArrived(inet::UdpSocket* socket, inet::Indication* indication) override;
+        virtual void socketClosed(inet::UdpSocket* socket) override;
 
         // process received packets
-        virtual void processPacket(inet::Packet *pk) = 0;
+        virtual void processPacket(inet::Packet* pk) = 0;
 
         // send packets
         virtual void sendGwInfo(uint8_t gatewayId, std::string gatewayAddress = "", uint16_t gatewayPort = 0);

@@ -47,7 +47,7 @@ void MqttSNClient::initialize(int stage)
     }
 }
 
-void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage *msg)
+void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage* msg)
 {
     if (msg == stateChangeEvent) {
         handleStateChangeEvent();
@@ -85,12 +85,12 @@ void MqttSNClient::refreshDisplay() const
     inet::ApplicationBase::refreshDisplay();
 }
 
-void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
+void MqttSNClient::handleStartOperation(inet::LifecycleOperation* operation)
 {
     socket.setOutputGate(gate("socketOut"));
     socket.setCallback(this);
 
-    const char *localAddress = par("localAddress");
+    const char* localAddress = par("localAddress");
     socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
     socket.setBroadcast(true);
 
@@ -102,7 +102,7 @@ void MqttSNClient::handleStartOperation(inet::LifecycleOperation *operation)
     }
 }
 
-void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
+void MqttSNClient::handleStopOperation(inet::LifecycleOperation* operation)
 {
     cancelEvent(stateChangeEvent);
     cancelActiveStateEvents();
@@ -111,7 +111,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation *operation)
     socket.close();
 }
 
-void MqttSNClient::handleCrashOperation(inet::LifecycleOperation *operation)
+void MqttSNClient::handleCrashOperation(inet::LifecycleOperation* operation)
 {
     cancelActiveStateClockEvents();
     clearRetransmissions();
@@ -440,7 +440,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
     }
 }
 
-void MqttSNClient::processPacket(inet::Packet *pk)
+void MqttSNClient::processPacket(inet::Packet* pk)
 {
     if (currentState == ClientState::DISCONNECTED || currentState == ClientState::LOST) {
         delete pk;
@@ -539,7 +539,7 @@ void MqttSNClient::processPacket(inet::Packet *pk)
     delete pk;
 }
 
-void MqttSNClient::processAdvertise(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processAdvertise(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNAdvertise>();
 
@@ -562,7 +562,7 @@ void MqttSNClient::processSearchGw()
     }
 }
 
-void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNClient::processGwInfo(inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
 {
     const auto& payload = pk->peekData<MqttSNGwInfo>();
 
@@ -589,7 +589,7 @@ void MqttSNClient::processGwInfo(inet::Packet *pk, inet::L3Address srcAddress, i
     }
 }
 
-void MqttSNClient::processConnAck(inet::Packet *pk)
+void MqttSNClient::processConnAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithReturnCode>();
 
@@ -627,7 +627,7 @@ void MqttSNClient::processPingResp(inet::L3Address srcAddress, int srcPort)
     unscheduleMsgRetransmission(MsgType::PINGREQ);
 }
 
-void MqttSNClient::processDisconnect(inet::Packet *pk)
+void MqttSNClient::processDisconnect(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
@@ -670,7 +670,7 @@ void MqttSNClient::sendSearchGw()
     payload->setRadius(0x00);
     payload->setChunkLength(inet::B(payload->getLength()));
 
-    inet::Packet *packet = new inet::Packet("SearchGwPacket");
+    inet::Packet* packet = new inet::Packet("SearchGwPacket");
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
@@ -686,7 +686,7 @@ void MqttSNClient::sendConnect(inet::L3Address destAddress, int destPort, bool w
     payload->setClientId(clientId);
     payload->setChunkLength(inet::B(payload->getLength()));
 
-    inet::Packet *packet = new inet::Packet("ConnectPacket");
+    inet::Packet* packet = new inet::Packet("ConnectPacket");
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);
@@ -700,7 +700,7 @@ void MqttSNClient::handleCheckGatewaysEvent()
         const GatewayInfo& gatewayInfo = it->second;
 
         // check if the elapsed time exceeds the threshold
-        if ((currentTime - gatewayInfo.lastUpdatedTime) > ((int) par("nadv") * gatewayInfo.duration)) {
+        if ((currentTime - gatewayInfo.lastUpdatedTime) > ((int) par("nadv")*  gatewayInfo.duration)) {
             // gateway is considered unavailable
             it = activeGateways.erase(it);
         }
@@ -726,7 +726,7 @@ void MqttSNClient::handleSearchGatewayEvent()
         double maxInterval = par("maxSearchGatewayInterval");
 
         // increase search interval exponentially, with a maximum limit
-        searchGatewayInterval = std::min(searchGatewayInterval * searchGatewayInterval, maxInterval);
+        searchGatewayInterval = std::min(searchGatewayInterval*  searchGatewayInterval, maxInterval);
         maxIntervalReached = (searchGatewayInterval == maxInterval);
     }
 
@@ -863,7 +863,7 @@ QoS MqttSNClient::intToQoS(int value)
     }
 }
 
-void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string> *parameters)
+void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address destAddress, int destPort, std::map<std::string, std::string>* parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
     if (retransmissions.find(msgType) != retransmissions.end()) {
@@ -880,7 +880,7 @@ void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, inet::L3Address de
 
     // add other dynamic parameters to the timer
     if (parameters != nullptr) {
-        for (const auto& param : *parameters) {
+        for (const auto& param :* parameters) {
             newInfo.retransmissionEvent->addPar(param.first.c_str()).setStringValue(param.second.c_str());
         }
     }
@@ -923,7 +923,7 @@ void MqttSNClient::clearRetransmissions()
     }
 }
 
-void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
+void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
 {
     // get the message type from the message parameter
     MsgType msgType = static_cast<MsgType>(msg->par("messageType").longValue());
@@ -936,7 +936,7 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
         return;
     }
 
-    UnicastMessageInfo *unicastMessageInfo = &it->second;
+    UnicastMessageInfo* unicastMessageInfo = &it->second;
     bool retransmission = true;
 
     // check if the number of retries equals the threshold
@@ -970,7 +970,7 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage *msg)
     }
 }
 
-void MqttSNClient::retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission)
+void MqttSNClient::retransmitDisconnect(inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
 {
     if (!retransmission) {
         scheduleClockEventAfter(0.5, stateChangeEvent);
@@ -983,7 +983,7 @@ void MqttSNClient::retransmitDisconnect(inet::L3Address destAddress, int destPor
     }
 }
 
-void MqttSNClient::retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission)
+void MqttSNClient::retransmitPingReq(inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
 {
     if (!retransmission) {
         if (msg->hasPar("clientId")) {

@@ -11,7 +11,7 @@ void MqttSNPublisher::initializeCustom()
     // TO DO
 }
 
-bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage *msg)
+bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 {
     // TO DO
     return false;
@@ -32,7 +32,7 @@ void MqttSNPublisher::cancelActiveStateClockEventsCustom()
     // TO DO
 }
 
-void MqttSNPublisher::processPacketCustom(MsgType msgType, inet::Packet *pk, inet::L3Address srcAddress, int srcPort)
+void MqttSNPublisher::processPacketCustom(MsgType msgType, inet::Packet* pk, inet::L3Address srcAddress, int srcPort)
 {
     switch(msgType) {
         // packet types that are allowed only from the selected gateway
@@ -98,7 +98,7 @@ void MqttSNPublisher::sendBaseWithWillTopic(inet::L3Address destAddress, int des
             packetName = "BaseWithWillTopicPacket";
     }
 
-    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);
@@ -126,7 +126,7 @@ void MqttSNPublisher::sendBaseWithWillMsg(inet::L3Address destAddress, int destP
             packetName = "BaseWithWillMsgPacket";
     }
 
-    inet::Packet *packet = new inet::Packet(packetName.c_str());
+    inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
     socket.sendTo(packet, destAddress, destPort);
@@ -137,7 +137,7 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(inet::L3Address destAddre
     MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), 0, keepAlive);
 }
 
-void MqttSNPublisher::handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage *msg, bool retransmission)
+void MqttSNPublisher::handleRetransmissionEventCustom(MsgType msgType, inet::L3Address destAddress, int destPort, omnetpp::cMessage* msg, bool retransmission)
 {
     // TO DO
     switch (msgType) {

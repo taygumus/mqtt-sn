@@ -24,21 +24,21 @@ class MqttSNServer : public MqttSNApp
         double clientsClearInterval;
 
         // gateway state management
-        inet::ClockEvent *stateChangeEvent = nullptr;
+        inet::ClockEvent* stateChangeEvent = nullptr;
         GatewayState currentState;
 
         // online gateway state
-        inet::ClockEvent *advertiseEvent = nullptr;
+        inet::ClockEvent* advertiseEvent = nullptr;
 
         static int gatewayIdCounter;
         uint8_t gatewayId;
 
         std::map<std::pair<inet::L3Address, int>, ClientInfo> clients;
 
-        inet::ClockEvent *activeClientsCheckEvent = nullptr;
-        inet::ClockEvent *asleepClientsCheckEvent = nullptr;
+        inet::ClockEvent* activeClientsCheckEvent = nullptr;
+        inet::ClockEvent* asleepClientsCheckEvent = nullptr;
 
-        inet::ClockEvent *clientsClearEvent = nullptr;
+        inet::ClockEvent* clientsClearEvent = nullptr;
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
         std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
@@ -48,13 +48,13 @@ class MqttSNServer : public MqttSNApp
 
     protected:
         virtual void initialize(int stage) override;
-        virtual void handleMessageWhenUp(omnetpp::cMessage *msg) override;
+        virtual void handleMessageWhenUp(omnetpp::cMessage* msg) override;
         virtual void finish() override;
         virtual void refreshDisplay() const override;
 
-        virtual void handleStartOperation(inet::LifecycleOperation *operation) override;
-        virtual void handleStopOperation(inet::LifecycleOperation *operation) override;
-        virtual void handleCrashOperation(inet::LifecycleOperation *operation) override;
+        virtual void handleStartOperation(inet::LifecycleOperation* operation) override;
+        virtual void handleStopOperation(inet::LifecycleOperation* operation) override;
+        virtual void handleCrashOperation(inet::LifecycleOperation* operation) override;
 
         // gateway state management
         virtual void handleStateChangeEvent();
@@ -70,14 +70,14 @@ class MqttSNServer : public MqttSNApp
         virtual std::string getGatewayStateAsString();
 
         // process received packets
-        virtual void processPacket(inet::Packet *pk) override;
+        virtual void processPacket(inet::Packet* pk) override;
         virtual void processSearchGw();
-        virtual void processConnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processWillTopic(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
-        virtual void processPingReq(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processConnect(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processWillTopic(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processWillMsg(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processPingReq(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
         virtual void processPingResp(inet::L3Address srcAddress, int srcPort);
-        virtual void processDisconnect(inet::Packet *pk, inet::L3Address srcAddress, int srcPort);
+        virtual void processDisconnect(inet::Packet* pk, inet::L3Address srcAddress, int srcPort);
 
         // send packets
         virtual void sendAdvertise();
