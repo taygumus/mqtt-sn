@@ -579,7 +579,7 @@ ClientInfo* MqttSNServer::getClientInfo(inet::L3Address srcAddress, int srcPort,
     }
 
     if (insertIfNotFound) {
-        // insert a new empty clientInfo
+        // insert a new empty client
         ClientInfo newClientInfo;
         clients[std::make_pair(srcAddress, srcPort)] = newClientInfo;
 
@@ -599,7 +599,7 @@ PublisherInfo* MqttSNServer::getPublisherInfo(inet::L3Address srcAddress, int sr
     }
 
     if (insertIfNotFound) {
-        // insert a new empty clientInfo
+        // insert a new empty publisher
         PublisherInfo newPublisherInfo;
         publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
 
