@@ -219,7 +219,7 @@ bool MqttSNClient::fromActiveToDisconnected()
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
     // schedule message retransmission
-    scheduleMsgRetransmission(MsgType::DISCONNECT, selectedGateway.address, selectedGateway.port);
+    scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT);
 
     return false;
 }
@@ -270,7 +270,7 @@ bool MqttSNClient::fromActiveToAsleep()
     // schedule message retransmission
     std::map<std::string, std::string> parameters;
     parameters["sleepDuration"] = std::to_string(sleepDuration);
-    scheduleMsgRetransmission(MsgType::DISCONNECT, selectedGateway.address, selectedGateway.port, &parameters);
+    scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT, &parameters);
 
     return false;
 }
@@ -299,7 +299,7 @@ bool MqttSNClient::fromAsleepToAwake()
     // schedule message retransmission
     std::map<std::string, std::string> parameters;
     parameters["clientId"] = clientId;
-    scheduleMsgRetransmission(MsgType::PINGREQ, selectedGateway.address, selectedGateway.port, &parameters);
+    scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::PINGREQ, &parameters);
 
     return true;
 }
@@ -316,7 +316,7 @@ bool MqttSNClient::fromAsleepToDisconnected()
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
     // schedule message retransmission
-    scheduleMsgRetransmission(MsgType::DISCONNECT, selectedGateway.address, selectedGateway.port);
+    scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT);
 
     return false;
 }
@@ -767,7 +767,7 @@ void MqttSNClient::handlePingEvent()
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port);
 
     // schedule message retransmission
-    scheduleMsgRetransmission(MsgType::PINGREQ, selectedGateway.address, selectedGateway.port);
+    scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::PINGREQ);
 
     scheduleClockEventAfter(keepAlive, pingEvent);
 }
@@ -863,7 +863,7 @@ QoS MqttSNClient::intToQoS(int value)
     }
 }
 
-void MqttSNClient::scheduleMsgRetransmission(MsgType msgType, const inet::L3Address& destAddress, const int& destPort, std::map<std::string, std::string>* parameters)
+void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::map<std::string, std::string>* parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
     if (retransmissions.find(msgType) != retransmissions.end()) {
