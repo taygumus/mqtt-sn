@@ -134,7 +134,7 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
-    MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), 0, keepAlive);
+    MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
 }
 
 void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)
