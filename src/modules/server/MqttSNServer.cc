@@ -341,7 +341,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     }
 }
 
-void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isUpdate)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
@@ -354,6 +354,10 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
     publisherInfo->willQosFlag = (QoS) payload->getQoSFlag();
     publisherInfo->willRetainFlag = payload->getRetainFlag();
     publisherInfo->willTopic = payload->getWillTopic();
+
+    if (isUpdate) {
+        //
+    }
 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
 }
@@ -371,6 +375,16 @@ void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAd
     publisherInfo->willMsg = payload->getWillMsg();
 
     sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
+}
+
+void MqttSNServer::processWillTopicUpd(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    //
+}
+
+void MqttSNServer::processWillMsgUpd(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    //
 }
 
 void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
