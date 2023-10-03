@@ -880,7 +880,7 @@ void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress,
 
     // add other dynamic parameters to the timer
     if (parameters != nullptr) {
-        for (const auto& param :* parameters) {
+        for (const auto& param : *parameters) {
             newInfo.retransmissionEvent->addPar(param.first.c_str()).setStringValue(param.second.c_str());
         }
     }

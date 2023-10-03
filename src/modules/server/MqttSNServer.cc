@@ -325,7 +325,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     clientInfo->isNew = false;
     clientInfo->clientId = payload->getClientId();
     clientInfo->keepAliveDuration = payload->getDuration();
-    ///clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
+    // TO DO -> clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
 
