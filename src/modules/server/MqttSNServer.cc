@@ -342,8 +342,8 @@ void MqttSNServer::processWillTopic(inet::Packet *pk, inet::L3Address srcAddress
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
-    // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    // update client information
     clientInfo->qosFlag = (QoS) payload->getQoSFlag();
     clientInfo->retainFlag = payload->getRetainFlag();
     clientInfo->willTopic = payload->getWillTopic();
@@ -356,8 +356,8 @@ void MqttSNServer::processWillMsg(inet::Packet *pk, inet::L3Address srcAddress, 
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
-    // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    // update client information
     clientInfo->willMsg = payload->getWillMsg();
     clientInfo->lastReceivedMsgTime = getClockTime();
 
@@ -370,6 +370,7 @@ void MqttSNServer::processPingReq(inet::Packet *pk, inet::L3Address srcAddress, 
     std::string clientId = payload->getClientId();
 
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    // update client information
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     if (!clientId.empty()) {
@@ -394,6 +395,7 @@ void MqttSNServer::processPingResp(inet::L3Address srcAddress, int srcPort)
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    // update client information
     clientInfo->lastReceivedMsgTime = getClockTime();
     clientInfo->sentPingReq = false;
 }
@@ -404,6 +406,7 @@ void MqttSNServer::processDisconnect(inet::Packet *pk, inet::L3Address srcAddres
     uint16_t sleepDuration = payload->getDuration();
 
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    // update client information
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
     clientInfo->lastReceivedMsgTime = getClockTime();
