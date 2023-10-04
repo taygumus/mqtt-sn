@@ -73,8 +73,8 @@ class MqttSNServer : public MqttSNApp
         virtual void processPacket(inet::Packet* pk) override;
         virtual void processSearchGw();
         virtual void processConnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
-        virtual void processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isUpdate = false);
-        virtual void processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isUpdate = false);
+        virtual void processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate = false);
+        virtual void processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate = false);
         virtual void processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPingResp(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);

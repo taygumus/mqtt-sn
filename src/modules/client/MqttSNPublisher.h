@@ -20,6 +20,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
         virtual void processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processWillResp(inet::Packet* pk, bool willTopic);
 
         // send packets
         virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);

@@ -1,6 +1,7 @@
 #include "MqttSNPublisher.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
+#include "messages/MqttSNBaseWithReturnCode.h"
 
 namespace mqttsn {
 
@@ -44,7 +45,12 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
             break;
 
         // packet types that are allowed only from the connected gateway
-        // TO DO
+        case MsgType::WILLTOPICRESP:
+        case MsgType::WILLMSGRESP:
+            if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
+                return;
+            }
+            break;
 
         default:
             break;
@@ -57,6 +63,14 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 
         case MsgType::WILLMSGREQ:
             processWillMsgReq(srcAddress, srcPort);
+            break;
+
+        case MsgType::WILLTOPICRESP:
+            processWillResp(pk, true);
+            break;
+
+        case MsgType::WILLMSGRESP:
+            processWillResp(pk, false);
             break;
 
         default:
@@ -72,6 +86,22 @@ void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, con
 void MqttSNPublisher::processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
     sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
+}
+
+void MqttSNPublisher::processWillResp(inet::Packet* pk, bool willTopic)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithReturnCode>();
+
+    if (payload->getReturnCode() != ReturnCode::ACCEPTED) {
+        return;
+    }
+
+    if (willTopic) {
+        EV << "Will topic name updated" << std::endl;
+        return;
+    }
+
+    EV << "Will message updated" << std::endl;
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic)
@@ -134,7 +164,7 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
-    MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), 0, MqttSNClient::keepAlive);
+    MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
 }
 
 void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)

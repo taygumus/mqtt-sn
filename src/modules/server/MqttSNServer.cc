@@ -238,7 +238,9 @@ void MqttSNServer::processPacket(inet::Packet* pk)
     switch(msgType) {
         // packet types that require an ACTIVE client state
         case MsgType::WILLTOPIC:
+        case MsgType::WILLTOPICUPD:
         case MsgType::WILLMSG:
+        case MsgType::WILLMSGUPD:
         case MsgType::PINGRESP:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
@@ -273,8 +275,16 @@ void MqttSNServer::processPacket(inet::Packet* pk)
             processWillTopic(pk, srcAddress, srcPort);
             break;
 
+        case MsgType::WILLTOPICUPD:
+            processWillTopic(pk, srcAddress, srcPort, true);
+            break;
+
         case MsgType::WILLMSG:
             processWillMsg(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::WILLMSGUPD:
+            processWillMsg(pk, srcAddress, srcPort, true);
             break;
 
         case MsgType::PINGREQ:
@@ -325,13 +335,15 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     clientInfo->isNew = false;
     clientInfo->clientId = payload->getClientId();
     clientInfo->keepAliveDuration = payload->getDuration();
-    // TO DO -> clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
 
+    // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe. Per il publisher cancellare elementi will per subscriber cancellare sottoscrizioni
+    // clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
+
     if (willFlag) {
-        PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
         // update publisher information
+        PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
         publisherInfo->willFlag = willFlag;
 
         MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLTOPICREQ);
@@ -341,50 +353,46 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     }
 }
 
-void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isUpdate)
+void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
     // update publisher information
+    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
     publisherInfo->willQosFlag = (QoS) payload->getQoSFlag();
     publisherInfo->willRetainFlag = payload->getRetainFlag();
     publisherInfo->willTopic = payload->getWillTopic();
 
-    if (isUpdate) {
-        //
+    if (isDirectUpdate) {
+        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::WILLTOPICRESP, ReturnCode::ACCEPTED);
     }
-
-    MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
+    else {
+        MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLMSGREQ);
+    }
 }
 
-void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
     // update publisher information
+    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
     publisherInfo->willMsg = payload->getWillMsg();
 
-    sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
-}
-
-void MqttSNServer::processWillTopicUpd(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
-{
-    //
-}
-
-void MqttSNServer::processWillMsgUpd(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
-{
-    //
+    if (isDirectUpdate) {
+        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::WILLMSGRESP, ReturnCode::ACCEPTED);
+    }
+    else {
+        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::ACCEPTED);
+    }
 }
 
 void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -392,8 +400,8 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
     const auto& payload = pk->peekData<MqttSNPingReq>();
     std::string clientId = payload->getClientId();
 
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     if (!clientId.empty()) {
@@ -417,8 +425,8 @@ void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int&
 {
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     clientInfo->lastReceivedMsgTime = getClockTime();
     clientInfo->sentPingReq = false;
 }
@@ -428,8 +436,8 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
 
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
     clientInfo->lastReceivedMsgTime = getClockTime();

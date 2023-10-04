@@ -606,8 +606,7 @@ void MqttSNClient::processConnAck(inet::Packet* pk)
 
     std::ostringstream str;
     str << "Client connected to: " << selectedGateway.address.str() << ":" << selectedGateway.port;
-    EV_INFO << str.str() << std::endl;
-    bubble(str.str().c_str());
+    EV << str.str() << std::endl;
 }
 
 void MqttSNClient::processPingReq(const inet::L3Address& srcAddress, const int& srcPort)
