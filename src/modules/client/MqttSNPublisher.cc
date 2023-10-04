@@ -9,7 +9,10 @@ Define_Module(MqttSNPublisher);
 
 void MqttSNPublisher::initializeCustom()
 {
-    // TO DO
+    willQosFlag = par("willQosFlag");
+    willRetainFlag = par("willRetainFlag");
+    willTopic = par("willTopic").stringValue();
+    willMsg = par("willMsg").stringValue();
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
@@ -80,12 +83,12 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
-    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, MqttSNClient::intToQoS(par("qosFlag")), par("retainFlag"), par("willTopic"));
+    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, MqttSNClient::intToQoS(willQosFlag), willRetainFlag, willTopic);
 }
 
 void MqttSNPublisher::processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
-    sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, par("willMsg"));
+    sendBaseWithWillMsg(srcAddress, srcPort, MsgType::WILLMSG, willMsg);
 }
 
 void MqttSNPublisher::processWillResp(inet::Packet* pk, bool willTopic)
@@ -169,12 +172,36 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& de
 
 void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)
 {
-    // TO DO
     switch (msgType) {
-        //
+        case MsgType::WILLTOPICUPD:
+            retransmitWillTopicUpd(destAddress, destPort, retransmission);
+            break;
+
+        case MsgType::WILLMSGUPD:
+            retransmitWillMsgUpd(destAddress, destPort, retransmission);
+            break;
+
         default:
             break;
     }
+}
+
+void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission)
+{
+    if (!retransmission) {
+        return;
+    }
+
+    sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, MqttSNClient::intToQoS(willQosFlag), willRetainFlag, willTopic);
+}
+
+void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission)
+{
+    if (!retransmission) {
+        return;
+    }
+
+    sendBaseWithWillMsg(destAddress, destPort, MsgType::WILLMSGUPD, willMsg);
 }
 
 MqttSNPublisher::~MqttSNPublisher()

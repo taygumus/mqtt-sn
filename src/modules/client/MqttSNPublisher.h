@@ -8,6 +8,13 @@ namespace mqttsn {
 class MqttSNPublisher : public MqttSNClient
 {
     protected:
+        // parameters
+        int willQosFlag;
+        bool willRetainFlag;
+        std::string willTopic;
+        std::string willMsg;
+
+    protected:
         virtual void initializeCustom() override;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
@@ -31,6 +38,9 @@ class MqttSNPublisher : public MqttSNClient
 
         // retransmissions management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission = true) override;
+
+        virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission = true);
+        virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission = true);
 
     public:
         MqttSNPublisher() {};
