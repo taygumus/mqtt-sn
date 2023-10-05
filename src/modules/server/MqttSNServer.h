@@ -43,6 +43,8 @@ class MqttSNServer : public MqttSNApp
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
         std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
 
+        std::map<int, std::string> topics;
+
         // statistics
         int numAdvertiseSent = 0;
 
