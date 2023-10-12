@@ -638,8 +638,8 @@ void MqttSNClient::processDisconnect(inet::Packet* pk)
         EV << "Active -> Asleep" << std::endl;
         cancelActiveStateEvents();
 
-        updateCurrentState(ClientState::ASLEEP);
         nextStateInterval = getStateInterval(ClientState::ASLEEP);
+        updateCurrentState(ClientState::ASLEEP);
 
         clearRetransmissions();
     }
@@ -653,8 +653,8 @@ void MqttSNClient::processDisconnect(inet::Packet* pk)
             cancelActiveStateEvents();
         }
 
-        updateCurrentState(ClientState::DISCONNECTED);
         nextStateInterval = getStateInterval(ClientState::DISCONNECTED);
+        updateCurrentState(ClientState::DISCONNECTED);
     }
 
     if (nextStateInterval != -1) {
