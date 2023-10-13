@@ -140,6 +140,21 @@ void MqttSNClient::handleStateChangeEvent()
     }
 }
 
+void MqttSNClient::updateCurrentState(ClientState nextState)
+{
+    currentState = nextState;
+    EV << "Current client state: " << getClientStateAsString() << std::endl;
+}
+
+void MqttSNClient::returnToSleep()
+{
+    // transition to ASLEEP state
+    EV << "Awake -> Asleep" << std::endl;
+    updateCurrentState(ClientState::ASLEEP);
+
+    scheduleClockEventAfter(getStateInterval(currentState), stateChangeEvent);
+}
+
 void MqttSNClient::scheduleActiveStateEvents()
 {
     searchGatewayInterval = uniform(SEARCH_GATEWAY_MIN_DELAY, searchGatewayMaxDelay);
@@ -183,22 +198,6 @@ void MqttSNClient::cancelActiveStateClockEvents()
     cancelActiveStateClockEventsCustom();
 }
 
-void MqttSNClient::updateCurrentState(ClientState nextState)
-{
-    currentState = nextState;
-    EV << "Current client state: " << getClientStateAsString() << std::endl;
-}
-
-void MqttSNClient::returnToSleep()
-{
-    // transition to ASLEEP state
-    EV << "Awake -> Asleep" << std::endl;
-    updateCurrentState(ClientState::ASLEEP);
-
-    // schedule the state change
-    scheduleClockEventAfter(getStateInterval(currentState), stateChangeEvent);
-}
-
 bool MqttSNClient::fromDisconnectedToActive()
 {
     EV << "Disconnected -> Active" << std::endl;
@@ -218,7 +217,7 @@ bool MqttSNClient::fromActiveToDisconnected()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
-    // schedule message retransmission
+    // schedule disconnect retransmission
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT);
 
     return false;
@@ -267,7 +266,7 @@ bool MqttSNClient::fromActiveToAsleep()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port, sleepDuration);
 
-    // schedule message retransmission
+    // schedule disconnect retransmission
     std::map<std::string, std::string> parameters;
     parameters["sleepDuration"] = std::to_string(sleepDuration);
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT, &parameters);
@@ -296,7 +295,7 @@ bool MqttSNClient::fromAsleepToAwake()
     EV << "Asleep -> Awake" << std::endl;
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port, clientId);
 
-    // schedule message retransmission
+    // schedule ping retransmission
     std::map<std::string, std::string> parameters;
     parameters["clientId"] = clientId;
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::PINGREQ, &parameters);
@@ -315,7 +314,7 @@ bool MqttSNClient::fromAsleepToDisconnected()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
-    // schedule message retransmission
+    // schedule disconnect retransmission
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT);
 
     return false;
@@ -765,7 +764,7 @@ void MqttSNClient::handlePingEvent()
 {
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port);
 
-    // schedule message retransmission
+    // schedule ping retransmission
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::PINGREQ);
 
     scheduleClockEventAfter(keepAlive, pingEvent);

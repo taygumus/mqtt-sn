@@ -63,11 +63,12 @@ class MqttSNClient : public MqttSNApp
 
         // client state management
         virtual void handleStateChangeEvent();
+        virtual void updateCurrentState(ClientState nextState);
+        virtual void returnToSleep();
+
         virtual void scheduleActiveStateEvents();
         virtual void cancelActiveStateEvents();
         virtual void cancelActiveStateClockEvents();
-        virtual void updateCurrentState(ClientState nextState);
-        virtual void returnToSleep();
 
         virtual bool fromDisconnectedToActive();
         virtual bool fromActiveToDisconnected();
