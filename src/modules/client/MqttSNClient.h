@@ -15,6 +15,7 @@ class MqttSNClient : public MqttSNApp
     protected:
         // constants
         static constexpr double SEARCH_GATEWAY_MIN_DELAY = 1.1;
+        static constexpr double MIN_WAITING_TIME = 0.5;
 
         // parameters
         double checkGatewaysInterval;
@@ -65,7 +66,6 @@ class MqttSNClient : public MqttSNApp
         virtual void handleStateChangeEvent();
         virtual void updateCurrentState(ClientState nextState);
         virtual void returnToSleep();
-
         virtual void scheduleActiveStateEvents();
         virtual void cancelActiveStateEvents();
         virtual void cancelActiveStateClockEvents();
@@ -120,8 +120,8 @@ class MqttSNClient : public MqttSNApp
         virtual void clearRetransmissions();
         virtual void handleRetransmissionEvent(omnetpp::cMessage* msg);
 
-        virtual void retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, bool retransmission = true);
-        virtual void retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, bool retransmission = true);
+        virtual void retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
+        virtual void retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
 
         // pure virtual functions
         virtual void initializeCustom() = 0;
@@ -131,7 +131,7 @@ class MqttSNClient : public MqttSNApp
         virtual void cancelActiveStateClockEventsCustom() = 0;
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) = 0;
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission = true) = 0;
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) = 0;
 
     public:
         MqttSNClient() {};

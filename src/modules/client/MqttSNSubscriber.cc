@@ -35,7 +35,7 @@ void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& d
     MqttSNClient::sendConnect(destAddress, destPort, 0, par("cleanSessionFlag"), MqttSNClient::keepAlive);
 }
 
-void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)
+void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType)
 {
     // TO DO
     switch (msgType) {

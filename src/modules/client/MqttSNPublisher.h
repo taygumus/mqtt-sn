@@ -37,10 +37,10 @@ class MqttSNPublisher : public MqttSNClient
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
 
         // retransmissions management
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission = true) override;
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) override;
 
-        virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission = true);
-        virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission = true);
+        virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort);
+        virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort);
 
     public:
         MqttSNPublisher() {};

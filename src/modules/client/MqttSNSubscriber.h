@@ -23,7 +23,7 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
 
         // retransmissions management
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission = true) override;
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) override;
 
     public:
         MqttSNSubscriber() {};

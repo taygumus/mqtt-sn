@@ -170,15 +170,15 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& de
     MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
 }
 
-void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType, bool retransmission)
+void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType)
 {
     switch (msgType) {
         case MsgType::WILLTOPICUPD:
-            retransmitWillTopicUpd(destAddress, destPort, retransmission);
+            retransmitWillTopicUpd(destAddress, destPort);
             break;
 
         case MsgType::WILLMSGUPD:
-            retransmitWillMsgUpd(destAddress, destPort, retransmission);
+            retransmitWillMsgUpd(destAddress, destPort);
             break;
 
         default:
@@ -186,21 +186,13 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
     }
 }
 
-void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission)
+void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort)
 {
-    if (!retransmission) {
-        return;
-    }
-
     sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, MqttSNClient::intToQoS(willQosFlag), willRetainFlag, willTopic);
 }
 
-void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort, bool retransmission)
+void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort)
 {
-    if (!retransmission) {
-        return;
-    }
-
     sendBaseWithWillMsg(destAddress, destPort, MsgType::WILLMSGUPD, willMsg);
 }
 

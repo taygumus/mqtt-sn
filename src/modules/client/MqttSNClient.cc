@@ -125,7 +125,7 @@ void MqttSNClient::handleStateChangeEvent()
     std::vector<ClientState> possibleNextStates = getNextPossibleStates(currentState);
 
     // randomly select one of the possible next states
-    uint16_t nextStateIndex = uniform(0, possibleNextStates.size());
+    uint16_t nextStateIndex = intuniform(0, possibleNextStates.size() - 1);
     ClientState nextState = possibleNextStates[nextStateIndex];
 
     // perform state transition functions based on the current and next states and return true if the transition is successful
@@ -292,6 +292,13 @@ bool MqttSNClient::fromAsleepToActive()
 
 bool MqttSNClient::fromAsleepToAwake()
 {
+    if (!isConnected) {
+        EV << "Asleep -> Asleep" << std::endl;
+        scheduleClockEventAfter(MIN_WAITING_TIME, stateChangeEvent);
+
+        return false;
+    }
+
     EV << "Asleep -> Awake" << std::endl;
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port, clientId);
 
@@ -748,7 +755,13 @@ void MqttSNClient::handleGatewayInfoEvent()
 
 void MqttSNClient::handleCheckConnectionEvent()
 {
-    if (!activeGateways.empty() && !isConnected) {
+    // if the client is already connected, do nothing and stop the timer
+    if (isConnected) {
+        return;
+    }
+
+    // if there are active gateways, select one and handle the connection event
+    if (!activeGateways.empty()) {
         std::pair<uint8_t, GatewayInfo> gateway = selectGateway();
 
         GatewayInfo gatewayInfo = gateway.second;
@@ -935,45 +948,51 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
     }
 
     UnicastMessageInfo* unicastMessageInfo = &it->second;
-    bool retransmission = true;
 
     // check if the number of retries equals the threshold
     if (unicastMessageInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
-        // stop further retransmissions
-        retransmission = false;
+        // stop further retransmissions and perform state transition
+        if (currentState == ClientState::AWAKE) {
+            returnToSleep();
+        }
+        else {
+            // if the client is in an ACTIVE state, reset state events
+            if (currentState == ClientState::ACTIVE) {
+                cancelActiveStateEvents();
+            }
+
+            updateCurrentState(ClientState::DISCONNECTED);
+            scheduleClockEventAfter(MIN_WAITING_TIME, stateChangeEvent);
+        }
+
+        cancelAndDelete(unicastMessageInfo->retransmissionEvent);
+        retransmissions.erase(it);
+
+        return;
     }
 
     switch (msgType) {
         case MsgType::DISCONNECT:
-            retransmitDisconnect(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
+            retransmitDisconnect(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg);
             break;
 
         case MsgType::PINGREQ:
-            retransmitPingReq(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, retransmission);
+            retransmitPingReq(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg);
             break;
 
         default:
             break;
     }
 
-    handleRetransmissionEventCustom(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, msgType, retransmission);
+    handleRetransmissionEventCustom(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, msgType);
 
-    if (retransmission) {
-        unicastMessageInfo->retransmissionCounter++;
-        scheduleClockEventAfter(retransmissionInterval, unicastMessageInfo->retransmissionEvent);
-    }
-    else {
-        cancelAndDelete(unicastMessageInfo->retransmissionEvent);
-        retransmissions.erase(it);
-    }
+    unicastMessageInfo->retransmissionCounter++;
+    scheduleClockEventAfter(retransmissionInterval, unicastMessageInfo->retransmissionEvent);
 }
 
-void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, bool retransmission)
+void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
-    if (!retransmission) {
-        scheduleClockEventAfter(0.5, stateChangeEvent);
-    }
-    else if (msg->hasPar("sleepDuration")) {
+    if (msg->hasPar("sleepDuration")) {
         MqttSNApp::sendDisconnect(destAddress, destPort, std::stoul(msg->par("sleepDuration").stringValue()));
     }
     else {
@@ -981,18 +1000,9 @@ void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, cons
     }
 }
 
-void MqttSNClient::retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, bool retransmission)
+void MqttSNClient::retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
-    if (!retransmission) {
-        if (msg->hasPar("clientId")) {
-            returnToSleep();
-        }
-        else {
-            isConnected = false;
-            cancelEvent(pingEvent);
-        }
-    }
-    else if (msg->hasPar("clientId")) {
+    if (msg->hasPar("clientId")) {
         MqttSNApp::sendPingReq(destAddress, destPort, msg->par("clientId").stringValue());
     }
     else {
