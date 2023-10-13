@@ -293,7 +293,7 @@ bool MqttSNClient::fromAsleepToActive()
 bool MqttSNClient::fromAsleepToAwake()
 {
     if (!isConnected) {
-        EV << "Asleep -> Asleep" << std::endl;
+        // remain in ASLEEP state
         scheduleClockEventAfter(MIN_WAITING_TIME, stateChangeEvent);
 
         return false;
