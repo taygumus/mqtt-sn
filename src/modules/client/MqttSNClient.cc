@@ -954,6 +954,9 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
         // stop further retransmissions and perform state transition
         if (currentState == ClientState::AWAKE) {
             returnToSleep();
+
+            cancelAndDelete(unicastMessageInfo->retransmissionEvent);
+            retransmissions.erase(it);
         }
         else {
             // if the client is in an ACTIVE state, reset state events
@@ -964,9 +967,6 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
             updateCurrentState(ClientState::DISCONNECTED);
             scheduleClockEventAfter(MIN_WAITING_TIME, stateChangeEvent);
         }
-
-        cancelAndDelete(unicastMessageInfo->retransmissionEvent);
-        retransmissions.erase(it);
 
         return;
     }
