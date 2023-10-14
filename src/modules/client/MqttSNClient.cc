@@ -204,6 +204,14 @@ bool MqttSNClient::fromDisconnectedToActive()
     return true;
 }
 
+bool MqttSNClient::fromLostToActive()
+{
+    EV << "Lost -> Active" << std::endl;
+    scheduleActiveStateEvents();
+
+    return true;
+}
+
 bool MqttSNClient::fromActiveToDisconnected()
 {
     if (!isConnected) {
@@ -226,14 +234,6 @@ bool MqttSNClient::fromActiveToLost()
     EV << "Active -> Lost" << std::endl;
     cancelActiveStateEvents();
     clearRetransmissions();
-
-    return true;
-}
-
-bool MqttSNClient::fromLostToActive()
-{
-    EV << "Lost -> Active" << std::endl;
-    scheduleActiveStateEvents();
 
     return true;
 }

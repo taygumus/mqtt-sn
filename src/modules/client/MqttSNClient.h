@@ -71,9 +71,9 @@ class MqttSNClient : public MqttSNApp
         virtual void cancelActiveStateClockEvents();
 
         virtual bool fromDisconnectedToActive();
+        virtual bool fromLostToActive();
         virtual bool fromActiveToDisconnected();
         virtual bool fromActiveToLost();
-        virtual bool fromLostToActive();
         virtual bool fromActiveToAsleep();
         virtual bool fromAsleepToLost();
         virtual bool fromAsleepToActive();
