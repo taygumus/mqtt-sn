@@ -166,8 +166,6 @@ void MqttSNClient::scheduleActiveStateEvents()
     searchGateway = true;
     isConnected = false;
 
-    clearRetransmissions();
-
     scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
     scheduleClockEventAfter(searchGatewayInterval, searchGatewayEvent);
     scheduleClockEventAfter(checkConnectionInterval, checkConnectionEvent);
@@ -227,6 +225,7 @@ bool MqttSNClient::fromActiveToLost()
 {
     EV << "Active -> Lost" << std::endl;
     cancelActiveStateEvents();
+    clearRetransmissions();
 
     return true;
 }
@@ -244,7 +243,6 @@ bool MqttSNClient::fromActiveToAsleep()
     if (!isConnected) {
         EV << "Active -> Asleep" << std::endl;
         cancelActiveStateEvents();
-        clearRetransmissions();
 
         return true;
     }
@@ -278,6 +276,7 @@ bool MqttSNClient::fromAsleepToLost()
 {
     EV << "Asleep -> Lost" << std::endl;
     cancelActiveStateEvents();
+    clearRetransmissions();
 
     return true;
 }
@@ -286,6 +285,7 @@ bool MqttSNClient::fromAsleepToActive()
 {
     EV << "Asleep -> Active" << std::endl;
     scheduleActiveStateEvents();
+    clearRetransmissions();
 
     return true;
 }
@@ -298,6 +298,8 @@ bool MqttSNClient::fromAsleepToAwake()
 
         return false;
     }
+
+    clearRetransmissions();
 
     EV << "Asleep -> Awake" << std::endl;
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port, clientId);
@@ -624,12 +626,12 @@ void MqttSNClient::processPingResp(const inet::L3Address& srcAddress, const int&
 {
     if (currentState == ClientState::AWAKE) {
         returnToSleep();
+        clearRetransmissions();
     }
     else {
         EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
+        unscheduleMsgRetransmission(MsgType::PINGREQ);
     }
-
-    unscheduleMsgRetransmission(MsgType::PINGREQ);
 }
 
 void MqttSNClient::processDisconnect(inet::Packet* pk)
@@ -646,8 +648,6 @@ void MqttSNClient::processDisconnect(inet::Packet* pk)
 
         nextStateInterval = getStateInterval(ClientState::ASLEEP);
         updateCurrentState(ClientState::ASLEEP);
-
-        clearRetransmissions();
     }
     else {
         // message without duration field
@@ -666,6 +666,8 @@ void MqttSNClient::processDisconnect(inet::Packet* pk)
     if (nextStateInterval != -1) {
         scheduleClockEventAfter(nextStateInterval, stateChangeEvent);
     }
+
+    clearRetransmissions();
 }
 
 void MqttSNClient::sendSearchGw()
@@ -954,9 +956,6 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
         // stop further retransmissions and perform state transition
         if (currentState == ClientState::AWAKE) {
             returnToSleep();
-
-            cancelAndDelete(unicastMessageInfo->retransmissionEvent);
-            retransmissions.erase(it);
         }
         else {
             // if the client is in an ACTIVE state, reset state events
@@ -965,9 +964,11 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
             }
 
             updateCurrentState(ClientState::DISCONNECTED);
+            cancelEvent(stateChangeEvent);
             scheduleClockEventAfter(MIN_WAITING_TIME, stateChangeEvent);
         }
 
+        clearRetransmissions();
         return;
     }
 
