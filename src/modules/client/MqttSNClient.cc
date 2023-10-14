@@ -757,7 +757,6 @@ void MqttSNClient::handleGatewayInfoEvent()
 
 void MqttSNClient::handleCheckConnectionEvent()
 {
-    // if the client is already connected, do nothing and stop the timer
     if (isConnected) {
         return;
     }
