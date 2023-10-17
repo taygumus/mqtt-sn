@@ -132,6 +132,7 @@ class MqttSNClient : public MqttSNApp
         virtual void cancelActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateClockEventsCustom() = 0;
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) = 0;
+        virtual void processConnAckCustom() = 0;
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) = 0;
 

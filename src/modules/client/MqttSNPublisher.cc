@@ -14,13 +14,22 @@ void MqttSNPublisher::initializeCustom()
     willTopic = par("willTopic").stringValue();
     willMsg = par("willMsg").stringValue();
 
+    registrationInterval = par("registrationInterval");
+    registrationEvent = new inet::ClockEvent("registrationTimer");
+
     fillTopicsAndData();
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 {
-    // TO DO
-    return false;
+    if (msg == registrationEvent) {
+        handleRegistrationEvent();
+    }
+    else {
+        return false;
+    }
+
+    return true;
 }
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
@@ -30,12 +39,12 @@ void MqttSNPublisher::scheduleActiveStateEventsCustom()
 
 void MqttSNPublisher::cancelActiveStateEventsCustom()
 {
-    // TO DO
+    cancelEvent(registrationEvent);
 }
 
 void MqttSNPublisher::cancelActiveStateClockEventsCustom()
 {
-    // TO DO
+    cancelClockEvent(registrationEvent);
 }
 
 void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
@@ -81,6 +90,11 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
         default:
             break;
     }
+}
+
+void MqttSNPublisher::processConnAckCustom()
+{
+    scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
@@ -172,6 +186,12 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& de
     MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
 }
 
+void MqttSNPublisher::handleRegistrationEvent()
+{
+    // TO DO
+    scheduleClockEventAfter(registrationInterval, registrationEvent);
+}
+
 void MqttSNPublisher::fillTopicsAndData()
 {
     std::vector<std::string> rows = MqttSNClient::parseString(par("topicsAndData").stringValue(), ';');
@@ -219,7 +239,7 @@ void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, c
 
 MqttSNPublisher::~MqttSNPublisher()
 {
-    // TO DO
+    cancelAndDelete(registrationEvent);
 }
 
 } /* namespace mqttsn */

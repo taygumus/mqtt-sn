@@ -14,8 +14,10 @@ class MqttSNPublisher : public MqttSNClient
         bool willRetainFlag;
         std::string willTopic;
         std::string willMsg;
+        double registrationInterval;
 
         // active publisher state
+        inet::ClockEvent* registrationEvent = nullptr;
         std::map<int, TopicsAndData> topicsAndData;
 
     protected:
@@ -29,6 +31,7 @@ class MqttSNPublisher : public MqttSNClient
 
         // process received packets
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
+        virtual void processConnAckCustom() override;
         virtual void processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processWillResp(inet::Packet* pk, bool willTopic);
@@ -39,6 +42,7 @@ class MqttSNPublisher : public MqttSNClient
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
+        virtual void handleRegistrationEvent();
 
         // other functions
         virtual void fillTopicsAndData();

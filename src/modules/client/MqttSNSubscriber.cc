@@ -30,6 +30,11 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
     // TO DO
 }
 
+void MqttSNSubscriber::processConnAckCustom()
+{
+    // TO DO
+}
+
 void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
     MqttSNClient::sendConnect(destAddress, destPort, 0, par("cleanSessionFlag"), MqttSNClient::keepAlive);

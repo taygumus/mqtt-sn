@@ -18,6 +18,7 @@ class MqttSNSubscriber : public MqttSNClient
 
         // process received packets
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
+        virtual void processConnAckCustom() override;
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;

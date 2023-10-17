@@ -9,6 +9,7 @@ module MqttSNPublisher extends MqttSNClient
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
         
+        double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
         string topicsAndData; // topic names with their associated data
         
         @display("i=block/routing;bgb=38,25");
