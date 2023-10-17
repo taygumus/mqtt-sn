@@ -11,7 +11,7 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void initializeCustom() override;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
-        // client state management
+        // active state management
         virtual void scheduleActiveStateEventsCustom() override;
         virtual void cancelActiveStateEventsCustom() override;
         virtual void cancelActiveStateClockEventsCustom() override;

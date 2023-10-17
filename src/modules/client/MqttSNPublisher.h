@@ -2,6 +2,7 @@
 #define MODULES_CLIENT_MQTTSNPUBLISHER_H_
 
 #include "MqttSNClient.h"
+#include "types/client/TopicsAndData.h"
 
 namespace mqttsn {
 
@@ -14,11 +15,14 @@ class MqttSNPublisher : public MqttSNClient
         std::string willTopic;
         std::string willMsg;
 
+        // active publisher state
+        std::map<int, TopicsAndData> topicsAndData;
+
     protected:
         virtual void initializeCustom() override;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
-        // client state management
+        // active state management
         virtual void scheduleActiveStateEventsCustom() override;
         virtual void cancelActiveStateEventsCustom() override;
         virtual void cancelActiveStateClockEventsCustom() override;
@@ -35,6 +39,9 @@ class MqttSNPublisher : public MqttSNClient
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
+
+        // other functions
+        virtual void fillTopicsAndData();
 
         // retransmissions management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) override;

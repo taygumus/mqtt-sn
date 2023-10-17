@@ -13,6 +13,8 @@ void MqttSNPublisher::initializeCustom()
     willRetainFlag = par("willRetainFlag");
     willTopic = par("willTopic").stringValue();
     willMsg = par("willMsg").stringValue();
+
+    fillTopicsAndData();
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
@@ -168,6 +170,25 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
     MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
+}
+
+void MqttSNPublisher::fillTopicsAndData()
+{
+    std::vector<std::string> rows = MqttSNClient::parseString(par("topicsAndData").stringValue(), ';');
+    int key = 1;
+
+    for (const auto& row : rows) {
+        std::vector<std::string> rowInfo = MqttSNClient::parseString(row, ':');
+
+        if (rowInfo.size() == 2) {
+            TopicsAndData topicAndData;
+            topicAndData.topicName = MqttSNClient::sanitizeSpaces(rowInfo[0]);
+            topicAndData.data = MqttSNClient::parseString(rowInfo[1], ',');
+
+            topicsAndData[key] = topicAndData;
+            key++;
+        }
+    }
 }
 
 void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType)

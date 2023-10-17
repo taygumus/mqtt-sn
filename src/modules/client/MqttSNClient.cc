@@ -839,6 +839,28 @@ std::string MqttSNClient::generateClientId()
     return clientId;
 }
 
+std::string MqttSNClient::sanitizeSpaces(std::string inputString)
+{
+    std::string sanitizedString = inputString;
+    sanitizedString.erase(std::remove_if(sanitizedString.begin(), sanitizedString.end(), ::isspace), sanitizedString.end());
+
+    return sanitizedString;
+}
+
+std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter) {
+    std::vector<std::string> tokens;
+    std::istringstream iss(inputString);
+    std::string token;
+
+    while (std::getline(iss, token, delimiter)) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    return tokens;
+}
+
 std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
 {
     if (activeGateways.empty()) {

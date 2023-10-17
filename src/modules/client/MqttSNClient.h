@@ -111,6 +111,8 @@ class MqttSNClient : public MqttSNApp
         virtual bool isSelectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual std::string generateClientId();
+        virtual std::string sanitizeSpaces(std::string inputString);
+        virtual std::vector<std::string> parseString(std::string inputString, char delimiter);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual QoS intToQoS(int value);
 

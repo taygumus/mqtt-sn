@@ -9,6 +9,8 @@ module MqttSNPublisher extends MqttSNClient
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
         
+        string topicsAndData; // topic names with their associated data
+        
         @display("i=block/routing;bgb=38,25");
         @class(MqttSNPublisher);
 }
