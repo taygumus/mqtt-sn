@@ -428,7 +428,8 @@ std::string MqttSNClient::getClientStateAsString()
     }
 }
 
-std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState) {
+std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState currentState)
+{
     // get the possible next states based on the current state
     switch (currentState) {
         case ClientState::DISCONNECTED:
@@ -841,15 +842,17 @@ std::string MqttSNClient::generateClientId()
     return clientId;
 }
 
-std::string MqttSNClient::sanitizeSpaces(std::string inputString)
+std::string MqttSNClient::concatenateStringWithCounter(std::string inputString, int counter)
 {
-    std::string sanitizedString = inputString;
-    sanitizedString.erase(std::remove_if(sanitizedString.begin(), sanitizedString.end(), ::isspace), sanitizedString.end());
+    if (counter == 0) {
+        return inputString;
+    }
 
-    return sanitizedString;
+    return inputString + std::to_string(counter);
 }
 
-std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter) {
+std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter)
+{
     std::vector<std::string> tokens;
     std::istringstream iss(inputString);
     std::string token;

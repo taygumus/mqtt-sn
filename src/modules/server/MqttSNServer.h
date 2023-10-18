@@ -43,7 +43,9 @@ class MqttSNServer : public MqttSNApp
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
         std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
 
-        std::map<int, std::string> topics;
+        std::map<std::string, int> topicsToIds;
+
+        //std::map<int, std::string> topics;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -80,10 +82,12 @@ class MqttSNServer : public MqttSNApp
         virtual void processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPingResp(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendAdvertise();
         virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode);
+        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode);
 
         // event handlers
         virtual void handleAdvertiseEvent();
@@ -94,6 +98,7 @@ class MqttSNServer : public MqttSNApp
         // other functions
         virtual bool isGatewayCongested();
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
+        virtual std::string base64Encode(std::string inputString);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 

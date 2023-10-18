@@ -2,6 +2,7 @@
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
+#include "messages/MqttSNRegister.h"
 
 namespace mqttsn {
 
@@ -181,6 +182,20 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
     socket.sendTo(packet, destAddress, destPort);
 }
 
+void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, std::string topicName)
+{
+    const auto& payload = inet::makeShared<MqttSNRegister>();
+    payload->setMsgType(MsgType::REGISTER);
+    payload->setMsgId(msgId);
+    payload->setTopicName(topicName);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet* packet = new inet::Packet("RegisterPacket");
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
     MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
@@ -188,11 +203,18 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& de
 
 void MqttSNPublisher::handleRegistrationEvent()
 {
-    // TO DO
+    if (topicsAndData.empty()) {
+        throw omnetpp::cRuntimeError("No topic available");
+    }
 
-    if (topicsAndData)
+    // select randomly an element from the map
+    auto it = topicsAndData.begin();
+    std::advance(it, intuniform(0, topicsAndData.size() - 1));
 
-    scheduleClockEventAfter(registrationInterval, registrationEvent);
+    std::string topicName = MqttSNClient::concatenateStringWithCounter(it->second.topicName, it->second.counter);
+
+    // TO DO -> msgID
+    sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, 0, topicName);
 }
 
 void MqttSNPublisher::fillTopicsAndData()
@@ -205,7 +227,7 @@ void MqttSNPublisher::fillTopicsAndData()
 
         if (rowInfo.size() == 2) {
             TopicsAndData topicAndData;
-            topicAndData.topicName = MqttSNClient::sanitizeSpaces(rowInfo[0]);
+            topicAndData.topicName = MqttSNApp::sanitizeSpaces(rowInfo[0]);
             topicAndData.data = MqttSNClient::parseString(rowInfo[1], ',');
 
             topicsAndData[key] = topicAndData;

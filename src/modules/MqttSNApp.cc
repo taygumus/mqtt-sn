@@ -119,4 +119,12 @@ bool MqttSNApp::isSelfBroadcastAddress(const inet::L3Address& address)
     return (address == selfBroadcastAddress);
 }
 
+std::string MqttSNApp::sanitizeSpaces(std::string inputString)
+{
+    std::string sanitizedString = inputString;
+    sanitizedString.erase(std::remove_if(sanitizedString.begin(), sanitizedString.end(), ::isspace), sanitizedString.end());
+
+    return sanitizedString;
+}
+
 } /* namespace mqttsn */

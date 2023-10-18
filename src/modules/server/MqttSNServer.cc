@@ -10,6 +10,8 @@
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNDisconnect.h"
 #include "messages/MqttSNPingReq.h"
+#include "messages/MqttSNRegister.h"
+#include "messages/MqttSNMsgIdWithTopicIdPlus.h"
 
 namespace mqttsn {
 
@@ -170,7 +172,8 @@ bool MqttSNServer::fromOnlineToOffline()
     return true;
 }
 
-bool MqttSNServer::performStateTransition(GatewayState currentState, GatewayState nextState) {
+bool MqttSNServer::performStateTransition(GatewayState currentState, GatewayState nextState)
+{
     // determine the transition function based on current and next states
     switch (currentState) {
         case GatewayState::OFFLINE:
@@ -242,6 +245,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::WILLMSG:
         case MsgType::WILLMSGUPD:
         case MsgType::PINGRESP:
+        case MsgType::REGISTER:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -297,6 +301,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::DISCONNECT:
             processDisconnect(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::REGISTER:
+            processRegister(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -358,7 +366,7 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     // update publisher information
@@ -380,7 +388,7 @@ void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAd
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     // update publisher information
@@ -401,7 +409,7 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
     std::string clientId = payload->getClientId();
 
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     if (!clientId.empty()) {
@@ -426,7 +434,7 @@ void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int&
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
     clientInfo->sentPingReq = false;
 }
@@ -437,7 +445,7 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
     uint16_t sleepDuration = payload->getDuration();
 
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
     clientInfo->lastReceivedMsgTime = getClockTime();
@@ -447,6 +455,44 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
 
     // TO DO -> not affect existing subscriptions (6.12)
     // TO DO -> manage disconnect with sleep duration field (6.14)
+}
+
+void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNRegister>();
+    uint16_t topicId = payload->getTopicId();
+    uint16_t msgId = payload->getMsgId();
+
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+
+    // extract and sanitize the topic name from the payload
+    std::string topicName = MqttSNApp::sanitizeSpaces(payload->getTopicName());
+
+    // if the topic name is empty, reject the registration and send REGACK with error code
+    if (topicName.empty()) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
+        return;
+    }
+
+    // encode the sanitized topic name to Base64 for consistent key handling
+    std::string encodedTopicName = base64Encode(topicName);
+
+    // check if the topic is already registered; if yes, send ACCEPTED response, otherwise register the topic
+    auto it = topicsToIds.find(encodedTopicName);
+    if (it != topicsToIds.end()) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, it->second, msgId, ReturnCode::ACCEPTED);
+        return;
+    }
+
+    // check if the maximum number of topics is reached
+    if (topicsToIds.size() == UINT16_MAX) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_CONGESTION);
+        return;
+    }
+
+    // TO DO
 }
 
 void MqttSNServer::sendAdvertise()
@@ -490,6 +536,36 @@ void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, co
 
         default:
             packetName = "BaseWithReturnCodePacket";
+    }
+
+    inet::Packet* packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    socket.sendTo(packet, destAddress, destPort);
+}
+
+void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode)
+{
+    const auto& payload = inet::makeShared<MqttSNMsgIdWithTopicIdPlus>();
+    payload->setMsgType(msgType);
+    payload->setTopicId(topicId);
+    payload->setMsgId(msgId);
+    payload->setReturnCode(returnCode);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::REGACK:
+            packetName = "RegAckPacket";
+            break;
+
+        case MsgType::PUBACK:
+            packetName = "PubAckPacket";
+            break;
+
+        default:
+            packetName = "MsgIdWithTopicIdPlus";
     }
 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
@@ -589,6 +665,34 @@ bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int&
 
     // return true if the client is found and its state matches the requested state, otherwise return false
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
+}
+
+std::string MqttSNServer::base64Encode(std::string inputString)
+{
+    // encode the string to Base64
+    const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    int val = 0, valb = -6;
+    std::string encodedString;
+
+    for (unsigned char c : inputString) {
+        val = (val << 8) + c;
+        valb += 8;
+
+        while (valb >= 0) {
+            encodedString.push_back(base64_chars[(val >> valb) & 0x3F]);
+            valb -= 6;
+        }
+    }
+
+    if (valb > -6) {
+        encodedString.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
+    }
+
+    while (encodedString.size() % 4) {
+        encodedString.push_back('=');
+    }
+
+    return encodedString;
 }
 
 ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)

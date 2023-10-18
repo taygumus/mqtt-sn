@@ -111,7 +111,7 @@ class MqttSNClient : public MqttSNApp
         virtual bool isSelectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual std::string generateClientId();
-        virtual std::string sanitizeSpaces(std::string inputString);
+        virtual std::string concatenateStringWithCounter(std::string inputString, int counter);
         virtual std::vector<std::string> parseString(std::string inputString, char delimiter);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual QoS intToQoS(int value);
@@ -128,11 +128,14 @@ class MqttSNClient : public MqttSNApp
         // pure virtual functions
         virtual void initializeCustom() = 0;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) = 0;
+
         virtual void scheduleActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateClockEventsCustom() = 0;
+
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) = 0;
         virtual void processConnAckCustom() = 0;
+
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) = 0;
 

@@ -39,6 +39,7 @@ class MqttSNPublisher : public MqttSNClient
         // send packets
         virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);
         virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::string willMsg);
+        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, std::string topicName);
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;

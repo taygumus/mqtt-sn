@@ -34,6 +34,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         // other functions
         virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
         virtual bool isSelfBroadcastAddress(const inet::L3Address& address);
+        virtual std::string sanitizeSpaces(std::string inputString);
 
     public:
         MqttSNApp() {};
