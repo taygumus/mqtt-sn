@@ -612,11 +612,11 @@ void MqttSNClient::processConnAck(inet::Packet* pk)
     cancelEvent(pingEvent);
     scheduleClockEventAfter(keepAlive, pingEvent);
 
-    processConnAckCustom();
-
     std::ostringstream str;
     str << "Client connected to: " << selectedGateway.address.str() << ":" << selectedGateway.port;
     EV << str.str() << std::endl;
+
+    processConnAckCustom();
 }
 
 void MqttSNClient::processPingReq(const inet::L3Address& srcAddress, const int& srcPort)

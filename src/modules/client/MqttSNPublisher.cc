@@ -189,6 +189,9 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& de
 void MqttSNPublisher::handleRegistrationEvent()
 {
     // TO DO
+
+    if (topicsAndData)
+
     scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
 
