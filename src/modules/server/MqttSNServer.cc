@@ -492,7 +492,13 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
         return;
     }
 
-    // TO DO
+    // generate a new topic ID and register it
+    uint16_t newTopicId = generateNewTopicId();
+    topicsToIds[encodedTopicName] = newTopicId;
+    topicIds.insert(newTopicId);
+
+    // send REGACK response with the new topic ID and ACCEPTED status
+    sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, newTopicId, msgId, ReturnCode::ACCEPTED);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -665,6 +671,19 @@ bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int&
 
     // return true if the client is found and its state matches the requested state, otherwise return false
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
+}
+
+uint16_t MqttSNServer::generateNewTopicId()
+{
+    int newTopicId = 1;
+
+    // search for an unused topic ID in the structure
+    while (newTopicId <= UINT16_MAX && topicIds.find(newTopicId) != topicIds.end()) {
+        newTopicId++;
+    }
+
+    // return 0 if no available ID is found within the range of uint16_t
+    return (newTopicId <= UINT16_MAX) ? newTopicId : 0;
 }
 
 std::string MqttSNServer::base64Encode(std::string inputString)
