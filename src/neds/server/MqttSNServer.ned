@@ -15,7 +15,7 @@ simple MqttSNServer like IApp
         double offlineStateInterval @unit(s) = default(30s);
         double onlineStateInterval @unit(s) = default(30s);
         
-        int advertiseInterval @unit(s); // range between 0..65535 seconds (TADV)
+        int advertiseInterval @unit(s) = default(900s); // range between 0..65535 seconds (TADV)
         
         double activeClientsCheckInterval @unit(s) = default(500ms); // check interval for verifying active clients
         double asleepClientsCheckInterval @unit(s) = default(500ms); // check interval for verifying asleep clients

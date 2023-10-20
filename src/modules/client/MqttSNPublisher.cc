@@ -3,6 +3,7 @@
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
 #include "messages/MqttSNRegister.h"
+#include "messages/MqttSNMsgIdWithTopicIdPlus.h"
 
 namespace mqttsn {
 
@@ -19,6 +20,8 @@ void MqttSNPublisher::initializeCustom()
     registrationEvent = new inet::ClockEvent("registrationTimer");
 
     fillTopicsAndData();
+
+    waitingInterval = par("waitingInterval");
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
@@ -62,6 +65,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
         // packet types that are allowed only from the connected gateway
         case MsgType::WILLTOPICRESP:
         case MsgType::WILLMSGRESP:
+        case MsgType::REGACK:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -86,6 +90,10 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 
         case MsgType::WILLMSGRESP:
             processWillResp(pk, false);
+            break;
+
+        case MsgType::REGACK:
+            processRegAck(pk);
             break;
 
         default:
@@ -122,6 +130,40 @@ void MqttSNPublisher::processWillResp(inet::Packet* pk, bool willTopic)
     }
 
     EV << "Will message updated" << std::endl;
+}
+
+void MqttSNPublisher::processRegAck(inet::Packet* pk)
+{
+    const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
+    ReturnCode returnCode = payload->getReturnCode();
+
+    // TO DO -> msgID
+
+    if (returnCode == ReturnCode::REJECTED_NOT_SUPPORTED) {
+        lastRegistration.retry = false;
+        scheduleClockEventAfter(waitingInterval, registrationEvent);
+        return;
+    }
+
+    if (returnCode == ReturnCode::REJECTED_CONGESTION) {
+        lastRegistration.retry = true;
+        scheduleClockEventAfter(waitingInterval, registrationEvent);
+        return;
+    }
+
+    if (returnCode != ReturnCode::ACCEPTED) {
+        return;
+    }
+
+    // handle operations when the registration is ACCEPTED
+    lastRegistration.retry = false;
+    topicsAndData[lastRegistration.info.key].counter++;
+
+    ///
+    topicIds[payload->getTopicId()] = lastRegistration.info;
+    ///
+
+    scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic)
@@ -207,11 +249,23 @@ void MqttSNPublisher::handleRegistrationEvent()
         throw omnetpp::cRuntimeError("No topic available");
     }
 
-    // select randomly an element from the map
-    auto it = topicsAndData.begin();
-    std::advance(it, intuniform(0, topicsAndData.size() - 1));
+    std::string topicName;
 
-    std::string topicName = MqttSNClient::concatenateStringWithCounter(it->second.topicName, it->second.counter);
+    // if it's a retry, use the last sent element
+    if (lastRegistration.retry) {
+        topicName = lastRegistration.info.topicName;
+    }
+    else {
+        // randomly select an element from the map
+        auto it = topicsAndData.begin();
+        std::advance(it, intuniform(0, topicsAndData.size() - 1));
+
+        topicName = MqttSNClient::concatenateStringWithCounter(it->second.topicName, it->second.counter);
+
+        // update information about the last sent element
+        lastRegistration.info.topicName = topicName;
+        lastRegistration.info.key = it->first;
+    }
 
     // TO DO -> msgID
     sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, 0, topicName);

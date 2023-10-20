@@ -37,8 +37,8 @@ simple MqttSNClient like IApp
         bool cleanSessionFlag = default(false);
         int topicIdTypeFlag = default(0); // valid topicIdType values: 0, 1 and 2
         
-        double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (Tretry)
-        int retransmissionCounter = default(3); // retransmission retry counter (Nretry)
+        double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (TRETRY)
+        int retransmissionCounter = default(3); // retransmission retry counter (NRETRY)
         
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);

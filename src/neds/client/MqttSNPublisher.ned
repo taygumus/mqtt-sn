@@ -12,6 +12,8 @@ module MqttSNPublisher extends MqttSNClient
         double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
         string topicsAndData; // topic names with their associated data
         
+        double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
+        
         @display("i=block/routing;bgb=38,25");
         @class(MqttSNPublisher);
 }
