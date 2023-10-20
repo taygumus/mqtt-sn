@@ -151,17 +151,16 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
         return;
     }
 
-    if (returnCode != ReturnCode::ACCEPTED) {
+    uint16_t topicId = payload->getTopicId();
+
+    if (returnCode != ReturnCode::ACCEPTED || topicId == 0) {
         return;
     }
 
-    // handle operations when the registration is ACCEPTED
+    // handle operations when the registration is ACCEPTED with a valid topic ID
     lastRegistration.retry = false;
     topicsAndData[lastRegistration.info.key].counter++;
-
-    ///
-    topicIds[payload->getTopicId()] = lastRegistration.info;
-    ///
+    topicIds[topicId] = lastRegistration.info;
 
     scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
