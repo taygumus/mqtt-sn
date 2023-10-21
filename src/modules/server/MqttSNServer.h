@@ -43,8 +43,9 @@ class MqttSNServer : public MqttSNApp
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
         std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
 
-        std::map<std::string, int> topicsToIds;
-        std::set<int> topicIds;
+        std::map<std::string, uint16_t> topicsToIds;
+        std::set<uint16_t> topicIds;
+        uint16_t currentTopicId = 0;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -97,7 +98,6 @@ class MqttSNServer : public MqttSNApp
         // other functions
         virtual bool isGatewayCongested();
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
-        virtual uint16_t generateNewTopicId();
         virtual std::string base64Encode(std::string inputString);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);

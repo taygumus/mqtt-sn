@@ -119,6 +119,38 @@ bool MqttSNApp::isSelfBroadcastAddress(const inet::L3Address& address)
     return (address == selfBroadcastAddress);
 }
 
+bool MqttSNApp::setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue)
+{
+    // ID=0 is considered invalid; ID=UINT16_MAX can be considered invalid
+    uint16_t maxValue = UINT16_MAX - 1;
+    if (allowMaxValue) {
+        maxValue++;
+    }
+
+    // if the set is full, there is no available ID
+    if (usedIds.size() >= maxValue) {
+        return false;
+    }
+
+    // if the set is empty, increment the current ID
+    if (usedIds.empty()) {
+        currentId = (currentId >= maxValue) ? 1 : currentId + 1;
+        return true;
+    }
+
+    // reset to one if the current ID is invalid (zero)
+    if (currentId == 0) {
+        currentId = 1;
+    }
+
+    // find the next available ID
+    while (usedIds.find(currentId) != usedIds.end()) {
+        currentId = (currentId >= maxValue) ? 1 : currentId + 1;
+    }
+
+    return true;
+}
+
 std::string MqttSNApp::sanitizeSpaces(std::string inputString)
 {
     std::string sanitizedString = inputString;
