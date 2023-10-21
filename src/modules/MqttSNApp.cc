@@ -122,10 +122,7 @@ bool MqttSNApp::isSelfBroadcastAddress(const inet::L3Address& address)
 bool MqttSNApp::setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue)
 {
     // ID=0 is considered invalid; ID=UINT16_MAX can be considered invalid
-    uint16_t maxValue = UINT16_MAX - 1;
-    if (allowMaxValue) {
-        maxValue++;
-    }
+    uint16_t maxValue = allowMaxValue ? UINT16_MAX : UINT16_MAX - 1;
 
     // if the set is full, there is no available ID
     if (usedIds.size() >= maxValue) {
