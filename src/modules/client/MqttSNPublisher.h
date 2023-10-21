@@ -20,8 +20,9 @@ class MqttSNPublisher : public MqttSNClient
         double waitingInterval;
 
         // active publisher state
-        inet::ClockEvent* registrationEvent = nullptr;
         std::map<int, TopicsAndData> topicsAndData;
+
+        inet::ClockEvent* registrationEvent = nullptr;
         std::map<int, RegisterInfo> topicIds;
         LastRegisterInfo lastRegistration;
 

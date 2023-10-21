@@ -159,8 +159,17 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     // handle operations when the registration is ACCEPTED with a valid topic ID
     lastRegistration.retry = false;
-    topicsAndData[lastRegistration.info.key].counter++;
     topicIds[topicId] = lastRegistration.info;
+
+    int* counter = &topicsAndData[lastRegistration.info.key].counter;
+
+    // check if the counter has reached its maximum value
+    if (*counter == std::numeric_limits<int>::max()) {
+        *counter = 0;
+    }
+    else {
+        (*counter)++;
+    }
 
     scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
