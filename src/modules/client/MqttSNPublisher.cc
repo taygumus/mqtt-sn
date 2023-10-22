@@ -161,7 +161,7 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     lastRegistration.retry = false;
     topicIds[topicId] = lastRegistration.info;
 
-    int* counter = &topicsAndData[lastRegistration.info.key].counter;
+    int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
 
     // check if the counter has reached its maximum value
     if (*counter == std::numeric_limits<int>::max()) {
@@ -272,7 +272,7 @@ void MqttSNPublisher::handleRegistrationEvent()
 
         // update information about the last sent element
         lastRegistration.info.topicName = topicName;
-        lastRegistration.info.key = it->first;
+        lastRegistration.info.topicsAndDataKey = it->first;
     }
 
     // TO DO -> msgID

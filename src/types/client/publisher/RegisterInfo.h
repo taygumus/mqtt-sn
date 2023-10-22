@@ -3,7 +3,7 @@
 
 struct RegisterInfo {
     std::string topicName;
-    int key = 0;
+    int topicsAndDataKey = 0;
 };
 
 #endif /* TYPES_CLIENT_PUBLISHER_REGISTERINFO_H_ */

@@ -23,7 +23,7 @@ class MqttSNPublisher : public MqttSNClient
         std::map<int, TopicsAndData> topicsAndData;
 
         inet::ClockEvent* registrationEvent = nullptr;
-        std::map<int, RegisterInfo> topicIds;
+        std::map<uint16_t, RegisterInfo> topicIds;
         LastRegisterInfo lastRegistration;
 
     protected:

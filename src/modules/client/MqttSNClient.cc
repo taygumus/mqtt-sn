@@ -851,21 +851,6 @@ std::string MqttSNClient::concatenateStringWithCounter(std::string inputString, 
     return inputString + std::to_string(counter);
 }
 
-std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::istringstream iss(inputString);
-    std::string token;
-
-    while (std::getline(iss, token, delimiter)) {
-        if (!token.empty()) {
-            tokens.push_back(token);
-        }
-    }
-
-    return tokens;
-}
-
 std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
 {
     if (activeGateways.empty()) {
@@ -879,6 +864,26 @@ std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
     std::advance(it, index);
 
     return std::make_pair(it->first, it->second);
+}
+
+std::set<uint16_t> MqttSNClient::getUsedMsgIds()
+{
+    // TO DO
+}
+
+std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter)
+{
+    std::vector<std::string> tokens;
+    std::istringstream iss(inputString);
+    std::string token;
+
+    while (std::getline(iss, token, delimiter)) {
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    return tokens;
 }
 
 QoS MqttSNClient::intToQoS(int value)

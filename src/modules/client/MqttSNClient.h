@@ -49,7 +49,7 @@ class MqttSNClient : public MqttSNApp
 
         inet::ClockEvent* pingEvent = nullptr;
 
-        uint16_t messageId = 0; ///
+        uint16_t currentMsgId = 0;
 
         // retransmissions management
         std::map<MsgType, UnicastMessageInfo> retransmissions;
@@ -114,8 +114,10 @@ class MqttSNClient : public MqttSNApp
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual std::string generateClientId();
         virtual std::string concatenateStringWithCounter(std::string inputString, int counter);
-        virtual std::vector<std::string> parseString(std::string inputString, char delimiter);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
+        virtual std::set<uint16_t> getUsedMsgIds();
+        virtual std::vector<std::string> parseString(std::string inputString, char delimiter);
+
         virtual QoS intToQoS(int value);
 
         // retransmissions management
