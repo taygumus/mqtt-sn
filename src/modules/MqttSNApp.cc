@@ -135,8 +135,8 @@ bool MqttSNApp::setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& 
         return true;
     }
 
-    // reset to one if the current ID is invalid (zero)
-    if (currentId == 0) {
+    // reset to one if the current ID is invalid (zero) or exceeds the maximum allowed value
+    if (currentId == 0 || (!allowMaxValue && currentId > maxValue)) {
         currentId = 1;
     }
 
