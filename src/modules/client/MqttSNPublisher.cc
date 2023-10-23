@@ -135,15 +135,17 @@ void MqttSNPublisher::processWillResp(inet::Packet* pk, bool willTopic)
 void MqttSNPublisher::processRegAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
-    ReturnCode returnCode = payload->getReturnCode();
 
-    // TO DO -> msgID
-
-    if (returnCode == ReturnCode::REJECTED_NOT_SUPPORTED) {
-        lastRegistration.retry = false;
-        scheduleClockEventAfter(waitingInterval, registrationEvent);
+    if (!MqttSNClient::checkLastMsgId(MsgType::REGISTER, payload->getMsgId())) {
+        // this ACK message does not match the expected message ID
         return;
     }
+
+    // stop retransmission mechanism; ACK with correct message ID is received
+    MqttSNClient::unscheduleMsgRetransmission(MsgType::REGISTER);
+
+    // now process and analyze message content as needed
+    ReturnCode returnCode = payload->getReturnCode();
 
     if (returnCode == ReturnCode::REJECTED_CONGESTION) {
         lastRegistration.retry = true;
@@ -151,10 +153,16 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
         return;
     }
 
+    if (returnCode == ReturnCode::REJECTED_NOT_SUPPORTED) {
+        lastRegistration.retry = false;
+        scheduleClockEventAfter(waitingInterval, registrationEvent);
+        return;
+    }
+
     uint16_t topicId = payload->getTopicId();
 
     if (returnCode != ReturnCode::ACCEPTED || topicId == 0) {
-        return;
+        throw omnetpp::cRuntimeError("Unexpected error: Invalid return code or topic ID");
     }
 
     // handle operations when the registration is ACCEPTED with a valid topic ID
@@ -273,10 +281,19 @@ void MqttSNPublisher::handleRegistrationEvent()
         // update information about the last sent element
         lastRegistration.info.topicName = topicName;
         lastRegistration.info.topicsAndDataKey = it->first;
+        lastRegistration.retry = true;
     }
 
-    // TO DO -> msgID
-    sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, 0, topicName);
+    if (!MqttSNApp::setNextAvailableId(MqttSNClient::getUsedMsgIds(), MqttSNClient::currentMsgId)) {
+        throw omnetpp::cRuntimeError("Failed to assign a new message ID. All available message IDs are in use");
+    }
+
+    sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::currentMsgId, topicName);
+
+    // schedule register retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["msgId"] = std::to_string(MqttSNClient::currentMsgId);
+    MqttSNClient::scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::REGISTER, &parameters);
 }
 
 void MqttSNPublisher::fillTopicsAndData()
@@ -309,6 +326,10 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
             retransmitWillMsgUpd(destAddress, destPort);
             break;
 
+        case MsgType::REGISTER:
+            retransmitRegister(destAddress, destPort, msg);
+            break;
+
         default:
             break;
     }
@@ -322,6 +343,11 @@ void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress,
 void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort)
 {
     sendBaseWithWillMsg(destAddress, destPort, MsgType::WILLMSGUPD, willMsg);
+}
+
+void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
+{
+    sendRegister(destAddress, destPort, std::stoi(msg->par("msgId").stringValue()), lastRegistration.info.topicName);
 }
 
 MqttSNPublisher::~MqttSNPublisher()

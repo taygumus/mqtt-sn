@@ -827,6 +827,29 @@ bool MqttSNClient::isConnectedGateway(const inet::L3Address& srcAddress, const i
     return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
 }
 
+bool MqttSNClient::checkLastMsgId(MsgType msgType, uint16_t msgId)
+{
+    // check if the message type exists in the retransmissions map and if the stored message ID matches the input one
+    auto it = retransmissions.find(msgType);
+    if (it == retransmissions.end()) {
+        // message type not found in retransmissions
+        return false;
+    }
+
+    auto retransmissionEvent = it->second.retransmissionEvent;
+    if (retransmissionEvent == nullptr) {
+        // null retransmission event
+        return false;
+    }
+
+    if (!retransmissionEvent->hasPar("msgId")) {
+        // parameter not found in retransmission event
+        return false;
+    }
+
+    return std::stoi(retransmissionEvent->par("msgId").stringValue()) == msgId;
+}
+
 std::string MqttSNClient::generateClientId()
 {
     // generate a random client ID of variable length
@@ -868,7 +891,16 @@ std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
 
 std::set<uint16_t> MqttSNClient::getUsedMsgIds()
 {
-    // TO DO
+    std::set<uint16_t> usedIds;
+
+    for (const auto& entry : retransmissions) {
+        if (entry.second.retransmissionEvent->hasPar("msgId")) {
+            // extract and insert message ID parameter value into the set
+            usedIds.insert(std::stoi(entry.second.retransmissionEvent->par("msgId").stringValue()));
+        }
+    }
+
+    return usedIds;
 }
 
 std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter)
