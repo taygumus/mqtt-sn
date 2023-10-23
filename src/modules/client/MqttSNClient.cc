@@ -827,7 +827,7 @@ bool MqttSNClient::isConnectedGateway(const inet::L3Address& srcAddress, const i
     return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
 }
 
-bool MqttSNClient::checkLastMsgId(MsgType msgType, uint16_t msgId)
+bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
 {
     // check if the message type exists in the retransmissions map and if the stored message ID matches the input one
     auto it = retransmissions.find(msgType);

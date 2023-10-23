@@ -136,7 +136,7 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
 
-    if (!MqttSNClient::checkLastMsgId(MsgType::REGISTER, payload->getMsgId())) {
+    if (!MqttSNClient::checkMsgIdForType(MsgType::REGISTER, payload->getMsgId())) {
         // this ACK message does not match the expected message ID
         return;
     }
