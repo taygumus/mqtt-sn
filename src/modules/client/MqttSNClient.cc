@@ -829,7 +829,7 @@ bool MqttSNClient::isConnectedGateway(const inet::L3Address& srcAddress, const i
 
 bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
 {
-    // check if the message type exists in the retransmissions map and if the stored message ID matches the input one
+    // check if the message type exists in the map and if the stored message ID matches the input one
     auto it = retransmissions.find(msgType);
     if (it == retransmissions.end()) {
         // message type not found in retransmissions
@@ -901,21 +901,6 @@ std::set<uint16_t> MqttSNClient::getUsedMsgIds()
     }
 
     return usedIds;
-}
-
-std::vector<std::string> MqttSNClient::parseString(std::string inputString, char delimiter)
-{
-    std::vector<std::string> tokens;
-    std::istringstream iss(inputString);
-    std::string token;
-
-    while (std::getline(iss, token, delimiter)) {
-        if (!token.empty()) {
-            tokens.push_back(token);
-        }
-    }
-
-    return tokens;
 }
 
 QoS MqttSNClient::intToQoS(int value)

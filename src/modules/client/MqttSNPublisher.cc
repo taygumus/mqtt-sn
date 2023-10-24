@@ -1,4 +1,5 @@
 #include "MqttSNPublisher.h"
+#include "includes/nlohmann/json.hpp"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
@@ -8,6 +9,8 @@
 namespace mqttsn {
 
 Define_Module(MqttSNPublisher);
+
+using json = nlohmann::json;
 
 void MqttSNPublisher::initializeCustom()
 {
@@ -298,20 +301,27 @@ void MqttSNPublisher::handleRegistrationEvent()
 
 void MqttSNPublisher::fillTopicsAndData()
 {
-    std::vector<std::string> rows = MqttSNClient::parseString(par("topicsAndData").stringValue(), ';');
-    int key = 1;
+    json jsonData = json::parse(par("topicsAndDataJson").stringValue());
+    int topicsKey = 0;
 
-    for (const auto& row : rows) {
-        std::vector<std::string> rowInfo = MqttSNClient::parseString(row, ':');
+    // iterate over json object keys (topics) and fill the data structures
+    for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
+        TopicAndData topicAndData;
+        topicAndData.topicName = it.key();
 
-        if (rowInfo.size() == 2) {
-            TopicsAndData topicAndData;
-            topicAndData.topicName = MqttSNApp::sanitizeSpaces(rowInfo[0]);
-            topicAndData.data = MqttSNClient::parseString(rowInfo[1], ',');
+        int dataKey = 0;
 
-            topicsAndData[key] = topicAndData;
-            key++;
+        // iterate over json array elements (messages) and populate structure
+        for (const auto& messageData : it.value()) {
+            DataInfo dataInfo;
+            dataInfo.qosFlag = MqttSNClient::intToQoS(messageData["qos"]);
+            dataInfo.retainFlag = messageData["retain"];
+            dataInfo.message = messageData["message"];
+
+            topicAndData.data[dataKey++] = dataInfo;
         }
+
+        topicsAndData[topicsKey++] = topicAndData;
     }
 }
 

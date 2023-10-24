@@ -117,8 +117,6 @@ class MqttSNClient : public MqttSNApp
         virtual std::string concatenateStringWithCounter(std::string inputString, int counter);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual std::set<uint16_t> getUsedMsgIds();
-        virtual std::vector<std::string> parseString(std::string inputString, char delimiter);
-
         virtual QoS intToQoS(int value);
 
         // retransmissions management

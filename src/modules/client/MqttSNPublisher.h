@@ -2,7 +2,8 @@
 #define MODULES_CLIENT_MQTTSNPUBLISHER_H_
 
 #include "MqttSNClient.h"
-#include "types/client/publisher/TopicsAndData.h"
+#include "types/client/publisher/DataInfo.h"
+#include "types/client/publisher/TopicAndData.h"
 #include "types/client/publisher/RegisterInfo.h"
 #include "types/client/publisher/LastRegisterInfo.h"
 
@@ -20,7 +21,7 @@ class MqttSNPublisher : public MqttSNClient
         double waitingInterval;
 
         // active publisher state
-        std::map<int, TopicsAndData> topicsAndData;
+        std::map<int, TopicAndData> topicsAndData;
 
         inet::ClockEvent* registrationEvent = nullptr;
         std::map<uint16_t, RegisterInfo> topicIds;

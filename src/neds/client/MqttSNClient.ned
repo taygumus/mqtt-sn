@@ -31,11 +31,7 @@ simple MqttSNClient like IApp
         
         int keepAlive @unit(s) = default(60s); // up to a maximum of 65535 seconds, approximately 18 hours
         
-        bool dupFlag = default(false);
-        int qosFlag = default(0); // valid qos values: 0, 1, 2 and -1
-        bool retainFlag = default(false);
         bool cleanSessionFlag = default(false);
-        int topicIdTypeFlag = default(0); // valid topicIdType values: 0, 1 and 2
         
         double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (TRETRY)
         int retransmissionCounter = default(3); // retransmission retry counter (NRETRY)
