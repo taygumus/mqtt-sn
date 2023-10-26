@@ -1,5 +1,5 @@
 #include "MqttSNPublisher.h"
-#include "includes/nlohmann/json.hpp"
+#include "externals/nlohmann/json.hpp"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"

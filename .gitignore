@@ -1,4 +1,4 @@
 *.exe
 out/
 simulations/results/
-src/includes/
+src/externals/
