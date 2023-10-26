@@ -71,7 +71,7 @@ void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage* msg)
         handlePingEvent();
     }
     else if (!handleMessageWhenUpCustom(msg)) {
-        socket.processMessage(msg);
+        MqttSNApp::socket.processMessage(msg);
     }
 }
 
@@ -87,12 +87,12 @@ void MqttSNClient::refreshDisplay() const
 
 void MqttSNClient::handleStartOperation(inet::LifecycleOperation* operation)
 {
-    socket.setOutputGate(gate("socketOut"));
-    socket.setCallback(this);
+    MqttSNApp::socket.setOutputGate(gate("socketOut"));
+    MqttSNApp::socket.setCallback(this);
 
     const char* localAddress = par("localAddress");
-    socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
-    socket.setBroadcast(true);
+    MqttSNApp::socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
+    MqttSNApp::socket.setBroadcast(true);
 
     EV << "Current client state: " << getClientStateAsString() << std::endl;
 
@@ -108,7 +108,7 @@ void MqttSNClient::handleStopOperation(inet::LifecycleOperation* operation)
     cancelActiveStateEvents();
     clearRetransmissions();
 
-    socket.close();
+    MqttSNApp::socket.close();
 }
 
 void MqttSNClient::handleCrashOperation(inet::LifecycleOperation* operation)
@@ -116,7 +116,7 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation* operation)
     cancelActiveStateClockEvents();
     clearRetransmissions();
 
-    socket.destroy();
+    MqttSNApp::socket.destroy();
 }
 
 void MqttSNClient::handleStateChangeEvent()
@@ -683,7 +683,7 @@ void MqttSNClient::sendSearchGw()
     inet::Packet* packet = new inet::Packet("SearchGwPacket");
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
+    MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
 void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration)
@@ -699,7 +699,7 @@ void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& de
     inet::Packet* packet = new inet::Packet("ConnectPacket");
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNClient::handleCheckGatewaysEvent()

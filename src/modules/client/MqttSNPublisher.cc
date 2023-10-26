@@ -221,7 +221,7 @@ void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::string willMsg)
@@ -249,7 +249,7 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, std::string topicName)
@@ -263,7 +263,7 @@ void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int
     inet::Packet* packet = new inet::Packet("RegisterPacket");
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)

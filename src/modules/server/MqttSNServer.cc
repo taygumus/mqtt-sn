@@ -67,7 +67,7 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
         handleClientsClearEvent();
     }
     else {
-        socket.processMessage(msg);
+        MqttSNApp::socket.processMessage(msg);
     }
 }
 
@@ -83,12 +83,12 @@ void MqttSNServer::refreshDisplay() const
 
 void MqttSNServer::handleStartOperation(inet::LifecycleOperation* operation)
 {
-    socket.setOutputGate(gate("socketOut"));
-    socket.setCallback(this);
+    MqttSNApp::socket.setOutputGate(gate("socketOut"));
+    MqttSNApp::socket.setCallback(this);
 
     const char* localAddress = par("localAddress");
-    socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
-    socket.setBroadcast(true);
+    MqttSNApp::socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
+    MqttSNApp::socket.setBroadcast(true);
 
     EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
 
@@ -103,7 +103,7 @@ void MqttSNServer::handleStopOperation(inet::LifecycleOperation* operation)
     cancelEvent(stateChangeEvent);
     cancelOnlineStateEvents();
 
-    socket.close();
+    MqttSNApp::socket.close();
 }
 
 void MqttSNServer::handleCrashOperation(inet::LifecycleOperation* operation)
@@ -114,7 +114,7 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation* operation)
     cancelClockEvent(asleepClientsCheckEvent);
     cancelClockEvent(clientsClearEvent);
 
-    socket.destroy();
+    MqttSNApp::socket.destroy();
 }
 
 void MqttSNServer::handleStateChangeEvent()
@@ -513,7 +513,7 @@ void MqttSNServer::sendAdvertise()
     inet::Packet* packet = new inet::Packet(str.str().c_str());
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
+    MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
     numAdvertiseSent++;
 }
 
@@ -546,7 +546,7 @@ void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, co
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode)
@@ -576,7 +576,7 @@ void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
-    socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::handleAdvertiseEvent()
