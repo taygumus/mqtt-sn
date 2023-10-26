@@ -333,10 +333,18 @@ void MqttSNPublisher::handlePublishEvent()
     auto dataIterator = data.begin();
     std::advance(dataIterator, intuniform(0, data.size() - 1));
 
-    ///
     int selectedTopicId = topicIterator->first;
     DataInfo selectedData = dataIterator->second;
-    ///
+
+    QoS qos = selectedData.qosFlag;
+    bool retain = selectedData.retainFlag;
+
+    if (qos == QoS::QOS_ZERO) {
+        // no need to wait for an ack
+        scheduleClockEventAfter(publishInterval, publishEvent);
+    }
+
+    // TO DO -> send publish message
 }
 
 void MqttSNPublisher::fillTopicsAndData()
