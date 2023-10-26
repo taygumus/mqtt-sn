@@ -291,7 +291,7 @@ void MqttSNPublisher::handleRegistrationEvent()
 
         topicName = MqttSNClient::concatenateStringWithCounter(it->second.topicName, it->second.counter);
 
-        // update information about the last sent element
+        // update information about the last element
         lastRegistration.info.topicName = topicName;
         lastRegistration.info.topicsAndDataKey = it->first;
         lastRegistration.retry = true;
@@ -311,9 +311,32 @@ void MqttSNPublisher::handleRegistrationEvent()
 
 void MqttSNPublisher::handlePublishEvent()
 {
-    // TO DO
+    // check for topics availability
+    if (topicIds.empty()) {
+        scheduleClockEventAfter(publishInterval, publishEvent);
+        return;
+    }
 
-    //scheduleClockEventAfter(publishInterval, publishEvent);
+    // randomly select a topic from the map
+    auto topicIterator = topicIds.begin();
+    std::advance(topicIterator, intuniform(0, topicIds.size() - 1));
+
+    std::map<int, DataInfo> data = topicsAndData[topicIterator->second.topicsAndDataKey].data;
+
+    // check for data availability
+    if (data.empty()) {
+        scheduleClockEventAfter(publishInterval, publishEvent);
+        return;
+    }
+
+    // randomly select a data from the map
+    auto dataIterator = data.begin();
+    std::advance(dataIterator, intuniform(0, data.size() - 1));
+
+    ///
+    int selectedTopicId = topicIterator->first;
+    DataInfo selectedData = dataIterator->second;
+    ///
 }
 
 void MqttSNPublisher::fillTopicsAndData()
@@ -328,7 +351,7 @@ void MqttSNPublisher::fillTopicsAndData()
 
         int dataKey = 0;
 
-        // iterate over json array elements (messages) and populate structure
+        // iterate over json array elements (messages) and populate the structure
         for (const auto& messageData : it.value()) {
             DataInfo dataInfo;
             dataInfo.qosFlag = MqttSNClient::intToQoS(messageData["qos"]);
