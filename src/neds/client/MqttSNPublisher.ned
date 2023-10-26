@@ -9,8 +9,10 @@ module MqttSNPublisher extends MqttSNClient
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
         
-        double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
         string topicsAndDataJson; // json string with topic names and their associated data
+        
+        double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
+        double publishInterval @unit(s) = default(5s); // publish interval for new messages
         
         double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
         

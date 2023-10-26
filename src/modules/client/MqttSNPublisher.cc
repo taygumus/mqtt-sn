@@ -19,10 +19,13 @@ void MqttSNPublisher::initializeCustom()
     willTopic = par("willTopic").stringValue();
     willMsg = par("willMsg").stringValue();
 
+    fillTopicsAndData();
+
     registrationInterval = par("registrationInterval");
     registrationEvent = new inet::ClockEvent("registrationTimer");
 
-    fillTopicsAndData();
+    publishInterval = par("publishInterval");
+    publishEvent = new inet::ClockEvent("publishTimer");
 
     waitingInterval = par("waitingInterval");
 }
@@ -31,6 +34,9 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 {
     if (msg == registrationEvent) {
         handleRegistrationEvent();
+    }
+    else if (msg == publishEvent) {
+        handlePublishEvent();
     }
     else {
         return false;
@@ -47,11 +53,13 @@ void MqttSNPublisher::scheduleActiveStateEventsCustom()
 void MqttSNPublisher::cancelActiveStateEventsCustom()
 {
     cancelEvent(registrationEvent);
+    cancelEvent(publishEvent);
 }
 
 void MqttSNPublisher::cancelActiveStateClockEventsCustom()
 {
     cancelClockEvent(registrationEvent);
+    cancelClockEvent(publishEvent);
 }
 
 void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
@@ -107,6 +115,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 void MqttSNPublisher::processConnAckCustom()
 {
     scheduleClockEventAfter(registrationInterval, registrationEvent);
+    scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
@@ -264,10 +273,6 @@ void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& de
 
 void MqttSNPublisher::handleRegistrationEvent()
 {
-    if (topicsAndData.empty()) {
-        throw omnetpp::cRuntimeError("No topic available");
-    }
-
     std::string topicName;
 
     // if it's a retry, use the last sent element
@@ -275,6 +280,11 @@ void MqttSNPublisher::handleRegistrationEvent()
         topicName = lastRegistration.info.topicName;
     }
     else {
+        // check for topics availability
+        if (topicsAndData.empty()) {
+            throw omnetpp::cRuntimeError("No topic available");
+        }
+
         // randomly select an element from the map
         auto it = topicsAndData.begin();
         std::advance(it, intuniform(0, topicsAndData.size() - 1));
@@ -297,6 +307,13 @@ void MqttSNPublisher::handleRegistrationEvent()
     std::map<std::string, std::string> parameters;
     parameters["msgId"] = std::to_string(MqttSNClient::currentMsgId);
     MqttSNClient::scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::REGISTER, &parameters);
+}
+
+void MqttSNPublisher::handlePublishEvent()
+{
+    // TO DO
+
+    //scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
 void MqttSNPublisher::fillTopicsAndData()
@@ -363,6 +380,7 @@ void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, con
 MqttSNPublisher::~MqttSNPublisher()
 {
     cancelAndDelete(registrationEvent);
+    cancelAndDelete(publishEvent);
 }
 
 } /* namespace mqttsn */
