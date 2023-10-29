@@ -14,7 +14,6 @@ std::string StringHelper::appendCounterToString(std::string inputString, int cou
 
 std::string StringHelper::base64Encode(std::string inputString)
 {
-    // encode the string to Base64
     const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int val = 0, valb = -6;
     std::string encodedString;

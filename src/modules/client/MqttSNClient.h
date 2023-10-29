@@ -4,7 +4,6 @@
 #include "../MqttSNApp.h"
 #include "types/shared/ClientState.h"
 #include "types/shared/MsgType.h"
-#include "types/shared/QoS.h"
 #include "types/client/GatewayInfo.h"
 #include "types/client/UnicastMessageInfo.h"
 

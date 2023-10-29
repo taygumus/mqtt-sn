@@ -2,6 +2,7 @@
 #define MODULES_CLIENT_MQTTSNPUBLISHER_H_
 
 #include "MqttSNClient.h"
+#include "types/shared/QoS.h"
 #include "types/client/publisher/DataInfo.h"
 #include "types/client/publisher/TopicAndData.h"
 #include "types/client/publisher/RegisterInfo.h"
