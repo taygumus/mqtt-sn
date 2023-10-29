@@ -3,6 +3,7 @@
 
 #include "MqttSNClient.h"
 #include "types/shared/QoS.h"
+#include "types/shared/TopicIdType.h"
 #include "types/client/publisher/DataInfo.h"
 #include "types/client/publisher/TopicAndData.h"
 #include "types/client/publisher/RegisterInfo.h"
@@ -52,7 +53,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, std::string willTopic);
         virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::string willMsg);
         virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, std::string topicName);
-        //virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort);
+        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, std::string data);
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;

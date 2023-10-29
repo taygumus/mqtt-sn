@@ -1,11 +1,11 @@
 #ifndef HELPERS_STRINGHELPER_H_
 #define HELPERS_STRINGHELPER_H_
 
-#include <iostream>
+#include "BaseHelper.h"
 
 namespace mqttsn {
 
-class StringHelper
+class StringHelper : public BaseHelper
 {
     public:
         static std::string appendCounterToString(std::string inputString, int counter);

@@ -2,10 +2,10 @@
 #include "externals/nlohmann/json.hpp"
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
+#include "helpers/PacketHelper.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
-#include "messages/MqttSNRegister.h"
 #include "messages/MqttSNMsgIdWithTopicIdPlus.h"
 
 namespace mqttsn {
@@ -256,16 +256,12 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
 
 void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, std::string topicName)
 {
-    const auto& payload = inet::makeShared<MqttSNRegister>();
-    payload->setMsgType(MsgType::REGISTER);
-    payload->setMsgId(msgId);
-    payload->setTopicName(topicName);
-    payload->setChunkLength(inet::B(payload->getLength()));
+    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(msgId, topicName), destAddress, destPort);
+}
 
-    inet::Packet* packet = new inet::Packet("RegisterPacket");
-    packet->insertAtBack(payload);
-
-    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
+void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, std::string data)
+{
+    MqttSNApp::socket.sendTo(PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data), destAddress, destPort);
 }
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
@@ -308,7 +304,7 @@ void MqttSNPublisher::handleRegistrationEvent()
     // schedule register retransmission
     std::map<std::string, std::string> parameters;
     parameters["msgId"] = std::to_string(MqttSNClient::currentMsgId);
-    MqttSNClient::scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::REGISTER, &parameters);
+    MqttSNClient::scheduleMsgRetransmission(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters);
 }
 
 void MqttSNPublisher::handlePublishEvent()

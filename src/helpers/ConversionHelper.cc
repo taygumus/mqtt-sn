@@ -1,5 +1,4 @@
 #include "ConversionHelper.h"
-#include "omnetpp.h"
 
 namespace mqttsn {
 
