@@ -148,12 +148,4 @@ bool MqttSNApp::setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& 
     return true;
 }
 
-std::string MqttSNApp::sanitizeSpaces(std::string inputString)
-{
-    std::string sanitizedString = inputString;
-    sanitizedString.erase(std::remove_if(sanitizedString.begin(), sanitizedString.end(), ::isspace), sanitizedString.end());
-
-    return sanitizedString;
-}
-
 } /* namespace mqttsn */

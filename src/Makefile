@@ -34,6 +34,8 @@ O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
 
 # Object files for local .cc, .msg and .sm files
 OBJS = \
+    $O/helpers/ConversionHelper.o \
+    $O/helpers/StringHelper.o \
     $O/messages/MqttSNAdvertise.o \
     $O/messages/MqttSNBase.o \
     $O/messages/MqttSNBaseWithDuration.o \

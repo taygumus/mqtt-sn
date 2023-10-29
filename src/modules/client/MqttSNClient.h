@@ -114,10 +114,8 @@ class MqttSNClient : public MqttSNApp
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool checkMsgIdForType(MsgType msgType, uint16_t msgId);
         virtual std::string generateClientId();
-        virtual std::string concatenateStringWithCounter(std::string inputString, int counter);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual std::set<uint16_t> getUsedMsgIds();
-        virtual QoS intToQoS(int value);
 
         // retransmissions management
         virtual void scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::map<std::string, std::string>* parameters = nullptr);

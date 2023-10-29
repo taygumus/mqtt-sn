@@ -1,5 +1,7 @@
 #include "MqttSNPublisher.h"
 #include "externals/nlohmann/json.hpp"
+#include "helpers/ConversionHelper.h"
+#include "helpers/StringHelper.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
@@ -120,7 +122,7 @@ void MqttSNPublisher::processConnAckCustom()
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
-    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, MqttSNClient::intToQoS(willQosFlag), willRetainFlag, willTopic);
+    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, ConversionHelper::intToQoS(willQosFlag), willRetainFlag, willTopic);
 }
 
 void MqttSNPublisher::processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort)
@@ -289,7 +291,7 @@ void MqttSNPublisher::handleRegistrationEvent()
         auto it = topicsAndData.begin();
         std::advance(it, intuniform(0, topicsAndData.size() - 1));
 
-        topicName = MqttSNClient::concatenateStringWithCounter(it->second.topicName, it->second.counter);
+        topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.counter);
 
         // update information about the last element
         lastRegistration.info.topicName = topicName;
@@ -362,7 +364,7 @@ void MqttSNPublisher::fillTopicsAndData()
         // iterate over json array elements (messages) and populate the structure
         for (const auto& messageData : it.value()) {
             DataInfo dataInfo;
-            dataInfo.qosFlag = MqttSNClient::intToQoS(messageData["qos"]);
+            dataInfo.qosFlag = ConversionHelper::intToQoS(messageData["qos"]);
             dataInfo.retainFlag = messageData["retain"];
             dataInfo.message = messageData["message"];
 
@@ -395,7 +397,7 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
 
 void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort)
 {
-    sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, MqttSNClient::intToQoS(willQosFlag), willRetainFlag, willTopic);
+    sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, ConversionHelper::intToQoS(willQosFlag), willRetainFlag, willTopic);
 }
 
 void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort)

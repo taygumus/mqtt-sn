@@ -2,6 +2,7 @@
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
+#include "helpers/StringHelper.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBase.h"
@@ -468,7 +469,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
     clientInfo->lastReceivedMsgTime = getClockTime();
 
     // extract and sanitize the topic name from the payload
-    std::string topicName = MqttSNApp::sanitizeSpaces(payload->getTopicName());
+    std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
 
     // if the topic name is empty, reject the registration and send REGACK with error code
     if (topicName.empty()) {
@@ -477,7 +478,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
     }
 
     // encode the sanitized topic name to Base64 for consistent key handling
-    std::string encodedTopicName = base64Encode(topicName);
+    std::string encodedTopicName = StringHelper::base64Encode(topicName);
 
     // check if the topic is already registered; if yes, send ACCEPTED response, otherwise register the topic
     auto it = topicsToIds.find(encodedTopicName);
@@ -670,34 +671,6 @@ bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int&
 
     // return true if the client is found and its state matches the requested state, otherwise return false
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
-}
-
-std::string MqttSNServer::base64Encode(std::string inputString)
-{
-    // encode the string to Base64
-    const std::string base64_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    int val = 0, valb = -6;
-    std::string encodedString;
-
-    for (unsigned char c : inputString) {
-        val = (val << 8) + c;
-        valb += 8;
-
-        while (valb >= 0) {
-            encodedString.push_back(base64_chars[(val >> valb) & 0x3F]);
-            valb -= 6;
-        }
-    }
-
-    if (valb > -6) {
-        encodedString.push_back(base64_chars[((val << 8) >> (valb + 8)) & 0x3F]);
-    }
-
-    while (encodedString.size() % 4) {
-        encodedString.push_back('=');
-    }
-
-    return encodedString;
 }
 
 ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)

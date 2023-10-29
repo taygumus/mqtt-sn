@@ -865,15 +865,6 @@ std::string MqttSNClient::generateClientId()
     return clientId;
 }
 
-std::string MqttSNClient::concatenateStringWithCounter(std::string inputString, int counter)
-{
-    if (counter == 0) {
-        return inputString;
-    }
-
-    return inputString + std::to_string(counter);
-}
-
 std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
 {
     if (activeGateways.empty()) {
@@ -901,27 +892,6 @@ std::set<uint16_t> MqttSNClient::getUsedMsgIds()
     }
 
     return usedIds;
-}
-
-QoS MqttSNClient::intToQoS(int value)
-{
-    // convert an integer to QoS enumeration
-    switch (value) {
-        case 0:
-            return QOS_ZERO;
-
-        case 1:
-            return QOS_ONE;
-
-        case 2:
-            return QOS_TWO;
-
-        case -1:
-            return QOS_MINUS_ONE;
-
-        default:
-            throw omnetpp::cRuntimeError("Invalid QoS value: %d", value);
-    }
 }
 
 void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::map<std::string, std::string>* parameters)
