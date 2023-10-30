@@ -86,8 +86,13 @@ class MqttSNServer : public MqttSNApp
 
         // send packets
         virtual void sendAdvertise();
-        virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode);
-        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode);
+
+        virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort,
+                                            MsgType msgType, ReturnCode returnCode);
+
+        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
+                                              MsgType msgType, ReturnCode returnCode,
+                                              uint16_t topicId, uint16_t msgId);
 
         // event handlers
         virtual void handleAdvertiseEvent();

@@ -50,10 +50,23 @@ class MqttSNPublisher : public MqttSNClient
         virtual void processRegAck(inet::Packet* pk);
 
         // send packets
-        virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, const std::string& willTopic);
-        virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, const std::string& willMsg);
-        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName);
-        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
+        virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
+                                           MsgType msgType,
+                                           QoS qosFlag, bool retainFlag,
+                                           const std::string& willTopic);
+
+        virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort,
+                                         MsgType msgType,
+                                         const std::string& willMsg);
+
+        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort,
+                                  uint16_t msgId,
+                                  const std::string& topicName);
+
+        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort,
+                                 bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
+                                 uint16_t topicId, uint16_t msgId,
+                                 const std::string& data);
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
@@ -64,7 +77,8 @@ class MqttSNPublisher : public MqttSNClient
         virtual void fillTopicsAndData();
 
         // retransmissions management
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) override;
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
+                                                     omnetpp::cMessage* msg, MsgType msgType) override;
 
         virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort);

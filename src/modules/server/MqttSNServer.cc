@@ -473,7 +473,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 
     // if the topic name is empty, reject the registration and send REGACK with error code
     if (topicName.empty()) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);
         return;
     }
 
@@ -483,13 +483,13 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
     // check if the topic is already registered; if yes, send ACCEPTED response, otherwise register the topic
     auto it = topicsToIds.find(encodedTopicName);
     if (it != topicsToIds.end()) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, it->second, msgId, ReturnCode::ACCEPTED);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::ACCEPTED, it->second, msgId);
         return;
     }
 
     // check if the maximum number of topics is reached; if not, set a new available topic ID
     if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_CONGESTION);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
         return;
     }
 
@@ -498,7 +498,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
     topicIds.insert(currentTopicId);
 
     // send REGACK response with the new topic ID and ACCEPTED status
-    sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, currentTopicId, msgId, ReturnCode::ACCEPTED);
+    sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::ACCEPTED, currentTopicId, msgId);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -518,7 +518,8 @@ void MqttSNServer::sendAdvertise()
     numAdvertiseSent++;
 }
 
-void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode)
+void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort,
+                                          MsgType msgType, ReturnCode returnCode)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithReturnCode>();
     payload->setMsgType(msgType);
@@ -550,7 +551,9 @@ void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, co
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode)
+void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
+                                            MsgType msgType, ReturnCode returnCode,
+                                            uint16_t topicId, uint16_t msgId)
 {
     const auto& payload = inet::makeShared<MqttSNMsgIdWithTopicIdPlus>();
     payload->setMsgType(msgType);

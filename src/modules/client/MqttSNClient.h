@@ -98,7 +98,10 @@ class MqttSNClient : public MqttSNApp
 
         // send packets
         virtual void sendSearchGw();
-        virtual void sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration);
+
+        virtual void sendConnect(const inet::L3Address& destAddress, const int& destPort,
+                                 bool willFlag, bool cleanSessionFlag,
+                                 uint16_t duration);
 
         // event handlers
         virtual void handleCheckGatewaysEvent();
@@ -117,7 +120,9 @@ class MqttSNClient : public MqttSNApp
         virtual std::set<uint16_t> getUsedMsgIds();
 
         // retransmissions management
-        virtual void scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::map<std::string, std::string>* parameters = nullptr);
+        virtual void scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort,
+                                               MsgType msgType, std::map<std::string, std::string>* parameters = nullptr);
+
         virtual void unscheduleMsgRetransmission(MsgType msgType);
         virtual void clearRetransmissions();
         virtual void handleRetransmissionEvent(omnetpp::cMessage* msg);
@@ -137,7 +142,9 @@ class MqttSNClient : public MqttSNApp
         virtual void processConnAckCustom() = 0;
 
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType) = 0;
+
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
+                                                     omnetpp::cMessage* msg, MsgType msgType) = 0;
 
     public:
         MqttSNClient() {};

@@ -196,7 +196,10 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
 
-void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag, bool retainFlag, const std::string& willTopic)
+void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
+                                            MsgType msgType,
+                                            QoS qosFlag, bool retainFlag,
+                                            const std::string& willTopic)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
     payload->setMsgType(msgType);
@@ -226,7 +229,9 @@ void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, const std::string& willMsg)
+void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort,
+                                          MsgType msgType,
+                                          const std::string& willMsg)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
     payload->setMsgType(msgType);
@@ -254,14 +259,27 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName)
+void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort,
+                                   uint16_t msgId,
+                                   const std::string& topicName)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(msgId, topicName), destAddress, destPort);
+    MqttSNApp::socket.sendTo(
+            PacketHelper::getRegisterPacket(msgId, topicName),
+            destAddress,
+            destPort
+    );
 }
 
-void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
+void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort,
+                                  bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
+                                  uint16_t topicId, uint16_t msgId,
+                                  const std::string& data)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data), destAddress, destPort);
+    MqttSNApp::socket.sendTo(
+            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data),
+            destAddress,
+            destPort
+    );
 }
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
@@ -304,7 +322,9 @@ void MqttSNPublisher::handleRegistrationEvent()
     // schedule register retransmission
     std::map<std::string, std::string> parameters;
     parameters["msgId"] = std::to_string(MqttSNClient::currentMsgId);
-    MqttSNClient::scheduleMsgRetransmission(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters);
+    MqttSNClient::scheduleMsgRetransmission(
+            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters
+    );
 }
 
 void MqttSNPublisher::handlePublishEvent()
@@ -371,7 +391,8 @@ void MqttSNPublisher::fillTopicsAndData()
     }
 }
 
-void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg, MsgType msgType)
+void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
+                                                      omnetpp::cMessage* msg, MsgType msgType)
 {
     switch (msgType) {
         case MsgType::WILLTOPICUPD:

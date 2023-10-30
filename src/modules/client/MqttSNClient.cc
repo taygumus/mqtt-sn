@@ -686,7 +686,9 @@ void MqttSNClient::sendSearchGw()
     MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration)
+void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort,
+                               bool willFlag, bool cleanSessionFlag,
+                               uint16_t duration)
 {
     const auto& payload = inet::makeShared<MqttSNConnect>();
     payload->setMsgType(MsgType::CONNECT);
@@ -894,7 +896,8 @@ std::set<uint16_t> MqttSNClient::getUsedMsgIds()
     return usedIds;
 }
 
-void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, std::map<std::string, std::string>* parameters)
+void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort,
+                                             MsgType msgType, std::map<std::string, std::string>* parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
     if (retransmissions.find(msgType) != retransmissions.end()) {
