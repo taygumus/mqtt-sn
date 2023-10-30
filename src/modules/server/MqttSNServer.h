@@ -100,7 +100,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleAsleepClientsCheckEvent();
         virtual void handleClientsClearEvent();
 
-        // other functions
+        // other methods
         virtual bool isGatewayCongested();
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);

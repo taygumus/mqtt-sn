@@ -73,7 +73,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void handleRegistrationEvent();
         virtual void handlePublishEvent();
 
-        // other functions
+        // other methods
         virtual void fillTopicsAndData();
 
         // retransmissions management

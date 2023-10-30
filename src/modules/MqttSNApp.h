@@ -31,7 +31,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void sendBase(const inet::L3Address& destAddress, const int& destPort, MsgType msgType);
         virtual void sendDisconnect(const inet::L3Address& destAddress, const int& destPort, uint16_t duration = 0);
 
-        // other functions
+        // other methods
         virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
         virtual bool isSelfBroadcastAddress(const inet::L3Address& address);
         virtual bool setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true);

@@ -263,11 +263,7 @@ void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int
                                    uint16_t msgId,
                                    const std::string& topicName)
 {
-    MqttSNApp::socket.sendTo(
-            PacketHelper::getRegisterPacket(msgId, topicName),
-            destAddress,
-            destPort
-    );
+    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(msgId, topicName), destAddress, destPort);
 }
 
 void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort,
