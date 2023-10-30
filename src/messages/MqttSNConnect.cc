@@ -34,7 +34,7 @@ uint8_t MqttSNConnect::getProtocolId() const
     return protocolId;
 }
 
-void MqttSNConnect::setClientId(std::string id)
+void MqttSNConnect::setClientId(const std::string& id)
 {
     MqttSNBase::setStringField(
             id,

@@ -13,7 +13,7 @@ class MqttSNPingReq : public MqttSNBase
     public:
         MqttSNPingReq() {};
 
-        void setClientId(std::string id);
+        void setClientId(const std::string& id);
         std::string getClientId() const;
 
         ~MqttSNPingReq() {};

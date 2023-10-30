@@ -3,7 +3,7 @@
 
 namespace mqttsn {
 
-void MqttSNBaseWithWillMsg::setWillMsg(std::string willMessage)
+void MqttSNBaseWithWillMsg::setWillMsg(const std::string& willMessage)
 {
     MqttSNBase::setStringField(
             willMessage,

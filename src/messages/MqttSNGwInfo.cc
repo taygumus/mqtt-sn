@@ -18,7 +18,7 @@ uint8_t MqttSNGwInfo::getGwId() const
     return gwId;
 }
 
-void MqttSNGwInfo::setGwAdd(std::string gatewayAddress)
+void MqttSNGwInfo::setGwAdd(const std::string& gatewayAddress)
 {
     // parse the textual IP address
     std::vector<std::string> ipParts;

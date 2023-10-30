@@ -23,7 +23,7 @@ class MqttSNConnect : public MqttSNBaseWithDuration
 
         uint8_t getProtocolId() const;
 
-        void setClientId(std::string id);
+        void setClientId(const std::string& id);
         std::string getClientId() const;
 
         ~MqttSNConnect() {};

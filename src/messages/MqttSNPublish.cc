@@ -48,7 +48,7 @@ uint8_t MqttSNPublish::getTopicIdTypeFlag() const
     return MqttSNBase::getFlag(Flag::TOPIC_ID_TYPE, flags);
 }
 
-void MqttSNPublish::setData(std::string stringData)
+void MqttSNPublish::setData(const std::string& stringData)
 {
     MqttSNBase::setStringField(
             stringData,

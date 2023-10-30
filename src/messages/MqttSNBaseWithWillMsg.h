@@ -13,7 +13,7 @@ class MqttSNBaseWithWillMsg : public MqttSNBase
     public:
         MqttSNBaseWithWillMsg() {};
 
-        void setWillMsg(std::string willMessage);
+        void setWillMsg(const std::string& willMessage);
         std::string getWillMsg() const;
 
         ~MqttSNBaseWithWillMsg() {};

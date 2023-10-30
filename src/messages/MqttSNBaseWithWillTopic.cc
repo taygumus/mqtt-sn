@@ -28,7 +28,7 @@ bool MqttSNBaseWithWillTopic::getRetainFlag() const
     return MqttSNBase::getBooleanFlag(Flag::RETAIN, flags);
 }
 
-void MqttSNBaseWithWillTopic::setWillTopic(std::string topicName)
+void MqttSNBaseWithWillTopic::setWillTopic(const std::string& topicName)
 {
     MqttSNBase::setStringField(
             topicName,

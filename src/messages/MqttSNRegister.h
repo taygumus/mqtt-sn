@@ -13,7 +13,7 @@ class MqttSNRegister : public MqttSNMsgIdWithTopicId
     public:
         MqttSNRegister() {};
 
-        void setTopicName(std::string name);
+        void setTopicName(const std::string& name);
         std::string getTopicName() const;
 
         ~MqttSNRegister() {};

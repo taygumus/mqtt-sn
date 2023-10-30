@@ -8,9 +8,9 @@ namespace mqttsn {
 class StringHelper : public BaseHelper
 {
     public:
-        static std::string appendCounterToString(std::string inputString, int counter);
-        static std::string base64Encode(std::string inputString);
-        static std::string sanitizeSpaces(std::string inputString);
+        static std::string appendCounterToString(const std::string& inputString, int counter);
+        static std::string base64Encode(const std::string& inputString);
+        static std::string sanitizeSpaces(const std::string& inputString);
 };
 
 } /* namespace mqttsn */

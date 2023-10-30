@@ -4,7 +4,7 @@
 
 namespace mqttsn {
 
-inet::Packet* PacketHelper::getRegisterPacket(uint16_t msgId, std::string topicName)
+inet::Packet* PacketHelper::getRegisterPacket(uint16_t msgId, const std::string& topicName)
 {
     const auto& payload = inet::makeShared<MqttSNRegister>();
     payload->setMsgType(MsgType::REGISTER);
@@ -18,7 +18,7 @@ inet::Packet* PacketHelper::getRegisterPacket(uint16_t msgId, std::string topicN
     return packet;
 }
 
-inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, std::string data)
+inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
 {
     const auto& payload = inet::makeShared<MqttSNPublish>();
     payload->setMsgType(MsgType::PUBLISH);

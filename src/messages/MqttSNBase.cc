@@ -51,7 +51,7 @@ void MqttSNBase::setOptionalField(uint32_t value, uint16_t octets, uint32_t& fie
     addLength(length, prevLength);
 }
 
-void MqttSNBase::setStringField(std::string value, uint16_t minLength, uint16_t maxLength, std::string error, std::string& field)
+void MqttSNBase::setStringField(const std::string& value, uint16_t minLength, uint16_t maxLength, const std::string& error, std::string& field)
 {
     if (maxLength < minLength)
         throw omnetpp::cRuntimeError("Minimum string length cannot be greater than the maximum one");
@@ -80,7 +80,7 @@ void MqttSNBase::setBooleanFlag(bool value, Flag position, uint8_t& flags)
     flags = (flags & ~(1 << position)) | (value << position);
 }
 
-std::string MqttSNBase::getClassName(std::string mangledName) const
+std::string MqttSNBase::getClassName(const std::string& mangledName) const
 {
     int status;
     char* demangledName = abi::__cxa_demangle(mangledName.c_str(), nullptr, nullptr, &status);

@@ -21,7 +21,7 @@ class MqttSNUnsubscribe : public MqttSNBaseWithMsgId
         void setTopicIdTypeFlag(TopicIdType topicIdTypeFlag);
         uint8_t getTopicIdTypeFlag() const;
 
-        void setTopicName(std::string name);
+        void setTopicName(const std::string& name);
         std::string getTopicName() const;
 
         void setTopicId(uint16_t id);

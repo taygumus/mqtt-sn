@@ -3,7 +3,7 @@
 
 namespace mqttsn {
 
-void MqttSNPingReq::setClientId(std::string id)
+void MqttSNPingReq::setClientId(const std::string& id)
 {
     MqttSNBase::setStringField(
             id,

@@ -21,7 +21,7 @@ private:
         void setRetainFlag(bool retainFlag);
         bool getRetainFlag() const;
 
-        void setWillTopic(std::string topicName);
+        void setWillTopic(const std::string& topicName);
         std::string getWillTopic() const;
 
         ~MqttSNBaseWithWillTopic() {};

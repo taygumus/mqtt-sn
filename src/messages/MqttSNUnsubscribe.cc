@@ -18,7 +18,7 @@ uint8_t MqttSNUnsubscribe::getTopicIdTypeFlag() const
     return MqttSNBase::getFlag(Flag::TOPIC_ID_TYPE, flags);
 }
 
-void MqttSNUnsubscribe::setTopicName(std::string name)
+void MqttSNUnsubscribe::setTopicName(const std::string& name)
 {
     uint8_t topicIdFlag = getTopicIdTypeFlag();
 

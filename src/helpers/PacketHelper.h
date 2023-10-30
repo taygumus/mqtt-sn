@@ -11,8 +11,8 @@ namespace mqttsn {
 class PacketHelper : public BaseHelper
 {
     public:
-        static inet::Packet* getRegisterPacket(uint16_t msgId, std::string topicName);
-        static inet::Packet* getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, std::string data);
+        static inet::Packet* getRegisterPacket(uint16_t msgId, const std::string& topicName);
+        static inet::Packet* getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
 };
 
 } /* namespace mqttsn */

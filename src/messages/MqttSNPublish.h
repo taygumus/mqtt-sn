@@ -28,7 +28,7 @@ class MqttSNPublish : public MqttSNMsgIdWithTopicId
         void setTopicIdTypeFlag(TopicIdType topicIdTypeFlag);
         uint8_t getTopicIdTypeFlag() const;
 
-        void setData(std::string stringData);
+        void setData(const std::string& stringData);
         std::string getData() const;
 
         ~MqttSNPublish() {};

@@ -3,7 +3,7 @@
 
 namespace mqttsn {
 
-void MqttSNRegister::setTopicName(std::string name)
+void MqttSNRegister::setTopicName(const std::string& name)
 {
     MqttSNBase::setStringField(
             name,

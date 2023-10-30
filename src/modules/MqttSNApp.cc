@@ -22,7 +22,7 @@ void MqttSNApp::socketClosed(inet::UdpSocket* socket)
         startActiveOperationExtraTimeOrFinish(-1);
 }
 
-void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16_t gatewayPort)
+void MqttSNApp::sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress, uint16_t gatewayPort)
 {
     const auto& payload = inet::makeShared<MqttSNGwInfo>();
     payload->setMsgType(MsgType::GWINFO);
@@ -37,7 +37,7 @@ void MqttSNApp::sendGwInfo(uint8_t gatewayId, std::string gatewayAddress, uint16
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNApp::sendPingReq(const inet::L3Address& destAddress, const int& destPort, std::string clientId)
+void MqttSNApp::sendPingReq(const inet::L3Address& destAddress, const int& destPort, const std::string& clientId)
 {
     const auto& payload = inet::makeShared<MqttSNPingReq>();
     payload->setMsgType(MsgType::PINGREQ);
