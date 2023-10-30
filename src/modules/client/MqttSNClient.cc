@@ -852,6 +852,15 @@ bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
     return std::stoi(retransmissionEvent->par("msgId").stringValue()) == msgId;
 }
 
+uint16_t MqttSNClient::getNewMsgId()
+{
+    if (!MqttSNApp::setNextAvailableId(getUsedMsgIds(), currentMsgId)) {
+        throw omnetpp::cRuntimeError("Failed to assign a new message ID. All available message IDs are in use");
+    }
+
+    return currentMsgId;
+}
+
 std::string MqttSNClient::generateClientId()
 {
     // generate a random client ID of variable length

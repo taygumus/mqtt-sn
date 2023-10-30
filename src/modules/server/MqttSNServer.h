@@ -83,6 +83,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processPingResp(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendAdvertise();

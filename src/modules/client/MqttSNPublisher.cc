@@ -79,6 +79,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
         case MsgType::WILLTOPICRESP:
         case MsgType::WILLMSGRESP:
         case MsgType::REGACK:
+        case MsgType::PUBACK:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -107,6 +108,10 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 
         case MsgType::REGACK:
             processRegAck(pk);
+            break;
+
+        case MsgType::PUBACK:
+            processPubAck(pk);
             break;
 
         default:
@@ -194,6 +199,15 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     }
 
     scheduleClockEventAfter(registrationInterval, registrationEvent);
+}
+
+void MqttSNPublisher::processPubAck(inet::Packet* pk)
+{
+    const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
+
+    // TO DO -> check msgId for ack; if no ack retransmit
+
+    // TO DO
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
@@ -309,11 +323,7 @@ void MqttSNPublisher::handleRegistrationEvent()
         lastRegistration.retry = true;
     }
 
-    if (!MqttSNApp::setNextAvailableId(MqttSNClient::getUsedMsgIds(), MqttSNClient::currentMsgId)) {
-        throw omnetpp::cRuntimeError("Failed to assign a new message ID. All available message IDs are in use");
-    }
-
-    sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::currentMsgId, topicName);
+    sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::getNewMsgId(), topicName);
 
     // schedule register retransmission
     std::map<std::string, std::string> parameters;
@@ -347,18 +357,29 @@ void MqttSNPublisher::handlePublishEvent()
     auto dataIterator = data.begin();
     std::advance(dataIterator, intuniform(0, data.size() - 1));
 
-    int selectedTopicId = topicIterator->first;
+    uint16_t selectedTopicId = topicIterator->first;
     DataInfo selectedData = dataIterator->second;
 
     QoS qos = selectedData.qosFlag;
     bool retain = selectedData.retainFlag;
 
     if (qos == QoS::QOS_ZERO) {
+        sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
+                    false, qos, retain, TopicIdType::NORMAL_TOPIC,
+                    selectedTopicId, 0,
+                    selectedData.message);
+
         // no need to wait for an ack
         scheduleClockEventAfter(publishInterval, publishEvent);
+        return;
     }
 
-    // TO DO -> send publish message
+    sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
+               false, qos, retain, TopicIdType::NORMAL_TOPIC,
+               selectedTopicId, MqttSNClient::getNewMsgId(),
+               selectedData.message);
+
+    // TO DO -> rtx
 }
 
 void MqttSNPublisher::fillTopicsAndData()

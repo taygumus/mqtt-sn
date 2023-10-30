@@ -48,6 +48,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processWillResp(inet::Packet* pk, bool willTopic);
         virtual void processRegAck(inet::Packet* pk);
+        virtual void processPubAck(inet::Packet* pk);
 
         // send packets
         virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,

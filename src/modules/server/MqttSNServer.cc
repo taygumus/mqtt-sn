@@ -13,6 +13,7 @@
 #include "messages/MqttSNPingReq.h"
 #include "messages/MqttSNRegister.h"
 #include "messages/MqttSNMsgIdWithTopicIdPlus.h"
+#include "messages/MqttSNPublish.h"
 
 namespace mqttsn {
 
@@ -247,6 +248,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::WILLMSGUPD:
         case MsgType::PINGRESP:
         case MsgType::REGISTER:
+        case MsgType::PUBLISH:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -306,6 +308,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::REGISTER:
             processRegister(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBLISH:
+            processPublish(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -499,6 +505,36 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 
     // send REGACK response with the new topic ID and ACCEPTED status
     sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::ACCEPTED, currentTopicId, msgId);
+}
+
+void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNPublish>();
+    uint8_t qos = payload->getQoSFlag();
+    uint16_t topicId = payload->getTopicId();
+    uint16_t msgId = payload->getMsgId();
+
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+
+    // TO DO -> check if topic ID is valid
+    // TO DO -> check if there is congestion
+
+    if (qos == QoS::QOS_ZERO) {
+        // TO DO -> manage QOS ZERO level, send to subscribers
+        return;
+    }
+
+    if (qos == QoS::QOS_ONE) {
+        // TO DO -> Return codes based on server checks
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
+        //sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
+        //sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
+        return;
+    }
+
+    // TO DO -> QoS 2 management
 }
 
 void MqttSNServer::sendAdvertise()

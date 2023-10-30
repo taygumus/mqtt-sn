@@ -22,7 +22,7 @@ void MqttSNUnsubscribe::setTopicName(const std::string& name)
 {
     uint8_t topicIdFlag = getTopicIdTypeFlag();
 
-    if (topicIdFlag == TopicIdType::TOPIC_NAME)
+    if (topicIdFlag == TopicIdType::NORMAL_TOPIC)
         MqttSNBase::setStringField(
                 name,
                 Length::ZERO_OCTETS,
