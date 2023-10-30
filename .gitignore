@@ -2,3 +2,6 @@
 out/
 simulations/results/
 src/externals/
+src/Makefile
+Makefile
+
