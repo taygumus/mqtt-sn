@@ -327,7 +327,7 @@ void MqttSNPublisher::handleRegistrationEvent()
 
     // schedule register retransmission
     std::map<std::string, std::string> parameters;
-    parameters["msgId"] = std::to_string(MqttSNClient::currentMsgId);
+    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
     MqttSNClient::scheduleMsgRetransmission(
             MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters
     );

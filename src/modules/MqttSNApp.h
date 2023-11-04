@@ -14,6 +14,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 {
     protected:
         inet::UdpSocket socket;
+        uint16_t currentMsgId = 0;
 
     protected:
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }

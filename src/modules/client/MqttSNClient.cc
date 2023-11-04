@@ -854,11 +854,11 @@ bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
 
 uint16_t MqttSNClient::getNewMsgId()
 {
-    if (!MqttSNApp::setNextAvailableId(getUsedMsgIds(), currentMsgId)) {
+    if (!MqttSNApp::setNextAvailableId(getUsedMsgIds(), MqttSNApp::currentMsgId)) {
         throw omnetpp::cRuntimeError("Failed to assign a new message ID. All available message IDs are in use");
     }
 
-    return currentMsgId;
+    return MqttSNApp::currentMsgId;
 }
 
 std::string MqttSNClient::generateClientId()

@@ -521,6 +521,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     // TO DO -> check if topic ID is valid
     // TO DO -> check if there is congestion
 
+    /*
     if (qos == QoS::QOS_ZERO) {
         // TO DO -> manage QOS ZERO level, send to subscribers
         return;
@@ -535,6 +536,8 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     // TO DO -> QoS 2 management
+
+    */
 }
 
 void MqttSNServer::sendAdvertise()
