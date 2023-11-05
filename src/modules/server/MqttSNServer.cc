@@ -518,26 +518,27 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    // TO DO -> check if topic ID is valid
-    // TO DO -> check if there is congestion
+    bool topicIdFound = (topicIds.find(topicId) != topicIds.end());
+    bool isCongested = true; // TO DO -> checkCongestion();
 
-    /*
-    if (qos == QoS::QOS_ZERO) {
-        // TO DO -> manage QOS ZERO level, send to subscribers
+    // check if the topic exists or there is a congestion for QoS 0
+    if ((!topicIdFound || isCongested) && qos == QoS::QOS_ZERO) {
         return;
     }
 
-    if (qos == QoS::QOS_ONE) {
-        // TO DO -> Return codes based on server checks
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
-        //sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
-        //sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
+    // check if the topic exists for QoS 1 and QoS 2; if not, ignore the message and return an error code
+    if (!topicIdFound && (qos == QoS::QOS_ONE || qos == QoS::QOS_TWO)) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
         return;
     }
 
-    // TO DO -> QoS 2 management
+    // check if there is a congestion for QoS 1 and QoS 2; if yes, ignore the message and return an error code
+    if (isCongested && (qos == QoS::QOS_ONE || qos == QoS::QOS_TWO)) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
+        return;
+    }
 
-    */
+    // TO DO -> process qos0, qos1 or qos2 messages now without errors
 }
 
 void MqttSNServer::sendAdvertise()

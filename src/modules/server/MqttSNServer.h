@@ -11,6 +11,8 @@
 #include "types/server/ClientInfo.h"
 #include "types/server/PublisherInfo.h"
 #include "types/server/SubscriberInfo.h"
+#include "types/server/DataInfo.h"
+#include "types/server/RequestInfo.h"
 
 namespace mqttsn {
 
@@ -46,6 +48,9 @@ class MqttSNServer : public MqttSNApp
         std::map<std::string, uint16_t> topicsToIds;
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
+
+        std::map<uint16_t, DataInfo> data;
+        std::map<uint16_t, RequestInfo> pendingRequests;
 
         // statistics
         int numAdvertiseSent = 0;
