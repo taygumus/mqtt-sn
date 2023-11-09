@@ -186,7 +186,6 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     }
 
     // handle operations when the registration is ACCEPTED with a valid topic ID
-
     topicIds[topicId] = lastRegistration.info;
     int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
 
@@ -481,7 +480,7 @@ void MqttSNPublisher::retryLastPublish()
 
 bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& topicId)
 {
-    // iterate through the to find the specified topic name
+    // iterate through the map to find the specified topic name
     for (const auto& pair : topicIds) {
         if (pair.second.topicName == topicName) {
             // topic name found in the map, assign the corresponding topic ID and return true
