@@ -186,26 +186,19 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     }
 
     // handle operations when the registration is ACCEPTED with a valid topic ID
+
+    topicIds[topicId] = lastRegistration.info;
+    int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
+
+    // check if the counter has reached its maximum value
+    if (*counter == std::numeric_limits<int>::max()) {
+        *counter = 0;
+    }
+    else {
+        (*counter)++;
+    }
+
     lastRegistration.retry = false;
-
-    if (topicIds.find(topicId) == topicIds.end()) {
-        // update only if the topic ID is new
-        topicIds[topicId] = lastRegistration.info;
-        int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
-
-        // check if the counter has reached its maximum value
-        if (*counter == std::numeric_limits<int>::max()) {
-            *counter = 0;
-        }
-        else {
-            (*counter)++;
-        }
-    }
-///
-    if (lastPublish.topicId == 0) {
-        lastPublish.topicId = topicId;
-    }
-///
     scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
 
@@ -224,20 +217,7 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     // now process and analyze message content as needed
     ReturnCode returnCode = payload->getReturnCode();
 
-    if (returnCode == ReturnCode::REJECTED_CONGESTION) {
-        retryLastPublish();
-        return;
-    }
-
-    /*
-    uint16_t topicId = payload->getTopicId();
-    if (topicId == 0) {
-        throw omnetpp::cRuntimeError("Unexpected error: Invalid topic ID");
-    }
-    */
-
     if (returnCode == ReturnCode::REJECTED_INVALID_TOPIC_ID) {
-        // TO DO -> check return ID
         lastRegistration.retry = true;
         lastRegistration.info = lastPublish.registerInfo;
 
@@ -246,7 +226,12 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
 
         // retry topic registration
         scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, registrationEvent);
-EV << "entrat" << std::endl;
+
+        retryLastPublish();
+        return;
+    }
+
+    if (returnCode == ReturnCode::REJECTED_CONGESTION) {
         retryLastPublish();
         return;
     }
@@ -381,14 +366,6 @@ void MqttSNPublisher::handleRegistrationEvent()
     MqttSNClient::scheduleMsgRetransmission(
             MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters
     );
-
-    ///
-    EV << "TopicUpdates:" << std::endl;
-    for (const auto& pair : topicIds) {
-            EV << "Topic ID: " << pair.first << ", Topic Name: " << pair.second.topicName
-                      << ", Topics and Data Key: " << pair.second.topicsAndDataKey << std::endl;
-        }
-    ///
 }
 
 void MqttSNPublisher::handlePublishEvent()
@@ -398,6 +375,11 @@ void MqttSNPublisher::handlePublishEvent()
 
     // if it's a retry, use the last sent element
     if (lastPublish.retry) {
+        // update topic ID after publisher reconnection to a server
+        if (lastPublish.topicId == 0) {
+            findTopicByName(lastPublish.registerInfo.topicName, lastPublish.topicId);
+        }
+
         selectedTopicId = lastPublish.topicId;
         selectedData = lastPublish.dataInfo;
     }
@@ -432,15 +414,11 @@ void MqttSNPublisher::handlePublishEvent()
         lastPublish.registerInfo = topicIterator->second;
         lastPublish.dataInfo = selectedData;
 
-        // retry after publisher reconnection to the server
+        // retry after publisher reconnection to a server
         if (selectedData.qosFlag != QoS::QOS_ZERO) {
             lastPublish.retry = true;
         }
     }
-
-EV << "TopicID: " << lastPublish.topicId << std::endl;
-EV << "TopicName: " << lastPublish.registerInfo.topicName << std::endl;
-EV << "Message: " << lastPublish.dataInfo.message << std::endl;
 
     QoS qos = selectedData.qosFlag;
     bool retain = selectedData.retainFlag;
@@ -495,9 +473,25 @@ void MqttSNPublisher::fillTopicsAndData()
     }
 }
 
-void MqttSNPublisher::retryLastPublish() {
+void MqttSNPublisher::retryLastPublish()
+{
     lastPublish.retry = true;
     scheduleClockEventAfter(waitingInterval, publishEvent);
+}
+
+bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& topicId)
+{
+    // iterate through the to find the specified topic name
+    for (const auto& pair : topicIds) {
+        if (pair.second.topicName == topicName) {
+            // topic name found in the map, assign the corresponding topic ID and return true
+            topicId = pair.first;
+            return true;
+        }
+    }
+
+    // topic name not found in the map
+    return false;
 }
 
 void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,

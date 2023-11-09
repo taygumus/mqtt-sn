@@ -79,6 +79,7 @@ class MqttSNPublisher : public MqttSNClient
         // other methods
         virtual void fillTopicsAndData();
         virtual void retryLastPublish();
+        virtual bool findTopicByName(const std::string& topicName, uint16_t& topicId);
 
         // retransmissions management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
