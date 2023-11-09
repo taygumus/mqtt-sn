@@ -123,7 +123,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 void MqttSNPublisher::processConnAckCustom()
 {
     scheduleClockEventAfter(registrationInterval, registrationEvent);
-    ///scheduleClockEventAfter(publishInterval, publishEvent);
+    scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
@@ -201,11 +201,11 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
             (*counter)++;
         }
     }
-
+///
     if (lastPublish.topicId == 0) {
         lastPublish.topicId = topicId;
     }
-
+///
     scheduleClockEventAfter(registrationInterval, registrationEvent);
 }
 
@@ -381,6 +381,14 @@ void MqttSNPublisher::handleRegistrationEvent()
     MqttSNClient::scheduleMsgRetransmission(
             MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters
     );
+
+    ///
+    EV << "TopicUpdates:" << std::endl;
+    for (const auto& pair : topicIds) {
+            EV << "Topic ID: " << pair.first << ", Topic Name: " << pair.second.topicName
+                      << ", Topics and Data Key: " << pair.second.topicsAndDataKey << std::endl;
+        }
+    ///
 }
 
 void MqttSNPublisher::handlePublishEvent()
