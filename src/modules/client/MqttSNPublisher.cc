@@ -49,7 +49,8 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
 {
-    // TO DO
+    topicIds.clear();
+    lastPublish.topicId = 0;
 }
 
 void MqttSNPublisher::cancelActiveStateEventsCustom()
@@ -122,7 +123,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 void MqttSNPublisher::processConnAckCustom()
 {
     scheduleClockEventAfter(registrationInterval, registrationEvent);
-    scheduleClockEventAfter(publishInterval, publishEvent);
+    ///scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
@@ -186,16 +187,23 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     // handle operations when the registration is ACCEPTED with a valid topic ID
     lastRegistration.retry = false;
-    topicIds[topicId] = lastRegistration.info;
 
-    int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
+    if (topicIds.find(topicId) == topicIds.end()) {
+        // update only if the topic ID is new
+        topicIds[topicId] = lastRegistration.info;
+        int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
 
-    // check if the counter has reached its maximum value
-    if (*counter == std::numeric_limits<int>::max()) {
-        *counter = 0;
+        // check if the counter has reached its maximum value
+        if (*counter == std::numeric_limits<int>::max()) {
+            *counter = 0;
+        }
+        else {
+            (*counter)++;
+        }
     }
-    else {
-        (*counter)++;
+
+    if (lastPublish.topicId == 0) {
+        lastPublish.topicId = topicId;
     }
 
     scheduleClockEventAfter(registrationInterval, registrationEvent);
@@ -205,9 +213,51 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
 
-    // TO DO -> check msgId for ack; if no ack retransmit
+    if (!MqttSNClient::checkMsgIdForType(MsgType::PUBLISH, payload->getMsgId())) {
+        // this ACK message does not match the expected message ID
+        return;
+    }
 
-    // TO DO
+    // ACK with correct message ID is received
+    MqttSNClient::unscheduleMsgRetransmission(MsgType::PUBLISH);
+
+    // now process and analyze message content as needed
+    ReturnCode returnCode = payload->getReturnCode();
+
+    if (returnCode == ReturnCode::REJECTED_CONGESTION) {
+        retryLastPublish();
+        return;
+    }
+
+    /*
+    uint16_t topicId = payload->getTopicId();
+    if (topicId == 0) {
+        throw omnetpp::cRuntimeError("Unexpected error: Invalid topic ID");
+    }
+    */
+
+    if (returnCode == ReturnCode::REJECTED_INVALID_TOPIC_ID) {
+        // TO DO -> check return ID
+        lastRegistration.retry = true;
+        lastRegistration.info = lastPublish.registerInfo;
+
+        MqttSNClient::unscheduleMsgRetransmission(MsgType::REGISTER);
+        cancelEvent(registrationEvent);
+
+        // retry topic registration
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, registrationEvent);
+EV << "entrat" << std::endl;
+        retryLastPublish();
+        return;
+    }
+
+    if (returnCode != ReturnCode::ACCEPTED) {
+        throw omnetpp::cRuntimeError("Unexpected error: Invalid return code");
+    }
+
+    // handle operations when publish is ACCEPTED
+    lastPublish.retry = false;
+    scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
@@ -335,30 +385,54 @@ void MqttSNPublisher::handleRegistrationEvent()
 
 void MqttSNPublisher::handlePublishEvent()
 {
-    // check for topics availability
-    if (topicIds.empty()) {
-        scheduleClockEventAfter(publishInterval, publishEvent);
-        return;
+    uint16_t selectedTopicId;
+    DataInfo selectedData;
+
+    // if it's a retry, use the last sent element
+    if (lastPublish.retry) {
+        selectedTopicId = lastPublish.topicId;
+        selectedData = lastPublish.dataInfo;
+    }
+    else {
+        // check for topics availability
+        if (topicIds.empty()) {
+            scheduleClockEventAfter(publishInterval, publishEvent);
+            return;
+        }
+
+        // randomly select a topic from the map
+        auto topicIterator = topicIds.begin();
+        std::advance(topicIterator, intuniform(0, topicIds.size() - 1));
+
+        std::map<int, DataInfo> data = topicsAndData[topicIterator->second.topicsAndDataKey].data;
+
+        // check for data availability
+        if (data.empty()) {
+            scheduleClockEventAfter(publishInterval, publishEvent);
+            return;
+        }
+
+        // randomly select a data from the map
+        auto dataIterator = data.begin();
+        std::advance(dataIterator, intuniform(0, data.size() - 1));
+
+        selectedTopicId = topicIterator->first;
+        selectedData = dataIterator->second;
+
+        // update information about the last element
+        lastPublish.topicId = selectedTopicId;
+        lastPublish.registerInfo = topicIterator->second;
+        lastPublish.dataInfo = selectedData;
+
+        // retry after publisher reconnection to the server
+        if (selectedData.qosFlag != QoS::QOS_ZERO) {
+            lastPublish.retry = true;
+        }
     }
 
-    // randomly select a topic from the map
-    auto topicIterator = topicIds.begin();
-    std::advance(topicIterator, intuniform(0, topicIds.size() - 1));
-
-    std::map<int, DataInfo> data = topicsAndData[topicIterator->second.topicsAndDataKey].data;
-
-    // check for data availability
-    if (data.empty()) {
-        scheduleClockEventAfter(publishInterval, publishEvent);
-        return;
-    }
-
-    // randomly select a data from the map
-    auto dataIterator = data.begin();
-    std::advance(dataIterator, intuniform(0, data.size() - 1));
-
-    uint16_t selectedTopicId = topicIterator->first;
-    DataInfo selectedData = dataIterator->second;
+EV << "TopicID: " << lastPublish.topicId << std::endl;
+EV << "TopicName: " << lastPublish.registerInfo.topicName << std::endl;
+EV << "Message: " << lastPublish.dataInfo.message << std::endl;
 
     QoS qos = selectedData.qosFlag;
     bool retain = selectedData.retainFlag;
@@ -379,7 +453,12 @@ void MqttSNPublisher::handlePublishEvent()
                selectedTopicId, MqttSNClient::getNewMsgId(),
                selectedData.message);
 
-    // TO DO -> rtx
+    // schedule publish retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleMsgRetransmission(
+            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::PUBLISH, &parameters
+    );
 }
 
 void MqttSNPublisher::fillTopicsAndData()
@@ -408,6 +487,11 @@ void MqttSNPublisher::fillTopicsAndData()
     }
 }
 
+void MqttSNPublisher::retryLastPublish() {
+    lastPublish.retry = true;
+    scheduleClockEventAfter(waitingInterval, publishEvent);
+}
+
 void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
                                                       omnetpp::cMessage* msg, MsgType msgType)
 {
@@ -422,6 +506,10 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
 
         case MsgType::REGISTER:
             retransmitRegister(destAddress, destPort, msg);
+            break;
+
+        case MsgType::PUBLISH:
+            retransmitPublish(destAddress, destPort, msg);
             break;
 
         default:
@@ -442,6 +530,14 @@ void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, c
 void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendRegister(destAddress, destPort, std::stoi(msg->par("msgId").stringValue()), lastRegistration.info.topicName);
+}
+
+void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
+{
+    sendPublish(destAddress, destPort,
+                true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag, TopicIdType::NORMAL_TOPIC,
+                lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()),
+                lastPublish.dataInfo.message);
 }
 
 MqttSNPublisher::~MqttSNPublisher()

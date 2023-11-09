@@ -510,7 +510,6 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNPublish>();
-    uint8_t qos = payload->getQoSFlag();
     uint16_t topicId = payload->getTopicId();
     uint16_t msgId = payload->getMsgId();
 
@@ -518,27 +517,33 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    bool topicIdFound = (topicIds.find(topicId) != topicIds.end());
-    bool isCongested = true; // TO DO -> checkCongestion();
-
-    // check if the topic exists or there is a congestion for QoS 0
-    if ((!topicIdFound || isCongested) && qos == QoS::QOS_ZERO) {
-        return;
-    }
-
-    // check if the topic exists for QoS 1 and QoS 2; if not, ignore the message and return an error code
-    if (!topicIdFound && (qos == QoS::QOS_ONE || qos == QoS::QOS_TWO)) {
+    // check if the topic is registered; if no, send a return code
+    if (topicIds.find(topicId) == topicIds.end()) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
         return;
     }
 
-    // check if there is a congestion for QoS 1 and QoS 2; if yes, ignore the message and return an error code
-    if (isCongested && (qos == QoS::QOS_ONE || qos == QoS::QOS_TWO)) {
+    // check if the server is congested; if yes, send a return code
+    bool isCongested = false; // TO DO -> checkCongestion(); ///
+    if (isCongested) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
         return;
     }
 
-    // TO DO -> process qos0, qos1 or qos2 messages now without errors
+    uint8_t qos = payload->getQoSFlag();
+
+    if (qos == QoS::QOS_ZERO) {
+        // TO DO -> manage QoS 0 level
+        return;
+    }
+
+    if (qos == QoS::QOS_ONE) {
+        // TO DO -> manage QoS 1 level
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
+        return;
+    }
+
+    // TO DO -> manage QoS 2 level
 }
 
 void MqttSNServer::sendAdvertise()

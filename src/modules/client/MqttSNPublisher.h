@@ -8,6 +8,7 @@
 #include "types/client/publisher/TopicAndData.h"
 #include "types/client/publisher/RegisterInfo.h"
 #include "types/client/publisher/LastRegisterInfo.h"
+#include "types/client/publisher/LastPublishInfo.h"
 
 namespace mqttsn {
 
@@ -31,6 +32,7 @@ class MqttSNPublisher : public MqttSNClient
         LastRegisterInfo lastRegistration;
 
         inet::ClockEvent* publishEvent = nullptr;
+        LastPublishInfo lastPublish;
 
     protected:
         virtual void initializeCustom() override;
@@ -76,6 +78,7 @@ class MqttSNPublisher : public MqttSNClient
 
         // other methods
         virtual void fillTopicsAndData();
+        virtual void retryLastPublish();
 
         // retransmissions management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
@@ -84,6 +87,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
+        virtual void retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
 
     public:
         MqttSNPublisher() {};
