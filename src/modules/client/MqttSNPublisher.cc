@@ -208,13 +208,17 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
 
-    if (!MqttSNClient::checkMsgIdForType(MsgType::PUBLISH, payload->getMsgId())) {
-        // this ACK message does not match the expected message ID
-        return;
-    }
+    if (lastPublish.dataInfo.qosFlag == QoS::QOS_ONE ||
+        lastPublish.dataInfo.qosFlag == QoS::QOS_TWO) {
 
-    // ACK with correct message ID is received
-    MqttSNClient::unscheduleMsgRetransmission(MsgType::PUBLISH);
+        if (!MqttSNClient::checkMsgIdForType(MsgType::PUBLISH, payload->getMsgId())) {
+            // this ACK message does not match the expected message ID
+            return;
+        }
+
+        // ACK with correct message ID is received
+        MqttSNClient::unscheduleMsgRetransmission(MsgType::PUBLISH);
+    }
 
     // now process and analyze message content as needed
     ReturnCode returnCode = payload->getReturnCode();
@@ -234,6 +238,7 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     }
 
     if (returnCode == ReturnCode::REJECTED_CONGESTION) {
+
         retryLastPublish();
         return;
     }
@@ -431,7 +436,7 @@ void MqttSNPublisher::handlePublishEvent()
                     selectedTopicId, 0,
                     selectedData.message);
 
-        // no need to wait for an ack
+        // no need to wait for an ACK
         scheduleClockEventAfter(publishInterval, publishEvent);
         return;
     }
@@ -478,6 +483,8 @@ void MqttSNPublisher::fillTopicsAndData()
 void MqttSNPublisher::retryLastPublish()
 {
     lastPublish.retry = true;
+
+    cancelEvent(publishEvent);
     scheduleClockEventAfter(waitingInterval, publishEvent);
 }
 
