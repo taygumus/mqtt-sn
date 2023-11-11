@@ -458,7 +458,7 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
 
-    // ack with disconnect message
+    // ACK with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
 
     // TO DO -> not affect existing subscriptions (6.12)
@@ -545,6 +545,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     // TO DO -> manage QoS 2 level
+    // send PUBREC
 }
 
 void MqttSNServer::sendAdvertise()

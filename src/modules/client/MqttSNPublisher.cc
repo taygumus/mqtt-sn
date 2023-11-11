@@ -238,7 +238,6 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     }
 
     if (returnCode == ReturnCode::REJECTED_CONGESTION) {
-
         retryLastPublish();
         return;
     }
