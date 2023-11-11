@@ -185,7 +185,7 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
         throw omnetpp::cRuntimeError("Unexpected error: Invalid return code or topic ID");
     }
 
-    // handle operations when the registration is ACCEPTED with a valid topic ID
+    // handle operations when the registration is ACCEPTED
     if (topicIds.find(topicId) == topicIds.end()) {
         // update only if the topic ID is new
         topicIds[topicId] = lastRegistration.info;

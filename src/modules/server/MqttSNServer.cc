@@ -370,11 +370,11 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
-    const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
-
     // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
     // update publisher information
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
@@ -392,11 +392,11 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
 
 void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
-    const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
-
     // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
     // update publisher information
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
@@ -412,12 +412,12 @@ void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    const auto& payload = pk->peekData<MqttSNPingReq>();
-    std::string clientId = payload->getClientId();
-
     // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNPingReq>();
+    std::string clientId = payload->getClientId();
 
     if (!clientId.empty()) {
         // check if the client ID matches the expected client ID
@@ -438,24 +438,25 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int& srcPort)
 {
-    EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
-
     // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
     clientInfo->sentPingReq = false;
+
+    EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 }
 
 void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
 
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
-    clientInfo->lastReceivedMsgTime = getClockTime();
 
     // ack with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
@@ -466,13 +467,13 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
 
 void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    const auto& payload = pk->peekData<MqttSNRegister>();
-    uint16_t topicId = payload->getTopicId();
-    uint16_t msgId = payload->getMsgId();
-
     // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNRegister>();
+    uint16_t topicId = payload->getTopicId();
+    uint16_t msgId = payload->getMsgId();
 
     // extract and sanitize the topic name from the payload
     std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
@@ -509,13 +510,13 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 
 void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    const auto& payload = pk->peekData<MqttSNPublish>();
-    uint16_t topicId = payload->getTopicId();
-    uint16_t msgId = payload->getMsgId();
-
     // update client information
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
     clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNPublish>();
+    uint16_t topicId = payload->getTopicId();
+    uint16_t msgId = payload->getMsgId();
 
     // check if the topic is registered; if no, send a return code
     if (topicIds.find(topicId) == topicIds.end()) {
