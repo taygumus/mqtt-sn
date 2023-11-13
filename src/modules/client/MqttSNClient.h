@@ -112,10 +112,12 @@ class MqttSNClient : public MqttSNApp
         virtual void updateActiveGateways(const inet::L3Address& srcAddress, const int& srcPort, uint8_t gatewayId, uint16_t duration);
         virtual bool isSelectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
-        virtual bool checkMsgIdForType(MsgType msgType, uint16_t msgId);
-        virtual uint16_t getNewMsgId();
-        virtual std::string generateClientId();
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
+        virtual std::string generateClientId();
+
+        virtual bool checkMsgIdForType(MsgType msgType, uint16_t msgId);
+        virtual bool processAckForMsgType(MsgType msgType, uint16_t msgId);
+        virtual uint16_t getNewMsgId();
         virtual std::set<uint16_t> getUsedMsgIds();
 
         // retransmissions management

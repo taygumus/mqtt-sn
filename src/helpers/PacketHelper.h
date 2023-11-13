@@ -3,6 +3,7 @@
 
 #include "BaseHelper.h"
 #include "inet/common/packet/Packet.h"
+#include "types/shared/MsgType.h"
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
 
@@ -16,6 +17,8 @@ class PacketHelper : public BaseHelper
         static inet::Packet* getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
                                               uint16_t topicId, uint16_t msgId,
                                               const std::string& data);
+
+        static inet::Packet* getBaseWithMsgIdPacket(MsgType msgType, uint16_t msgId);
 };
 
 } /* namespace mqttsn */

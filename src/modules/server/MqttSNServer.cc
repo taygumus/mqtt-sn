@@ -3,6 +3,7 @@
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
 #include "helpers/StringHelper.h"
+#include "helpers/PacketHelper.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBase.h"
@@ -538,14 +539,24 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
+    // message ID check needed for QoS 1 and QoS 2
+    if (msgId == 0) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);
+        return;
+    }
+
     if (qos == QoS::QOS_ONE) {
         // TO DO -> manage QoS 1 level
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;
     }
 
-    // TO DO -> manage QoS 2 level
-    // send PUBREC
+    // handling QoS 2; update publisher information and respond with PUBREC
+    PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
+    publisherInfo->messageIds.insert(msgId);
+
+    // TO DO -> manage QoS 2 level; in particular with message saving
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -628,6 +639,11 @@ void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, 
     packet->insertAtBack(payload);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
+}
+
+void MqttSNServer::sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId)
+{
+    MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
 }
 
 void MqttSNServer::handleAdvertiseEvent()

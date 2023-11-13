@@ -7,6 +7,7 @@
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
 #include "messages/MqttSNMsgIdWithTopicIdPlus.h"
+#include "messages/MqttSNBaseWithMsgId.h"
 
 namespace mqttsn {
 
@@ -81,6 +82,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
         case MsgType::WILLMSGRESP:
         case MsgType::REGACK:
         case MsgType::PUBACK:
+        case MsgType::PUBREC:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -113,6 +115,10 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
 
         case MsgType::PUBACK:
             processPubAck(pk);
+            break;
+
+        case MsgType::PUBREC:
+            processPubRec(pk);
             break;
 
         default:
@@ -156,13 +162,10 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
 
-    if (!MqttSNClient::checkMsgIdForType(MsgType::REGISTER, payload->getMsgId())) {
-        // this ACK message does not match the expected message ID
+    // check if the ACK is correct; exit if not
+    if (!MqttSNClient::processAckForMsgType(MsgType::REGISTER, payload->getMsgId())) {
         return;
     }
-
-    // stop retransmission mechanism; ACK with correct message ID is received
-    MqttSNClient::unscheduleMsgRetransmission(MsgType::REGISTER);
 
     // now process and analyze message content as needed
     ReturnCode returnCode = payload->getReturnCode();
@@ -211,13 +214,10 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     if (lastPublish.dataInfo.qosFlag == QoS::QOS_ONE ||
         lastPublish.dataInfo.qosFlag == QoS::QOS_TWO) {
 
-        if (!MqttSNClient::checkMsgIdForType(MsgType::PUBLISH, payload->getMsgId())) {
-            // this ACK message does not match the expected message ID
+        // check if the ACK is correct; exit if not
+        if (!MqttSNClient::processAckForMsgType(MsgType::PUBLISH, payload->getMsgId())) {
             return;
         }
-
-        // ACK with correct message ID is received
-        MqttSNClient::unscheduleMsgRetransmission(MsgType::PUBLISH);
     }
 
     // now process and analyze message content as needed
@@ -249,6 +249,18 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     // handle operations when publish is ACCEPTED
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
+}
+
+void MqttSNPublisher::processPubRec(inet::Packet* pk)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+
+    // check if the ACK is correct; exit if not
+    if (!MqttSNClient::processAckForMsgType(MsgType::PUBLISH, payload->getMsgId())) {
+        return;
+    }
+
+    // TO DO
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,

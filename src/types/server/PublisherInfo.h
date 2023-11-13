@@ -7,6 +7,7 @@ struct PublisherInfo {
     bool willRetainFlag = false;
     std::string willTopic = "";
     std::string willMsg = "";
+    std::set<uint16_t> messageIds;
 };
 
 #endif /* TYPES_SERVER_PUBLISHERINFO_H_ */

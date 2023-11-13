@@ -829,6 +829,36 @@ bool MqttSNClient::isConnectedGateway(const inet::L3Address& srcAddress, const i
     return (isConnected && selectedGateway.address == srcAddress && selectedGateway.port == srcPort);
 }
 
+std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
+{
+    if (activeGateways.empty()) {
+        throw omnetpp::cRuntimeError("No active gateway found");
+    }
+
+    // random selection policy
+    uint16_t index = intuniform(0, activeGateways.size() - 1);
+
+    auto it = activeGateways.begin();
+    std::advance(it, index);
+
+    return std::make_pair(it->first, it->second);
+}
+
+std::string MqttSNClient::generateClientId()
+{
+    // generate a random client ID of variable length
+    uint16_t length = intuniform(Length::ONE_OCTET, Length::CLIENT_ID_OCTETS);
+
+    std::string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    std::string clientId;
+
+    for (uint16_t i = 0; i < length; i++) {
+        clientId += allowedChars[intuniform(0, allowedChars.length() - 1)];
+    }
+
+    return clientId;
+}
+
 bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
 {
     // check if the message type exists in the map and if the stored message ID matches the input one
@@ -852,6 +882,19 @@ bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
     return std::stoi(retransmissionEvent->par("msgId").stringValue()) == msgId;
 }
 
+bool MqttSNClient::processAckForMsgType(MsgType msgType, uint16_t msgId)
+{
+    if (!checkMsgIdForType(msgType, msgId)) {
+        // either the ACK message ID does not match the expected message ID or the ACK message is already processed
+        return false;
+    }
+
+    // ACK with correct message ID is received
+    unscheduleMsgRetransmission(msgType);
+
+    return true;
+}
+
 uint16_t MqttSNClient::getNewMsgId()
 {
     if (!MqttSNApp::setNextAvailableId(getUsedMsgIds(), MqttSNApp::currentMsgId)) {
@@ -859,36 +902,6 @@ uint16_t MqttSNClient::getNewMsgId()
     }
 
     return MqttSNApp::currentMsgId;
-}
-
-std::string MqttSNClient::generateClientId()
-{
-    // generate a random client ID of variable length
-    uint16_t length = intuniform(Length::ONE_OCTET, Length::CLIENT_ID_OCTETS);
-
-    std::string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    std::string clientId;
-
-    for (uint16_t i = 0; i < length; i++) {
-        clientId += allowedChars[intuniform(0, allowedChars.length() - 1)];
-    }
-
-    return clientId;
-}
-
-std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
-{
-    if (activeGateways.empty()) {
-        throw omnetpp::cRuntimeError("No active gateway found");
-    }
-
-    // random selection policy
-    uint16_t index = intuniform(0, activeGateways.size() - 1);
-
-    auto it = activeGateways.begin();
-    std::advance(it, index);
-
-    return std::make_pair(it->first, it->second);
 }
 
 std::set<uint16_t> MqttSNClient::getUsedMsgIds()

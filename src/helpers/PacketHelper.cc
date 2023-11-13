@@ -1,6 +1,7 @@
 #include "PacketHelper.h"
 #include "messages/MqttSNRegister.h"
 #include "messages/MqttSNPublish.h"
+#include "messages/MqttSNBaseWithMsgId.h"
 
 namespace mqttsn {
 
@@ -34,6 +35,42 @@ inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool ret
     payload->setChunkLength(inet::B(payload->getLength()));
 
     inet::Packet* packet = new inet::Packet("PublishPacket");
+    packet->insertAtBack(payload);
+
+    return packet;
+}
+
+inet::Packet* PacketHelper::getBaseWithMsgIdPacket(MsgType msgType, uint16_t msgId)
+{
+    const auto& payload = inet::makeShared<MqttSNBaseWithMsgId>();
+    payload->setMsgType(msgType);
+    payload->setMsgId(msgId);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::PUBREC:
+            packetName = "PubRecPacket";
+            break;
+
+        case MsgType::PUBREL:
+            packetName = "PubRelPacket";
+            break;
+
+        case MsgType::PUBCOMP:
+            packetName = "PubCompPacket";
+            break;
+
+        case MsgType::UNSUBACK:
+            packetName = "UnsubAckPacket";
+            break;
+
+        default:
+            packetName = "BaseWithMsgId";
+    }
+
+    inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
 
     return packet;
