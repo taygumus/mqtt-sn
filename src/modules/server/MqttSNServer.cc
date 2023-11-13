@@ -250,6 +250,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::PINGRESP:
         case MsgType::REGISTER:
         case MsgType::PUBLISH:
+        case MsgType::PUBREL:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -313,6 +314,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::PUBLISH:
             processPublish(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBREL:
+            processPubRel(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -519,7 +524,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     uint16_t topicId = payload->getTopicId();
     uint16_t msgId = payload->getMsgId();
 
-    // check if the topic is registered; if no, send a return code
+    // check if the topic is registered; if not, send a return code
     if (topicIds.find(topicId) == topicIds.end()) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
         return;
@@ -555,8 +560,25 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
     publisherInfo->messageIds.insert(msgId);
 
-    // TO DO -> manage QoS 2 level; in particular with message saving
+    // TO DO -> message to be saved
+
+    // send publish received
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
+}
+
+void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+    uint16_t msgId = payload->getMsgId();
+
+    // TO DO -> manage QoS 2 level
+
+    // send publish complete
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
 }
 
 void MqttSNServer::sendAdvertise()

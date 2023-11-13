@@ -51,7 +51,8 @@ class MqttSNPublisher : public MqttSNClient
         virtual void processWillResp(inet::Packet* pk, bool willTopic);
         virtual void processRegAck(inet::Packet* pk);
         virtual void processPubAck(inet::Packet* pk);
-        virtual void processPubRec(inet::Packet* pk);
+        virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPubComp(inet::Packet* pk);
 
         // send packets
         virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
@@ -71,6 +72,8 @@ class MqttSNPublisher : public MqttSNClient
                                  bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
                                  uint16_t topicId, uint16_t msgId,
                                  const std::string& data);
+
+        virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;

@@ -83,6 +83,7 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
         case MsgType::REGACK:
         case MsgType::PUBACK:
         case MsgType::PUBREC:
+        case MsgType::PUBCOMP:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -118,7 +119,11 @@ void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Addres
             break;
 
         case MsgType::PUBREC:
-            processPubRec(pk);
+            processPubRec(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBCOMP:
+            processPubComp(pk);
             break;
 
         default:
@@ -251,12 +256,31 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
-void MqttSNPublisher::processPubRec(inet::Packet* pk)
+void MqttSNPublisher::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+    uint16_t msgId = payload->getMsgId();
+
+    // check if the ACK is correct; exit if not
+    if (!MqttSNClient::processAckForMsgType(MsgType::PUBLISH, msgId)) {
+        return;
+    }
+
+    // send publish release
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
+
+    // schedule publish release retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["msgId"] = std::to_string(msgId);
+    MqttSNClient::scheduleMsgRetransmission(srcAddress, srcPort, MsgType::PUBREL, &parameters);
+}
+
+void MqttSNPublisher::processPubComp(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
 
     // check if the ACK is correct; exit if not
-    if (!MqttSNClient::processAckForMsgType(MsgType::PUBLISH, payload->getMsgId())) {
+    if (!MqttSNClient::processAckForMsgType(MsgType::PUBREL, payload->getMsgId())) {
         return;
     }
 
@@ -343,6 +367,11 @@ void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int&
             destAddress,
             destPort
     );
+}
+
+void MqttSNPublisher::sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId)
+{
+    MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
 }
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
