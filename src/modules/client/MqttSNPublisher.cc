@@ -284,7 +284,9 @@ void MqttSNPublisher::processPubComp(inet::Packet* pk)
         return;
     }
 
-    // TO DO
+    // proceed with the next publish
+    lastPublish.retry = false;
+    scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
