@@ -10,8 +10,13 @@ namespace mqttsn {
 class MqttSNSubscriber : public MqttSNClient
 {
     protected:
+        // parameters
+        double subscriptionInterval;
+
         // active subscriber state
         std::map<int, Topic> topics;
+
+        inet::ClockEvent* subscriptionEvent = nullptr;
 
     protected:
         virtual void initializeCustom() override;
@@ -28,6 +33,7 @@ class MqttSNSubscriber : public MqttSNClient
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
+        virtual void handleSubscriptionEvent();
 
         // other methods
         virtual void fillTopics();

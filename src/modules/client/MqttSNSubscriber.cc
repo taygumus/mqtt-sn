@@ -11,22 +11,36 @@ using json = nlohmann::json;
 void MqttSNSubscriber::initializeCustom()
 {
     fillTopics();
+
+    subscriptionInterval = par("subscriptionInterval");
+    subscriptionEvent = new inet::ClockEvent("subscriptionTimer");
 }
 
 bool MqttSNSubscriber::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 {
-    // TO DO
-    return false;
+    if (msg == subscriptionEvent) {
+        handleSubscriptionEvent();
+    }
+    else {
+        return false;
+    }
+
+    return true;
 }
 
 void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 {
-    // TO DO
+    //
 }
 
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
 {
-    // TO DO
+    cancelEvent(subscriptionEvent);
+}
+
+void MqttSNSubscriber::cancelActiveStateClockEventsCustom()
+{
+    cancelClockEvent(subscriptionEvent);
 }
 
 void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
@@ -36,12 +50,17 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
 
 void MqttSNSubscriber::processConnAckCustom()
 {
-    // TO DO
+    scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
 }
 
 void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
     MqttSNClient::sendConnect(destAddress, destPort, 0, par("cleanSessionFlag"), MqttSNClient::keepAlive);
+}
+
+void MqttSNSubscriber::handleSubscriptionEvent()
+{
+    // TO DO
 }
 
 void MqttSNSubscriber::fillTopics()
@@ -70,14 +89,9 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
     }
 }
 
-void MqttSNSubscriber::cancelActiveStateClockEventsCustom()
-{
-    // TO DO
-}
-
 MqttSNSubscriber::~MqttSNSubscriber()
 {
-    // TO DO
+    cancelAndDelete(subscriptionEvent);
 }
 
 } /* namespace mqttsn */
