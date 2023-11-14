@@ -501,7 +501,7 @@ void MqttSNPublisher::fillTopicsAndData()
     json jsonData = json::parse(par("topicsAndDataJson").stringValue());
     int topicsKey = 0;
 
-    // iterate over json object keys (topics) and fill the data structures
+    // iterate over json object keys (topics) and fill the data structure
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
         TopicAndData topicAndData;
         topicAndData.topicName = it.key();
