@@ -469,12 +469,6 @@ void MqttSNPublisher::handlePublishEvent()
         }
     }
 
-    ///
-        EV << "TopicID: " << lastPublish.topicId << std::endl;
-        EV << "TopicName: " << lastPublish.registerInfo.topicName << std::endl;
-        EV << "Message: " << lastPublish.dataInfo.message << std::endl;
-    ///
-
     QoS qos = selectedData.qosFlag;
     bool retain = selectedData.retainFlag;
 
