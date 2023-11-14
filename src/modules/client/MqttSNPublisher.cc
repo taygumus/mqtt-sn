@@ -469,6 +469,12 @@ void MqttSNPublisher::handlePublishEvent()
         }
     }
 
+    ///
+        EV << "TopicID: " << lastPublish.topicId << std::endl;
+        EV << "TopicName: " << lastPublish.registerInfo.topicName << std::endl;
+        EV << "Message: " << lastPublish.dataInfo.message << std::endl;
+    ///
+
     QoS qos = selectedData.qosFlag;
     bool retain = selectedData.retainFlag;
 
@@ -565,6 +571,10 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
             retransmitPublish(destAddress, destPort, msg);
             break;
 
+        case MsgType::PUBREL:
+            retransmitPubRel(destAddress, destPort, msg);
+            break;
+
         default:
             break;
     }
@@ -591,6 +601,11 @@ void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, cons
                 true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag, TopicIdType::NORMAL_TOPIC,
                 lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()),
                 lastPublish.dataInfo.message);
+}
+
+void MqttSNPublisher::retransmitPubRel(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
+{
+    sendBaseWithMsgId(destAddress, destPort, MsgType::PUBREL, std::stoi(msg->par("msgId").stringValue()));
 }
 
 MqttSNPublisher::~MqttSNPublisher()

@@ -93,6 +93,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
         virtual void retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
+        virtual void retransmitPubRel(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
 
     public:
         MqttSNPublisher() {};

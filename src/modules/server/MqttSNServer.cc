@@ -551,7 +551,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     if (qos == QoS::QOS_ONE) {
-        // TO DO -> manage QoS 1 level
+        // TO DO -> message to be saved and manage QoS 1 level
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;
     }
