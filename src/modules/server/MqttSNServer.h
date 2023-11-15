@@ -90,6 +90,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendAdvertise();
@@ -103,6 +104,10 @@ class MqttSNServer : public MqttSNApp
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 
+        virtual void sendSubAck(const inet::L3Address& destAddress, const int& destPort,
+                                QoS qosFlag, ReturnCode returnCode,
+                                uint16_t topicId, uint16_t msgId);
+
         // event handlers
         virtual void handleAdvertiseEvent();
         virtual void handleActiveClientsCheckEvent();
@@ -110,6 +115,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // other methods
+        virtual void registerNewTopic(const std::string& topicName);
         virtual bool isGatewayCongested();
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);

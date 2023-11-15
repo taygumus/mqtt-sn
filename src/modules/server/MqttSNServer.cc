@@ -15,6 +15,8 @@
 #include "messages/MqttSNRegister.h"
 #include "messages/MqttSNMsgIdWithTopicIdPlus.h"
 #include "messages/MqttSNPublish.h"
+#include "messages/MqttSNSubscribe.h"
+#include "messages/MqttSNSubAck.h"
 
 namespace mqttsn {
 
@@ -251,6 +253,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::REGISTER:
         case MsgType::PUBLISH:
         case MsgType::PUBREL:
+        case MsgType::SUBSCRIBE:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -318,6 +321,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::PUBREL:
             processPubRel(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::SUBSCRIBE:
+            processSubscribe(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -506,9 +513,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
         return;
     }
 
-    // register the new topic ID
-    topicsToIds[encodedTopicName] = currentTopicId;
-    topicIds.insert(currentTopicId);
+    registerNewTopic(encodedTopicName);
 
     // send REGACK response with the new topic ID and ACCEPTED status
     sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::ACCEPTED, currentTopicId, msgId);
@@ -537,9 +542,9 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    uint8_t qos = payload->getQoSFlag();
+    uint8_t qosFlag = payload->getQoSFlag();
 
-    if (qos == QoS::QOS_ZERO) {
+    if (qosFlag == QoS::QOS_ZERO) {
         // TO DO -> manage QoS 0 level
         return;
     }
@@ -550,7 +555,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    if (qos == QoS::QOS_ONE) {
+    if (qosFlag == QoS::QOS_ONE) {
         // TO DO -> message to be saved and manage QoS 1 level
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;
@@ -579,6 +584,51 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
 
     // send publish complete
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
+}
+
+void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNSubscribe>();
+    QoS qosFlag = (QoS) payload->getQoSFlag();
+    uint16_t msgId = payload->getMsgId();
+
+    // extract and sanitize the topic name from the payload
+    std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
+
+    // if the topic name is empty, reject the subscription and send SUBACK with error code
+    if (topicName.empty()) {
+        sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
+        return;
+    }
+
+    // encode the sanitized topic name to Base64 for consistent key handling
+    std::string encodedTopicName = StringHelper::base64Encode(topicName);
+
+    // check if the topic is already registered; if not, register it
+    auto it = topicsToIds.find(encodedTopicName);
+    uint16_t topicId = 0;
+
+    if (it == topicsToIds.end()) {
+        // check if the maximum number of topics is reached; if not, set a new available topic ID
+        if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
+            sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_CONGESTION, 0, msgId);
+            return;
+        }
+
+        registerNewTopic(encodedTopicName);
+        topicId = currentTopicId;
+    }
+    else {
+        topicId = it->second;
+    }
+
+    // TO DO -> save subscriber and topic info
+
+    sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::ACCEPTED, topicId, msgId);
 }
 
 void MqttSNServer::sendAdvertise()
@@ -668,6 +718,24 @@ void MqttSNServer::sendBaseWithMsgId(const inet::L3Address& destAddress, const i
     MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
 }
 
+void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& destPort,
+                              QoS qosFlag, ReturnCode returnCode,
+                              uint16_t topicId, uint16_t msgId)
+{
+    const auto& payload = inet::makeShared<MqttSNSubAck>();
+    payload->setMsgType(MsgType::SUBACK);
+    payload->setQoSFlag(qosFlag);
+    payload->setTopicId(topicId);
+    payload->setMsgId(msgId);
+    payload->setReturnCode(returnCode);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet* packet = new inet::Packet("SubAckPacket");
+    packet->insertAtBack(payload);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
+}
+
 void MqttSNServer::handleAdvertiseEvent()
 {
     sendAdvertise();
@@ -744,6 +812,13 @@ void MqttSNServer::handleClientsClearEvent()
     }
 
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
+}
+
+void MqttSNServer::registerNewTopic(const std::string& topicName)
+{
+    // add the new topic in the data structures
+    topicsToIds[topicName] = currentTopicId;
+    topicIds.insert(currentTopicId);
 }
 
 bool MqttSNServer::isGatewayCongested()

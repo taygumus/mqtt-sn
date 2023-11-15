@@ -3,6 +3,7 @@
 
 #include "MqttSNClient.h"
 #include "types/shared/QoS.h"
+#include "types/shared/TopicIdType.h"
 #include "types/client/subscriber/Topic.h"
 
 namespace mqttsn {
@@ -30,6 +31,13 @@ class MqttSNSubscriber : public MqttSNClient
         // process received packets
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
         virtual void processConnAckCustom() override;
+        virtual void processSubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+
+        // send packets
+        virtual void sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
+                                   bool dupFlag, QoS qosFlag, TopicIdType topicIdTypeFlag,
+                                   uint16_t msgId,
+                                   const std::string& topicName, uint16_t topicId);
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
