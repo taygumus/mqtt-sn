@@ -5,6 +5,8 @@
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
 #include "types/client/subscriber/Topic.h"
+#include "types/client/subscriber/TopicInfo.h"
+#include "types/client/subscriber/LastSubscriptionInfo.h"
 
 namespace mqttsn {
 
@@ -18,6 +20,7 @@ class MqttSNSubscriber : public MqttSNClient
         std::map<int, Topic> topics;
 
         inet::ClockEvent* subscriptionEvent = nullptr;
+        LastSubscriptionInfo lastSubscription;
 
     protected:
         virtual void initializeCustom() override;

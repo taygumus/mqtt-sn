@@ -119,16 +119,30 @@ void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& d
 
 void MqttSNSubscriber::handleSubscriptionEvent()
 {
-    // check for topics availability
-    if (topics.empty()) {
-        throw omnetpp::cRuntimeError("No topic available");
+    // topic name
+    // qos level
+
+    // if it's a retry, use the last sent element
+    if (lastSubscription.retry) {
+        //
     }
+    else {
+        // check for topics availability
+        if (topics.empty()) {
+            throw omnetpp::cRuntimeError("No topic available");
+        }
 
-    // randomly select an element from the map
-    auto it = topics.begin();
-    std::advance(it, intuniform(0, topics.size() - 1));
+        // randomly select an element from the map
+        auto it = topics.begin();
+        std::advance(it, intuniform(0, topics.size() - 1));
 
-    std::string topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.subscribeCounter);
+        std::string topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.subscribeCounter);
+
+        // update information about the last element
+        lastSubscription.info.topicName = topicName;
+        lastSubscription.info.topicsKey = it->first;
+        lastSubscription.retry = true;
+    }
 
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
                   false, it->second.qosFlag, TopicIdType::NORMAL_TOPIC,
