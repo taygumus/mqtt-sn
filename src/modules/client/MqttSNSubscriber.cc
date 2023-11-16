@@ -34,7 +34,7 @@ bool MqttSNSubscriber::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 {
-    //
+    topicIds.clear();
 }
 
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
@@ -209,12 +209,22 @@ void MqttSNSubscriber::fillTopics()
 void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
                                                        omnetpp::cMessage* msg, MsgType msgType)
 {
-    // TO DO
     switch (msgType) {
-        //
+        case MsgType::SUBSCRIBE:
+            retransmitSubscribe(destAddress, destPort, msg);
+            break;
+
         default:
             break;
     }
+}
+
+void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
+{
+    sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
+                  true, topics[lastSubscription.info.topicsKey].qosFlag, TopicIdType::NORMAL_TOPIC,
+                  std::stoi(msg->par("msgId").stringValue()),
+                  lastSubscription.info.topicName, 0);
 }
 
 MqttSNSubscriber::~MqttSNSubscriber()
