@@ -3,6 +3,7 @@
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
 #include "helpers/PacketHelper.h"
+#include "helpers/NumericHelper.h"
 #include "messages/MqttSNBaseWithWillTopic.h"
 #include "messages/MqttSNBaseWithWillMsg.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
@@ -29,8 +30,6 @@ void MqttSNPublisher::initializeCustom()
 
     publishInterval = par("publishInterval");
     publishEvent = new inet::ClockEvent("publishTimer");
-
-    waitingInterval = par("waitingInterval");
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
@@ -177,13 +176,13 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     if (returnCode == ReturnCode::REJECTED_CONGESTION) {
         lastRegistration.retry = true;
-        scheduleClockEventAfter(waitingInterval, registrationEvent);
+        scheduleClockEventAfter(MqttSNClient::waitingInterval, registrationEvent);
         return;
     }
 
     if (returnCode == ReturnCode::REJECTED_NOT_SUPPORTED) {
         lastRegistration.retry = false;
-        scheduleClockEventAfter(waitingInterval, registrationEvent);
+        scheduleClockEventAfter(MqttSNClient::waitingInterval, registrationEvent);
         return;
     }
 
@@ -197,15 +196,7 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     if (topicIds.find(topicId) == topicIds.end()) {
         // update only if the topic ID is new
         topicIds[topicId] = lastRegistration.info;
-        int* counter = &topicsAndData[lastRegistration.info.topicsAndDataKey].counter;
-
-        // check if the counter has reached its maximum value
-        if (*counter == std::numeric_limits<int>::max()) {
-            *counter = 0;
-        }
-        else {
-            (*counter)++;
-        }
+        NumericHelper::incrementCounter(&topicsAndData[lastRegistration.info.topicsAndDataKey].counter);
     }
 
     lastRegistration.retry = false;
@@ -527,7 +518,7 @@ void MqttSNPublisher::retryLastPublish()
     lastPublish.retry = true;
 
     cancelEvent(publishEvent);
-    scheduleClockEventAfter(waitingInterval, publishEvent);
+    scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
 }
 
 bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& topicId)

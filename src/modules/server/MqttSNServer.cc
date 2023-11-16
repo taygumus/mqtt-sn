@@ -610,7 +610,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
 
     // check if the topic is already registered; if not, register it
     auto it = topicsToIds.find(encodedTopicName);
-    uint16_t topicId = 0;
+    uint16_t topicId;
 
     if (it == topicsToIds.end()) {
         // check if the maximum number of topics is reached; if not, set a new available topic ID

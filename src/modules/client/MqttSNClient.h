@@ -26,6 +26,7 @@ class MqttSNClient : public MqttSNApp
         double checkConnectionInterval;
         uint16_t keepAlive;
         double retransmissionInterval;
+        double waitingInterval;
 
         // client state management
         inet::ClockEvent* stateChangeEvent = nullptr;

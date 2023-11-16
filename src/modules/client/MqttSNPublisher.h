@@ -22,7 +22,6 @@ class MqttSNPublisher : public MqttSNClient
         std::string willMsg;
         double registrationInterval;
         double publishInterval;
-        double waitingInterval;
 
         // active publisher state
         std::map<int, TopicAndData> topicsAndData;

@@ -20,6 +20,7 @@ class MqttSNSubscriber : public MqttSNClient
         std::map<int, Topic> topics;
 
         inet::ClockEvent* subscriptionEvent = nullptr;
+        std::map<uint16_t, TopicInfo> topicIds;
         LastSubscriptionInfo lastSubscription;
 
     protected:

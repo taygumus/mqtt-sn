@@ -2,6 +2,7 @@
 #include "externals/nlohmann/json.hpp"
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
+#include "helpers/NumericHelper.h"
 #include "messages/MqttSNSubscribe.h"
 #include "messages/MqttSNSubAck.h"
 
@@ -79,10 +80,41 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
 {
     const auto& payload = pk->peekData<MqttSNSubAck>();
 
+    // check if the ACK is correct; exit if not
+    if (!MqttSNClient::processAckForMsgType(MsgType::SUBSCRIBE, payload->getMsgId())) {
+        return;
+    }
+
     // now process and analyze message content as needed
     ReturnCode returnCode = payload->getReturnCode();
 
-    // TO DO
+    if (returnCode == ReturnCode::REJECTED_CONGESTION) {
+        lastSubscription.retry = true;
+        scheduleClockEventAfter(MqttSNClient::waitingInterval, subscriptionEvent);
+        return;
+    }
+
+    if (returnCode == ReturnCode::REJECTED_NOT_SUPPORTED) {
+        lastSubscription.retry = false;
+        scheduleClockEventAfter(MqttSNClient::waitingInterval, subscriptionEvent);
+        return;
+    }
+
+    uint16_t topicId = payload->getTopicId();
+
+    if (returnCode != ReturnCode::ACCEPTED || topicId == 0) {
+        throw omnetpp::cRuntimeError("Unexpected error: Invalid return code or topic ID");
+    }
+
+    // handle operations when the subscription is ACCEPTED
+    if (topicIds.find(topicId) == topicIds.end()) {
+        // update only if the topic ID is new
+        topicIds[topicId] = lastSubscription.info;
+        NumericHelper::incrementCounter(&topics[lastSubscription.info.topicsKey].subscribeCounter);
+    }
+
+    lastSubscription.retry = false;
+    scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
@@ -119,12 +151,13 @@ void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& d
 
 void MqttSNSubscriber::handleSubscriptionEvent()
 {
-    // topic name
-    // qos level
+    std::string topicName;
+    QoS qosFlag;
 
     // if it's a retry, use the last sent element
     if (lastSubscription.retry) {
-        //
+        topicName = lastSubscription.info.topicName;
+        qosFlag = topics[lastSubscription.info.topicsKey].qosFlag;
     }
     else {
         // check for topics availability
@@ -136,7 +169,8 @@ void MqttSNSubscriber::handleSubscriptionEvent()
         auto it = topics.begin();
         std::advance(it, intuniform(0, topics.size() - 1));
 
-        std::string topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.subscribeCounter);
+        topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.subscribeCounter);
+        qosFlag = it->second.qosFlag;
 
         // update information about the last element
         lastSubscription.info.topicName = topicName;
@@ -145,9 +179,16 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     }
 
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  false, it->second.qosFlag, TopicIdType::NORMAL_TOPIC,
+                  false, qosFlag, TopicIdType::NORMAL_TOPIC,
                   MqttSNClient::getNewMsgId(),
                   topicName, 0);
+
+    // schedule subscribe retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleMsgRetransmission(
+            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::SUBSCRIBE, &parameters
+    );
 }
 
 void MqttSNSubscriber::fillTopics()

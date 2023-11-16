@@ -36,6 +36,8 @@ simple MqttSNClient like IApp
         double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (TRETRY)
         int retransmissionCounter = default(3); // retransmission retry counter (NRETRY)
         
+        double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
+        
         @display("i=block/routing;bgb=100,82");
         @class(MqttSNClient);
 

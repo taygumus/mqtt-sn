@@ -43,6 +43,8 @@ void MqttSNClient::initialize(int stage)
 
         retransmissionInterval = par("retransmissionInterval");
 
+        waitingInterval = par("waitingInterval");
+
         initializeCustom();
     }
 }
