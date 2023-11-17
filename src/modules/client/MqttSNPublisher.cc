@@ -396,7 +396,7 @@ void MqttSNPublisher::handleRegistrationEvent()
     sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::getNewMsgId(), topicName);
 
     // schedule register retransmission
-    scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNApp::currentMsgId);
 }
 
 void MqttSNPublisher::handlePublishEvent()
