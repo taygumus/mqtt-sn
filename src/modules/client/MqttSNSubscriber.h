@@ -6,7 +6,8 @@
 #include "types/shared/TopicIdType.h"
 #include "types/client/subscriber/Topic.h"
 #include "types/client/subscriber/TopicInfo.h"
-#include "types/client/subscriber/LastSubscriptionInfo.h"
+#include "types/client/subscriber/LastSubscribeInfo.h"
+#include "types/client/subscriber/LastUnsubscribeInfo.h"
 
 namespace mqttsn {
 
@@ -22,9 +23,10 @@ class MqttSNSubscriber : public MqttSNClient
 
         inet::ClockEvent* subscriptionEvent = nullptr;
         std::map<uint16_t, TopicInfo> topicIds;
-        LastSubscriptionInfo lastSubscription;
+        LastSubscribeInfo lastSubscription;
 
         inet::ClockEvent* unsubscriptionEvent = nullptr;
+        LastUnsubscribeInfo lastUnsubscription;
 
     protected:
         virtual void initializeCustom() override;
@@ -39,12 +41,18 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
         virtual void processConnAckCustom() override;
         virtual void processSubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processUnsubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
                                    bool dupFlag, QoS qosFlag, TopicIdType topicIdTypeFlag,
                                    uint16_t msgId,
                                    const std::string& topicName, uint16_t topicId);
+
+        virtual void sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort,
+                                     TopicIdType topicIdTypeFlag,
+                                     uint16_t msgId,
+                                     const std::string& topicName, uint16_t topicId);
 
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
@@ -59,6 +67,7 @@ class MqttSNSubscriber : public MqttSNClient
                                                      omnetpp::cMessage* msg, MsgType msgType) override;
 
         virtual void retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
+        virtual void retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
 
     public:
         MqttSNSubscriber() {};

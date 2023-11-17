@@ -1,0 +1,9 @@
+#ifndef TYPES_CLIENT_SUBSCRIBER_LASTSUBSCRIBEINFO_H_
+#define TYPES_CLIENT_SUBSCRIBER_LASTSUBSCRIBEINFO_H_
+
+struct LastSubscribeInfo {
+    TopicInfo info;
+    bool retry = false;
+};
+
+#endif /* TYPES_CLIENT_SUBSCRIBER_LASTSUBSCRIBEINFO_H_ */

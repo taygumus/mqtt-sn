@@ -192,12 +192,9 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
         throw omnetpp::cRuntimeError("Unexpected error: Invalid return code or topic ID");
     }
 
-    // handle operations when the registration is ACCEPTED
-    if (topicIds.find(topicId) == topicIds.end()) {
-        // update only if the topic ID is new
-        topicIds[topicId] = lastRegistration.info;
-        NumericHelper::incrementCounter(&topicsAndData[lastRegistration.info.topicsAndDataKey].counter);
-    }
+    // handle operations when the registration is ACCEPTED; update data structures
+    topicIds[topicId] = lastRegistration.info;
+    NumericHelper::incrementCounter(&topicsAndData[lastRegistration.info.topicsAndDataKey].counter);
 
     lastRegistration.retry = false;
     scheduleClockEventAfter(registrationInterval, registrationEvent);

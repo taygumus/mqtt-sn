@@ -6,7 +6,7 @@ module MqttSNSubscriber extends MqttSNClient
         string topicsJson; // json string with topic names and their associated QoS
         
         double subscriptionInterval @unit(s) = default(10s); // subscription interval for new topics
-        double unsubscriptionInterval @unit(s) = default(20s); // unsubscription interval from topics
+        double unsubscriptionInterval @unit(s) = default(60s); // unsubscription interval from topics
         
         @display("i=block/routing;bgb=38,25");
         @class(MqttSNSubscriber);

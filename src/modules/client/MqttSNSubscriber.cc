@@ -5,6 +5,8 @@
 #include "helpers/NumericHelper.h"
 #include "messages/MqttSNSubscribe.h"
 #include "messages/MqttSNSubAck.h"
+#include "messages/MqttSNUnsubscribe.h"
+#include "messages/MqttSNBaseWithMsgId.h"
 
 namespace mqttsn {
 
@@ -60,6 +62,7 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
     switch(msgType) {
         // packet types that are allowed only from the connected gateway
         case MsgType::SUBACK:
+        case MsgType::UNSUBACK:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -72,6 +75,10 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
     switch(msgType) {
         case MsgType::SUBACK:
             processSubAck(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::UNSUBACK:
+            processUnsubAck(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -115,15 +122,27 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
         throw omnetpp::cRuntimeError("Unexpected error: Invalid return code or topic ID");
     }
 
-    // handle operations when the subscription is ACCEPTED
-    if (topicIds.find(topicId) == topicIds.end()) {
-        // update only if the topic ID is new
-        topicIds[topicId] = lastSubscription.info;
-        NumericHelper::incrementCounter(&topics[lastSubscription.info.topicsKey].subscribeCounter);
-    }
+    // handle operations when the subscription is ACCEPTED; update data structures
+    topicIds[topicId] = lastSubscription.info;
+    NumericHelper::incrementCounter(&topics[lastSubscription.info.topicsKey].subscribeCounter);
 
     lastSubscription.retry = false;
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
+}
+
+void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+
+    // check if the ACK is correct; exit if not
+    if (!MqttSNClient::processAckForMsgType(MsgType::UNSUBSCRIBE, payload->getMsgId())) {
+        return;
+    }
+
+    NumericHelper::incrementCounter(&topics[lastUnsubscription.info.topicsKey].unsubscribeCounter);
+
+    lastUnsubscription.retry = false;
+    scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
@@ -148,6 +167,31 @@ void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const i
     payload->setChunkLength(inet::B(payload->getLength()));
 
     inet::Packet* packet = new inet::Packet("SubscribePacket");
+    packet->insertAtBack(payload);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
+}
+
+void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort,
+                                       TopicIdType topicIdTypeFlag,
+                                       uint16_t msgId,
+                                       const std::string& topicName, uint16_t topicId)
+{
+    const auto& payload = inet::makeShared<MqttSNUnsubscribe>();
+    payload->setMsgType(MsgType::UNSUBSCRIBE);
+    payload->setTopicIdTypeFlag(topicIdTypeFlag);
+    payload->setMsgId(msgId);
+
+    if (!topicName.empty()) {
+        payload->setTopicName(topicName);
+    }
+    if (topicId > 0) {
+        payload->setTopicId(topicId);
+    }
+
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    inet::Packet* packet = new inet::Packet("UnsubscribePacket");
     packet->insertAtBack(payload);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
@@ -202,7 +246,47 @@ void MqttSNSubscriber::handleSubscriptionEvent()
 
 void MqttSNSubscriber::handleUnsubscriptionEvent()
 {
-    // TO DO
+    std::string topicName;
+
+    // if it's a retry, use the last sent element
+    if (lastUnsubscription.retry) {
+        topicName = lastUnsubscription.info.topicName;
+    }
+    else {
+        // check for topics availability
+        if (topics.empty()) {
+            throw omnetpp::cRuntimeError("No topic available");
+        }
+
+        // randomly select an element from the map
+        auto it = topics.begin();
+        std::advance(it, intuniform(0, topics.size() - 1));
+
+        // unsubcription must be after subscription
+        if (it->second.unsubscribeCounter == it->second.subscribeCounter) {
+            scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
+            return;
+        }
+
+        topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.unsubscribeCounter);
+
+        // update information about the last element
+        lastUnsubscription.info.topicName = topicName;
+        lastUnsubscription.info.topicsKey = it->first;
+        lastUnsubscription.retry = true;
+    }
+
+    sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
+                    TopicIdType::NORMAL_TOPIC,
+                    MqttSNClient::getNewMsgId(),
+                    topicName, 0);
+
+    // schedule unsubscribe retransmission
+    std::map<std::string, std::string> parameters;
+    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleMsgRetransmission(
+            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::UNSUBSCRIBE, &parameters
+    );
 }
 
 void MqttSNSubscriber::fillTopics()
@@ -228,6 +312,10 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
             retransmitSubscribe(destAddress, destPort, msg);
             break;
 
+        case MsgType::UNSUBSCRIBE:
+            retransmitUnsubscribe(destAddress, destPort, msg);
+            break;
+
         default:
             break;
     }
@@ -239,6 +327,14 @@ void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, c
                   true, topics[lastSubscription.info.topicsKey].qosFlag, TopicIdType::NORMAL_TOPIC,
                   std::stoi(msg->par("msgId").stringValue()),
                   lastSubscription.info.topicName, 0);
+}
+
+void MqttSNSubscriber::retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
+{
+    sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
+                  TopicIdType::NORMAL_TOPIC,
+                  std::stoi(msg->par("msgId").stringValue()),
+                  lastUnsubscription.info.topicName, 0);
 }
 
 MqttSNSubscriber::~MqttSNSubscriber()

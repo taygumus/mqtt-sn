@@ -17,6 +17,7 @@
 #include "messages/MqttSNPublish.h"
 #include "messages/MqttSNSubscribe.h"
 #include "messages/MqttSNSubAck.h"
+#include "messages/MqttSNUnsubscribe.h"
 
 namespace mqttsn {
 
@@ -254,6 +255,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::PUBLISH:
         case MsgType::PUBREL:
         case MsgType::SUBSCRIBE:
+        case MsgType::UNSUBSCRIBE:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -325,6 +327,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::SUBSCRIBE:
             processSubscribe(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::UNSUBSCRIBE:
+            processUnsubscribe(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -629,7 +635,32 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     // TO DO -> check if there is already a subscription for that topic name; if yes update it
     // TO DO -> save subscriber and topic info
 
+    // send ACK message with ACCEPTED code
     sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::ACCEPTED, topicId, msgId);
+}
+
+void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+
+    const auto& payload = pk->peekData<MqttSNUnsubscribe>();
+
+    // extract and sanitize the topic name from the payload
+    std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
+
+    if (!topicName.empty()) {
+        // check if the topic is present
+        auto it = topicsToIds.find(StringHelper::base64Encode(topicName));
+        if (it != topicsToIds.end()) {
+            uint16_t topicId = it->second;
+            // TO DO -> delete subscription for this subscriber
+        }
+    }
+
+    // send ACK message
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::UNSUBACK, payload->getMsgId());
 }
 
 void MqttSNServer::sendAdvertise()
