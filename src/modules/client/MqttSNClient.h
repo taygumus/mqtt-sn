@@ -116,6 +116,8 @@ class MqttSNClient : public MqttSNApp
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual std::string generateClientId();
 
+        // other methods using message ID
+        virtual void scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msgId);
         virtual bool checkMsgIdForType(MsgType msgType, uint16_t msgId);
         virtual bool processAckForMsgType(MsgType msgType, uint16_t msgId);
         virtual uint16_t getNewMsgId();

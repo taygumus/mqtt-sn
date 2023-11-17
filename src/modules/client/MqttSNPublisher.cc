@@ -258,9 +258,7 @@ void MqttSNPublisher::processPubRec(inet::Packet* pk, const inet::L3Address& src
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
 
     // schedule publish release retransmission
-    std::map<std::string, std::string> parameters;
-    parameters["msgId"] = std::to_string(msgId);
-    MqttSNClient::scheduleMsgRetransmission(srcAddress, srcPort, MsgType::PUBREL, &parameters);
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBREL, msgId);
 }
 
 void MqttSNPublisher::processPubComp(inet::Packet* pk)
@@ -398,11 +396,7 @@ void MqttSNPublisher::handleRegistrationEvent()
     sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::getNewMsgId(), topicName);
 
     // schedule register retransmission
-    std::map<std::string, std::string> parameters;
-    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
-    MqttSNClient::scheduleMsgRetransmission(
-            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::REGISTER, &parameters
-    );
+    scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNApp::currentMsgId);
 }
 
 void MqttSNPublisher::handlePublishEvent()
@@ -477,11 +471,7 @@ void MqttSNPublisher::handlePublishEvent()
                selectedData.message);
 
     // schedule publish retransmission
-    std::map<std::string, std::string> parameters;
-    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
-    MqttSNClient::scheduleMsgRetransmission(
-            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::PUBLISH, &parameters
-    );
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNApp::currentMsgId);
 }
 
 void MqttSNPublisher::fillTopicsAndData()

@@ -237,11 +237,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
                   topicName, 0);
 
     // schedule subscribe retransmission
-    std::map<std::string, std::string> parameters;
-    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
-    MqttSNClient::scheduleMsgRetransmission(
-            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::SUBSCRIBE, &parameters
-    );
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::SUBSCRIBE, MqttSNApp::currentMsgId);
 }
 
 void MqttSNSubscriber::handleUnsubscriptionEvent()
@@ -282,11 +278,7 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
                     topicName, 0);
 
     // schedule unsubscribe retransmission
-    std::map<std::string, std::string> parameters;
-    parameters["msgId"] = std::to_string(MqttSNApp::currentMsgId);
-    MqttSNClient::scheduleMsgRetransmission(
-            MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MsgType::UNSUBSCRIBE, &parameters
-    );
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::UNSUBSCRIBE, MqttSNApp::currentMsgId);
 }
 
 void MqttSNSubscriber::fillTopics()

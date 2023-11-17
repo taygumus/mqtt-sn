@@ -861,6 +861,14 @@ std::string MqttSNClient::generateClientId()
     return clientId;
 }
 
+void MqttSNClient::scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msgId)
+{
+    // schedule retransmission with only message ID parameter
+    std::map<std::string, std::string> parameters;
+    parameters["msgId"] = std::to_string(msgId);
+    scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, msgType, &parameters);
+}
+
 bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
 {
     // check if the message type exists in the map and if the stored message ID matches the input one
