@@ -15,6 +15,7 @@ class MqttSNSubscriber : public MqttSNClient
     protected:
         // parameters
         double subscriptionInterval;
+        double unsubscriptionInterval;
 
         // active subscriber state
         std::map<int, Topic> topics;
@@ -22,6 +23,8 @@ class MqttSNSubscriber : public MqttSNClient
         inet::ClockEvent* subscriptionEvent = nullptr;
         std::map<uint16_t, TopicInfo> topicIds;
         LastSubscriptionInfo lastSubscription;
+
+        inet::ClockEvent* unsubscriptionEvent = nullptr;
 
     protected:
         virtual void initializeCustom() override;
@@ -46,6 +49,7 @@ class MqttSNSubscriber : public MqttSNClient
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
         virtual void handleSubscriptionEvent();
+        virtual void handleUnsubscriptionEvent();
 
         // other methods
         virtual void fillTopics();

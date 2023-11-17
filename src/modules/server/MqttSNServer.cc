@@ -626,6 +626,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
         topicId = it->second;
     }
 
+    // TO DO -> check if there is already a subscription for that topic name; if yes update it
     // TO DO -> save subscriber and topic info
 
     sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::ACCEPTED, topicId, msgId);

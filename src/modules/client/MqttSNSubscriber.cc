@@ -18,12 +18,18 @@ void MqttSNSubscriber::initializeCustom()
 
     subscriptionInterval = par("subscriptionInterval");
     subscriptionEvent = new inet::ClockEvent("subscriptionTimer");
+
+    unsubscriptionInterval = par("unsubscriptionInterval");
+    unsubscriptionEvent = new inet::ClockEvent("unsubscriptionTimer");
 }
 
 bool MqttSNSubscriber::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 {
     if (msg == subscriptionEvent) {
         handleSubscriptionEvent();
+    }
+    else if (msg == unsubscriptionEvent) {
+        handleUnsubscriptionEvent();
     }
     else {
         return false;
@@ -40,11 +46,13 @@ void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
 {
     cancelEvent(subscriptionEvent);
+    cancelEvent(unsubscriptionEvent);
 }
 
 void MqttSNSubscriber::cancelActiveStateClockEventsCustom()
 {
     cancelClockEvent(subscriptionEvent);
+    cancelClockEvent(unsubscriptionEvent);
 }
 
 void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
@@ -74,6 +82,7 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
 void MqttSNSubscriber::processConnAckCustom()
 {
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
+    scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
 }
 
 void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -191,6 +200,11 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     );
 }
 
+void MqttSNSubscriber::handleUnsubscriptionEvent()
+{
+    // TO DO
+}
+
 void MqttSNSubscriber::fillTopics()
 {
     json jsonData = json::parse(par("topicsJson").stringValue());
@@ -230,6 +244,7 @@ void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, c
 MqttSNSubscriber::~MqttSNSubscriber()
 {
     cancelAndDelete(subscriptionEvent);
+    cancelAndDelete(unsubscriptionEvent);
 }
 
 } /* namespace mqttsn */
