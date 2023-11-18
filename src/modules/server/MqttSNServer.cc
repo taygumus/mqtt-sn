@@ -900,6 +900,96 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress,
     return nullptr;
 }
 
+bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
+                                    std::pair<uint16_t, QoS>& subscriptionKey)
+{
+    // temporary map to store elements with the same topic ID
+    std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> result;
+
+    // copy the matching elements
+    std::copy_if(subscriptions.begin(), subscriptions.end(), std::inserter(result, result.end()),
+                 [topicId](const auto& pair) {
+                    return pair.first.first == topicId;
+                 });
+
+    // iterate for each QoS
+    for (const auto& pair : result) {
+        // subscribers inside subscription with key: <topic ID, QoS>
+        const auto& subscribers = pair.second.subscribers;
+
+        // find the given subscriber inside the structure
+        auto it = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
+        if (it != subscribers.end()) {
+            // assign the found key to the parameter one
+            subscriptionKey = pair.first;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                      uint16_t topicId, QoS qosFlag)
+{
+    // create keys
+    std::pair<uint16_t, QoS> subscriptionKey = std::make_pair(topicId, qosFlag);
+    std::pair<inet::L3Address, int> subscriberKey = std::make_pair(subscriberAddress, subscriberPort);
+
+    // TO DO -> if empty, replace subscribers with a set ///
+    SubscriberInfo subscriberInfo;
+
+    // check if the subscription key already exists in the map
+    auto subscriptionIt = subscriptions.find(subscriptionKey);
+
+    if (subscriptionIt != subscriptions.end()) {
+        // if the key exists, access the subscribers
+        auto& subscribers = subscriptionIt->second.subscribers;
+
+        // check if the subscriber already exists for the given address and port
+        if (subscribers.find(subscriberKey) != subscribers.end()) {
+            // if the subscriber already exists, return false
+            return false;
+        }
+
+        subscribers[subscriberKey] = subscriberInfo;
+    }
+    else {
+        // if the subscription key doesn't exist, create a new object
+        SubscriptionInfo newSubscriptionInfo;
+
+        // insert the new subscriber with the given address and port into the map
+        newSubscriptionInfo.subscribers[subscriberKey] = subscriberInfo;
+
+        // insert the new subscription into the main map
+        subscriptions[subscriptionKey] = newSubscriptionInfo;
+    }
+
+    return true;
+}
+
+bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                      const std::pair<uint16_t, QoS>& subscriptionKey)
+{
+    // search for the subscription key in the map
+    auto subscriptionIt = subscriptions.find(subscriptionKey);
+    if (subscriptionIt != subscriptions.end()) {
+        // if the key is found, access the subscribers
+        auto& subscribers = subscriptionIt->second.subscribers;
+
+        // check if the subscriber is present
+        auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
+        if (subscriberIt != subscribers.end()) {
+            // delete the subscriber from the map
+            subscribers.erase(subscriberIt);
+            return true; // return true if the subscriber is successfully removed
+        }
+    }
+
+    // return false if the subscription key or the subscriber is not found
+    return false;
+}
+
 MqttSNServer::~MqttSNServer()
 {
     cancelAndDelete(stateChangeEvent);

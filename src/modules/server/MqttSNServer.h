@@ -13,6 +13,7 @@
 #include "types/server/SubscriberInfo.h"
 #include "types/server/DataInfo.h"
 #include "types/server/RequestInfo.h"
+#include "types/server/SubscriptionInfo.h"
 
 namespace mqttsn {
 
@@ -43,7 +44,7 @@ class MqttSNServer : public MqttSNApp
         inet::ClockEvent* clientsClearEvent = nullptr;
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
-        std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
+        //std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers; ///
 
         std::map<std::string, uint16_t> topicsToIds;
         std::set<uint16_t> topicIds;
@@ -51,6 +52,8 @@ class MqttSNServer : public MqttSNApp
 
         std::map<uint16_t, DataInfo> data;
         std::map<uint16_t, RequestInfo> pendingRequests;
+
+        std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> subscriptions;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -123,7 +126,19 @@ class MqttSNServer : public MqttSNApp
         virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
+
+        // other methods about publishers
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
+
+        // other methods about subscribers
+        virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
+                                      std::pair<uint16_t, QoS>& subscriptionKey);
+
+        virtual bool insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                        uint16_t topicId, QoS qosFlag);
+
+        virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                        const std::pair<uint16_t, QoS>& subscriptionKey);
 
     public:
         MqttSNServer() {};
