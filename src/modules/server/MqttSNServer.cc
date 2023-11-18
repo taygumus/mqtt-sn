@@ -926,6 +926,7 @@ bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, co
         }
     }
 
+    // return false if the subscriber has no subscription
     return false;
 }
 
@@ -965,6 +966,7 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
         subscriptions[subscriptionKey] = newSubscriptionInfo;
     }
 
+    // return true if the insertion is successful
     return true;
 }
 
