@@ -620,8 +620,18 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
         topicId = it->second;
     }
 
-    // TO DO -> check if there is already a subscription for that topic name; if yes update it
-    // TO DO -> save subscriber and topic info
+    std::pair<uint16_t, QoS> subscriptionKey;
+
+    // check for an existing subscription and delete it if found
+    if (findSubscription(srcAddress, srcPort, topicId, subscriptionKey)) {
+        // if unable to delete the existing subscription, throw an error
+        if (!deleteSubscription(srcAddress, srcPort, subscriptionKey)) {
+            throw omnetpp::cRuntimeError("Unexpected error: subscription cannot be deleted");
+        }
+    }
+
+    // create a new subscription
+    insertSubscription(srcAddress, srcPort, topicId, qosFlag);
 
     // send ACK message with ACCEPTED code
     sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::ACCEPTED, topicId, msgId);
