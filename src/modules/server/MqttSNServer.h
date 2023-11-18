@@ -118,9 +118,11 @@ class MqttSNServer : public MqttSNApp
         // other methods
         virtual void registerNewTopic(const std::string& topicName);
         virtual bool isGatewayCongested();
+
+        // other methods about clients
+        virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
-        virtual ClientInfo* updateClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
     public:

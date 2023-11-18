@@ -389,7 +389,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
@@ -409,7 +409,7 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
 
 void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
@@ -427,7 +427,9 @@ void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    ClientInfo* clientInfo = updateClientLastMsgTime(srcAddress, srcPort);
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     const auto& payload = pk->peekData<MqttSNPingReq>();
     std::string clientId = payload->getClientId();
@@ -452,7 +454,8 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
 void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int& srcPort)
 {
     // update client information
-    ClientInfo* clientInfo = updateClientLastMsgTime(srcAddress, srcPort);
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
     clientInfo->sentPingReq = false;
 
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
@@ -460,12 +463,13 @@ void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int&
 
 void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    ClientInfo* clientInfo = updateClientLastMsgTime(srcAddress, srcPort);
+    // update client information
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
 
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
 
-    // update client information
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
 
@@ -478,7 +482,7 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
 
 void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNRegister>();
     uint16_t topicId = payload->getTopicId();
@@ -517,7 +521,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 
 void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNPublish>();
     uint16_t topicId = payload->getTopicId();
@@ -567,7 +571,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
     uint16_t msgId = payload->getMsgId();
@@ -580,7 +584,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
 
 void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNSubscribe>();
     QoS qosFlag = (QoS) payload->getQoSFlag();
@@ -625,7 +629,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
 
 void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    updateClientLastMsgTime(srcAddress, srcPort);
+    setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNUnsubscribe>();
 
@@ -841,6 +845,12 @@ bool MqttSNServer::isGatewayCongested()
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
+void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
+{
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    clientInfo->lastReceivedMsgTime = getClockTime();
+}
+
 bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState)
 {
     // get client information with the specified IP address and port
@@ -868,14 +878,6 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     }
 
     return nullptr;
-}
-
-ClientInfo* MqttSNServer::updateClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
-{
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
-    clientInfo->lastReceivedMsgTime = getClockTime();
-
-    return clientInfo;
 }
 
 PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
