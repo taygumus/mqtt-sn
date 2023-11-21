@@ -854,6 +854,40 @@ bool MqttSNServer::isGatewayCongested()
     return clients.size() >= (unsigned int) par("maximumClients");
 }
 
+PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
+{
+    // check if the publisher with the specified address and port is present in the data structure
+    auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));
+
+    if (publisherIterator != publishers.end()) {
+        return &publisherIterator->second;
+    }
+
+    if (insertIfNotFound) {
+        // insert a new empty publisher
+        PublisherInfo newPublisherInfo;
+        publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
+
+        return &publishers[std::make_pair(srcAddress, srcPort)];
+    }
+
+    return nullptr;
+}
+
+std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> MqttSNServer::getSubscriptionsByTopicId(uint16_t topicId)
+{
+    // temporary map to store elements with the same topic ID
+    std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> result;
+
+    // copy the matching elements
+    std::copy_if(subscriptions.begin(), subscriptions.end(), std::inserter(result, result.end()),
+                 [topicId](const auto& pair) {
+                    return pair.first.first == topicId;
+                 });
+
+    return result;
+}
+
 void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
 {
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
@@ -889,37 +923,11 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     return nullptr;
 }
 
-PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
-{
-    // check if the publisher with the specified address and port is present in the data structure
-    auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));
-
-    if (publisherIterator != publishers.end()) {
-        return &publisherIterator->second;
-    }
-
-    if (insertIfNotFound) {
-        // insert a new empty publisher
-        PublisherInfo newPublisherInfo;
-        publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
-
-        return &publishers[std::make_pair(srcAddress, srcPort)];
-    }
-
-    return nullptr;
-}
-
 bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                     std::pair<uint16_t, QoS>& subscriptionKey)
 {
-    // temporary map to store elements with the same topic ID
-    std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> result;
-
-    // copy the matching elements
-    std::copy_if(subscriptions.begin(), subscriptions.end(), std::inserter(result, result.end()),
-                 [topicId](const auto& pair) {
-                    return pair.first.first == topicId;
-                 });
+    // elements with the same topic ID
+    std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> result = getSubscriptionsByTopicId(topicId);
 
     // iterate for each QoS
     for (const auto& pair : result) {
