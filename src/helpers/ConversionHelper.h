@@ -9,7 +9,8 @@ namespace mqttsn {
 class ConversionHelper : public BaseHelper
 {
     public:
-        static QoS intToQoS(int value);
+        static QoS intToQos(int value);
+        static int qosToInt(QoS value);
 };
 
 } /* namespace mqttsn */

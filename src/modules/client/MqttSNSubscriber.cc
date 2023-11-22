@@ -290,7 +290,7 @@ void MqttSNSubscriber::fillTopics()
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
         Topic topic;
         topic.topicName = it.key();
-        topic.qosFlag = ConversionHelper::intToQoS(it.value()["qos"]);
+        topic.qosFlag = ConversionHelper::intToQos(it.value()["qos"]);
 
         topics[topicsKey++] = topic;
     }

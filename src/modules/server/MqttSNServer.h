@@ -10,10 +10,8 @@
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
 #include "types/server/PublisherInfo.h"
-#include "types/server/SubscriberInfo.h"
 #include "types/server/DataInfo.h"
 #include "types/server/RequestInfo.h"
-#include "types/server/SubscriptionInfo.h"
 
 namespace mqttsn {
 
@@ -44,7 +42,6 @@ class MqttSNServer : public MqttSNApp
         inet::ClockEvent* clientsClearEvent = nullptr;
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
-        //std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers; ///
 
         std::map<std::string, uint16_t> topicsToIds;
         std::set<uint16_t> topicIds;
@@ -53,7 +50,8 @@ class MqttSNServer : public MqttSNApp
         std::map<uint16_t, DataInfo> data;
         std::map<uint16_t, RequestInfo> pendingRequests;
 
-        std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> subscriptions;
+        std::map<uint16_t, std::set<QoS>> topicIdToQos;
+        std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -122,7 +120,7 @@ class MqttSNServer : public MqttSNApp
         virtual void registerNewTopic(const std::string& topicName);
         virtual bool isGatewayCongested();
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
-        virtual std::map<std::pair<uint16_t, QoS>, SubscriptionInfo> getSubscriptionsByTopicId(uint16_t topicId);
+        virtual std::set<std::pair<uint16_t, QoS>> getSubscriptionKeysByTopicId(uint16_t topicId);
 
         // other methods about clients
         virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
@@ -130,11 +128,13 @@ class MqttSNServer : public MqttSNApp
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // other methods about subscribers
+        virtual void dispatchPublishToSubscribers(uint16_t topicId, QoS qos);
+
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
 
         virtual bool insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                        uint16_t topicId, QoS qosFlag);
+                                        uint16_t topicId, QoS qos);
 
         virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                         const std::pair<uint16_t, QoS>& subscriptionKey);
