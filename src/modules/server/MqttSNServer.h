@@ -110,6 +110,11 @@ class MqttSNServer : public MqttSNApp
                                 QoS qosFlag, ReturnCode returnCode,
                                 uint16_t topicId, uint16_t msgId);
 
+        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort,
+                                 bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
+                                 uint16_t topicId, uint16_t msgId,
+                                 const std::string& data);
+
         // event handlers
         virtual void handleAdvertiseEvent();
         virtual void handleActiveClientsCheckEvent();
@@ -128,7 +133,7 @@ class MqttSNServer : public MqttSNApp
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // other methods about subscribers
-        virtual void dispatchPublishToSubscribers(uint16_t topicId, QoS qos);
+        virtual void dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const std::string& data);
 
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);

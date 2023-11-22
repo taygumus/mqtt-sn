@@ -7,6 +7,7 @@
 #include "messages/MqttSNSubAck.h"
 #include "messages/MqttSNUnsubscribe.h"
 #include "messages/MqttSNBaseWithMsgId.h"
+#include "messages/MqttSNPublish.h"
 
 namespace mqttsn {
 
@@ -63,6 +64,7 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
         // packet types that are allowed only from the connected gateway
         case MsgType::SUBACK:
         case MsgType::UNSUBACK:
+        case MsgType::PUBLISH:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -79,6 +81,10 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
 
         case MsgType::UNSUBACK:
             processUnsubAck(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBLISH:
+            processPublish(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -143,6 +149,14 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
 
     lastUnsubscription.retry = false;
     scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
+}
+
+void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNPublish>();
+
+    EV << "received msg: " << payload->getData() << " with topicID: " << payload->getTopicId() << std::endl;
+    EV << "sub: " << srcAddress << std::endl;
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,

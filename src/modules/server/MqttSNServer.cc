@@ -764,6 +764,18 @@ void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& des
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
+void MqttSNServer::sendPublish(const inet::L3Address& destAddress, const int& destPort,
+                               bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
+                               uint16_t topicId, uint16_t msgId,
+                               const std::string& data)
+{
+    MqttSNApp::socket.sendTo(
+            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data),
+            destAddress,
+            destPort
+    );
+}
+
 void MqttSNServer::handleAdvertiseEvent()
 {
     sendAdvertise();
@@ -930,7 +942,7 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     return nullptr;
 }
 
-void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos)
+void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const std::string& data)
 {
     // keys with the same topic ID
     std::set<std::pair<uint16_t, QoS>> keys = getSubscriptionKeysByTopicId(topicId);
@@ -943,7 +955,28 @@ void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos)
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
         if (subscriptionIt != subscriptions.end()) {
-            // TO DO
+            // retrieve subscribers for the current subscription key
+            const auto& subscribers = subscriptionIt->second;
+
+            // iterate for each subscriber
+            for (const auto& subscriber : subscribers) {
+               // extract subscriber's address and port
+               inet::L3Address subscriberAddr = subscriber.first;
+               int subcriberPort = subscriber.second;
+
+               if (resultQos == QoS::QOS_ZERO) {
+                   // send a publish message with QoS zero to the subscriber
+                   sendPublish(subscriberAddr, subcriberPort,
+                               false, resultQos, false, TopicIdType::NORMAL_TOPIC,
+                               topicId, 0,
+                               data);
+
+                   // continue to the next subscriber
+                   continue;
+               }
+
+               // TO DO -> handling for QoS 1 and Qos 2 levels
+            }
         }
     }
 }
@@ -1019,7 +1052,7 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
         auto& subscribers = subscriptionIt->second;
 
         // check if the subscriber is present
-        auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));s
+        auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
         if (subscriberIt != subscribers.end()) {
             // delete the subscriber from the map
             subscribers.erase(subscriberIt);
