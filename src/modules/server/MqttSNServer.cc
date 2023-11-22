@@ -881,14 +881,12 @@ std::set<std::pair<uint16_t, QoS>> MqttSNServer::getSubscriptionKeysByTopicId(ui
 
     // check if the topic ID key exists in the map
     auto topicIt = topicIdToQos.find(topicId);
-
-    // if the topic ID doesn't exist, return an empty set
     if (topicIt == topicIdToQos.end()) {
+        // if the topic ID doesn't exist, return an empty set
         return keys;
     }
 
     const auto& qosSet = topicIt->second;
-
     // generate complete <topicId, QoS> keys and insert into the set
     for (const auto& qos : qosSet) {
         keys.insert(std::make_pair(topicId, qos));
@@ -942,7 +940,11 @@ void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos)
         // calculate the minimum QoS level between subscription QoS and incoming publish QoS
         QoS resultQos = NumericHelper::minQos(key.second, qos);
 
-        // TO DO
+        // check if the subscription exists for the given key
+        auto subscriptionIt = subscriptions.find(key);
+        if (subscriptionIt != subscriptions.end()) {
+            // TO DO
+        }
     }
 }
 
@@ -956,12 +958,11 @@ bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, co
     for (const auto& key : keys) {
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
-
         if (subscriptionIt != subscriptions.end()) {
             // check if the subscriber is present in the subscription set
             const auto& subscribers = subscriptionIt->second;
-            auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
 
+            auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
             if (subscriberIt != subscribers.end()) {
                 // subscriber found, update the subscription key parameter and return true
                 subscriptionKey = key;
@@ -983,7 +984,6 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
 
     // check if the subscription key already exists in the map
     auto subscriptionIt = subscriptions.find(subscriptionKey);
-
     if (subscriptionIt != subscriptions.end()) {
         // if the key exists, access the subscribers
         auto& subscribers = subscriptionIt->second;
@@ -1014,14 +1014,12 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
 {
     // search for the subscription key in the map
     auto subscriptionIt = subscriptions.find(subscriptionKey);
-
     if (subscriptionIt != subscriptions.end()) {
         // if the key is found, access the subscribers
         auto& subscribers = subscriptionIt->second;
 
         // check if the subscriber is present
-        auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
-
+        auto subscriberIt = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));s
         if (subscriberIt != subscribers.end()) {
             // delete the subscriber from the map
             subscribers.erase(subscriberIt);
@@ -1033,7 +1031,6 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
 
                 // remove the QoS associated with topic ID if there are no more subscribers
                 auto qosSetIt = topicIdToQos.find(subscriptionKey.first);
-
                 if (qosSetIt != topicIdToQos.end()) {
                     auto& qosSet = qosSetIt->second;
                     qosSet.erase(subscriptionKey.second);
