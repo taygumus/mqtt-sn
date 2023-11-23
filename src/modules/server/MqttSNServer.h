@@ -47,7 +47,7 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
-        std::map<uint16_t, DataInfo> data;
+        std::map<int, DataInfo> data;
         std::map<uint16_t, RequestInfo> pendingRequests;
 
         std::map<uint16_t, std::set<QoS>> topicIdToQos;

@@ -541,10 +541,10 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    uint8_t qosFlag = payload->getQoSFlag();
+    QoS qosFlag = (QoS) payload->getQoSFlag();
 
     if (qosFlag == QoS::QOS_ZERO) {
-        // TO DO -> manage QoS 0 level
+        dispatchPublishToSubscribers(topicId, qosFlag, payload->getData());
         return;
     }
 

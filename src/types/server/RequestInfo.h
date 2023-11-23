@@ -4,7 +4,7 @@
 struct RequestInfo {
     inet::L3Address subscriberAddress;
     int subscriberPort;
-    uint16_t dataKey;
+    int dataKey;
 };
 
 #endif /* TYPES_SERVER_REQUESTINFO_H_ */

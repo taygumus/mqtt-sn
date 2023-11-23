@@ -155,8 +155,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
 {
     const auto& payload = pk->peekData<MqttSNPublish>();
 
-    EV << "received msg: " << payload->getData() << " with topicID: " << payload->getTopicId() << std::endl;
-    EV << "sub: " << srcAddress << std::endl;
+    // TO DO
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
