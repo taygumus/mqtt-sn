@@ -3,7 +3,7 @@
 
 struct PublisherInfo {
     bool willFlag = false;
-    QoS willQosFlag = QoS::QOS_ZERO;
+    QoS willQoSFlag = QoS::QOS_ZERO;
     bool willRetainFlag = false;
     std::string willTopic = "";
     std::string willMsg = "";

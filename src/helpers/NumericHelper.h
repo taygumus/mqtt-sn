@@ -11,7 +11,7 @@ class NumericHelper : public BaseHelper
 {
     public:
         static void incrementCounter(int* counter);
-        static QoS minQos(QoS first, QoS second);
+        static QoS minQoS(QoS first, QoS second);
 };
 
 } /* namespace mqttsn */

@@ -50,7 +50,7 @@ class MqttSNServer : public MqttSNApp
         std::map<int, DataInfo> data;
         std::map<uint16_t, RequestInfo> pendingRequests;
 
-        std::map<uint16_t, std::set<QoS>> topicIdToQos;
+        std::map<uint16_t, std::set<QoS>> topicIdToQoS;
         std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;
 
         // statistics

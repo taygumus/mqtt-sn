@@ -12,16 +12,16 @@ void NumericHelper::incrementCounter(int* counter)
     }
 }
 
-QoS NumericHelper::minQos(QoS first, QoS second)
+QoS NumericHelper::minQoS(QoS first, QoS second)
 {
     // calculate the minimum QoS value
-    int minQosValue = std::min(
+    int minQoSValue = std::min(
             ConversionHelper::qosToInt(first),
             ConversionHelper::qosToInt(second)
     );
 
     // convert the minimum QoS value back to QoS enumeration
-    return ConversionHelper::intToQos(minQosValue);
+    return ConversionHelper::intToQoS(minQoSValue);
 }
 
 } /* namespace mqttsn */

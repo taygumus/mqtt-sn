@@ -2,7 +2,7 @@
 
 namespace mqttsn {
 
-QoS ConversionHelper::intToQos(int value)
+QoS ConversionHelper::intToQoS(int value)
 {
     // convert an integer to QoS enumeration
     switch (value) {

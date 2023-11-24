@@ -4,7 +4,7 @@ module MqttSNPublisher extends MqttSNClient
 {
     parameters:
         bool willFlag = default(false);
-        int willQosFlag = default(0); // valid qos values: 0, 1, 2 and -1
+        int willQoSFlag = default(0); // valid QoS values: 0, 1, 2 and -1
         bool willRetainFlag = default(false);
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message

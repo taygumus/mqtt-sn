@@ -396,7 +396,7 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
 
     // update publisher information
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
-    publisherInfo->willQosFlag = (QoS) payload->getQoSFlag();
+    publisherInfo->willQoSFlag = (QoS) payload->getQoSFlag();
     publisherInfo->willRetainFlag = payload->getRetainFlag();
     publisherInfo->willTopic = payload->getWillTopic();
 
@@ -892,8 +892,8 @@ std::set<std::pair<uint16_t, QoS>> MqttSNServer::getSubscriptionKeysByTopicId(ui
     std::set<std::pair<uint16_t, QoS>> keys = {};
 
     // check if the topic ID key exists in the map
-    auto topicIt = topicIdToQos.find(topicId);
-    if (topicIt == topicIdToQos.end()) {
+    auto topicIt = topicIdToQoS.find(topicId);
+    if (topicIt == topicIdToQoS.end()) {
         // if the topic ID doesn't exist, return an empty set
         return keys;
     }
@@ -950,7 +950,7 @@ void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const
     // iterate for each QoS
     for (const auto& key : keys) {
         // calculate the minimum QoS level between subscription QoS and incoming publish QoS
-        QoS resultQos = NumericHelper::minQos(key.second, qos);
+        QoS resultQoS = NumericHelper::minQoS(key.second, qos);
 
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
@@ -964,10 +964,10 @@ void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const
                inet::L3Address subscriberAddr = subscriber.first;
                int subcriberPort = subscriber.second;
 
-               if (resultQos == QoS::QOS_ZERO) {
+               if (resultQoS == QoS::QOS_ZERO) {
                    // send a publish message with QoS zero to the subscriber
                    sendPublish(subscriberAddr, subcriberPort,
-                               false, resultQos, false, TopicIdType::NORMAL_TOPIC,
+                               false, resultQoS, false, TopicIdType::NORMAL_TOPIC,
                                topicId, 0,
                                data);
 
@@ -975,7 +975,7 @@ void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const
                    continue;
                }
 
-               // TO DO -> handling for QoS 1 and Qos 2 levels
+               // TO DO -> handling for QoS 1 and QoS 2 levels
             }
         }
     }
@@ -1035,7 +1035,7 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
         subscriptions[subscriptionKey].insert(subscriberKey);
 
         // insert the QoS value associated with the topic ID
-        topicIdToQos[topicId].insert(qos);
+        topicIdToQoS[topicId].insert(qos);
     }
 
     // return true if the insertion is successful
@@ -1063,14 +1063,14 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
                 subscriptions.erase(subscriptionIt);
 
                 // remove the QoS associated with topic ID if there are no more subscribers
-                auto qosSetIt = topicIdToQos.find(subscriptionKey.first);
-                if (qosSetIt != topicIdToQos.end()) {
+                auto qosSetIt = topicIdToQoS.find(subscriptionKey.first);
+                if (qosSetIt != topicIdToQoS.end()) {
                     auto& qosSet = qosSetIt->second;
                     qosSet.erase(subscriptionKey.second);
 
                     // remove the topic ID if no more QoS are associated
                     if (qosSet.empty()) {
-                        topicIdToQos.erase(qosSetIt);
+                        topicIdToQoS.erase(qosSetIt);
                     }
                 }
             }
