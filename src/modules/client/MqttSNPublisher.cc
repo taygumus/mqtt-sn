@@ -451,12 +451,12 @@ void MqttSNPublisher::handlePublishEvent()
         }
     }
 
-    QoS qos = selectedData.qosFlag;
-    bool retain = selectedData.retainFlag;
+    QoS qosFlag = selectedData.qosFlag;
+    bool retainFlag = selectedData.retainFlag;
 
-    if (qos == QoS::QOS_ZERO) {
+    if (qosFlag == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                    false, qos, retain, TopicIdType::NORMAL_TOPIC,
+                    false, qosFlag, retainFlag, TopicIdType::NORMAL_TOPIC,
                     selectedTopicId, 0,
                     selectedData.data);
 
@@ -466,7 +466,7 @@ void MqttSNPublisher::handlePublishEvent()
     }
 
     sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-               false, qos, retain, TopicIdType::NORMAL_TOPIC,
+               false, qosFlag, retainFlag, TopicIdType::NORMAL_TOPIC,
                selectedTopicId, MqttSNClient::getNewMsgId(),
                selectedData.data);
 
