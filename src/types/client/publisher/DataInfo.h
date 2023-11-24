@@ -4,7 +4,7 @@
 struct DataInfo {
     QoS qosFlag = QoS::QOS_ZERO;
     bool retainFlag = false;
-    std::string message;
+    std::string data;
 };
 
 #endif /* TYPES_CLIENT_PUBLISHER_DATAINFO_H_ */

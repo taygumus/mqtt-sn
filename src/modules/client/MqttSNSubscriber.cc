@@ -299,7 +299,7 @@ void MqttSNSubscriber::fillTopics()
     json jsonData = json::parse(par("topicsJson").stringValue());
     int topicsKey = 0;
 
-    // iterate over json object keys (topics) and fill the data structure
+    // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
         Topic topic;
         topic.topicName = it.key();

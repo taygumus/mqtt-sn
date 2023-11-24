@@ -458,7 +458,7 @@ void MqttSNPublisher::handlePublishEvent()
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
                     false, qos, retain, TopicIdType::NORMAL_TOPIC,
                     selectedTopicId, 0,
-                    selectedData.message);
+                    selectedData.data);
 
         // no need to wait for an ACK
         scheduleClockEventAfter(publishInterval, publishEvent);
@@ -468,7 +468,7 @@ void MqttSNPublisher::handlePublishEvent()
     sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
                false, qos, retain, TopicIdType::NORMAL_TOPIC,
                selectedTopicId, MqttSNClient::getNewMsgId(),
-               selectedData.message);
+               selectedData.data);
 
     // schedule publish retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNApp::currentMsgId);
@@ -479,19 +479,19 @@ void MqttSNPublisher::fillTopicsAndData()
     json jsonData = json::parse(par("topicsAndDataJson").stringValue());
     int topicsKey = 0;
 
-    // iterate over json object keys (topics) and fill the data structure
+    // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
         TopicAndData topicAndData;
         topicAndData.topicName = it.key();
 
         int dataKey = 0;
 
-        // iterate over json array elements (messages) and populate the structure
-        for (const auto& messageData : it.value()) {
+        // iterate over json array elements (data)
+        for (const auto& data : it.value()) {
             DataInfo dataInfo;
-            dataInfo.qosFlag = ConversionHelper::intToQos(messageData["qos"]);
-            dataInfo.retainFlag = messageData["retain"];
-            dataInfo.message = messageData["message"];
+            dataInfo.qosFlag = ConversionHelper::intToQos(data["qos"]);
+            dataInfo.retainFlag = data["retain"];
+            dataInfo.data = data["data"];
 
             topicAndData.data[dataKey++] = dataInfo;
         }
@@ -572,7 +572,7 @@ void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, cons
     sendPublish(destAddress, destPort,
                 true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag, TopicIdType::NORMAL_TOPIC,
                 lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()),
-                lastPublish.dataInfo.message);
+                lastPublish.dataInfo.data);
 }
 
 void MqttSNPublisher::retransmitPubRel(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
