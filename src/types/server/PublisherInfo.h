@@ -3,8 +3,8 @@
 
 struct PublisherInfo {
     bool willFlag = false;
-    QoS willQoSFlag = QoS::QOS_ZERO;
-    bool willRetainFlag = false;
+    QoS willQoS = QoS::QOS_ZERO;
+    bool willRetain = false;
     std::string willTopic = "";
     std::string willMsg = "";
     std::set<uint16_t> messageIds;

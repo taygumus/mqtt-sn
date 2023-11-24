@@ -396,8 +396,8 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
 
     // update publisher information
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
-    publisherInfo->willQoSFlag = (QoS) payload->getQoSFlag();
-    publisherInfo->willRetainFlag = payload->getRetainFlag();
+    publisherInfo->willQoS = (QoS) payload->getQoSFlag();
+    publisherInfo->willRetain = payload->getRetainFlag();
     publisherInfo->willTopic = payload->getWillTopic();
 
     if (isDirectUpdate) {

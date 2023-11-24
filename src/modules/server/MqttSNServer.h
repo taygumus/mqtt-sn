@@ -10,7 +10,7 @@
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
 #include "types/server/PublisherInfo.h"
-#include "types/server/DataInfo.h"
+#include "types/server/MessageInfo.h"
 #include "types/server/RequestInfo.h"
 
 namespace mqttsn {
@@ -47,7 +47,7 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
-        std::map<int, DataInfo> data;
+        std::map<int, MessageInfo> messages;
         std::map<uint16_t, RequestInfo> pendingRequests;
 
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
