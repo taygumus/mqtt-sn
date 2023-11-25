@@ -9,6 +9,7 @@
 #include "types/shared/ClientState.h"
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
+#include "types/server/DataInfo.h"
 #include "types/server/PublisherInfo.h"
 #include "types/server/MessageInfo.h"
 #include "types/server/RequestInfo.h"
@@ -41,11 +42,11 @@ class MqttSNServer : public MqttSNApp
 
         inet::ClockEvent* clientsClearEvent = nullptr;
 
-        std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
-
         std::map<std::string, uint16_t> topicsToIds;
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
+
+        std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
 
         std::map<int, MessageInfo> messages;
         std::map<uint16_t, RequestInfo> pendingRequests;
@@ -133,7 +134,7 @@ class MqttSNServer : public MqttSNApp
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // other methods about subscribers
-        virtual void dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const std::string& data);
+        virtual void dispatchPublishToSubscribers(const MessageInfo& message);
 
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);

@@ -544,7 +544,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     QoS qosFlag = (QoS) payload->getQoSFlag();
 
     if (qosFlag == QoS::QOS_ZERO) {
-        dispatchPublishToSubscribers(topicId, qosFlag, payload->getData());
+        //dispatchPublishToSubscribers(topicId, qosFlag, payload->getData()); ///
         return;
     }
 
@@ -562,9 +562,13 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
     // handling QoS 2; update publisher information and respond with PUBREC
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
-    publisherInfo->messageIds.insert(msgId);
 
-    // TO DO -> message to be saved
+    DataInfo dataInfo;
+    dataInfo.topicId = topicId;
+    dataInfo.data = payload->getData();
+
+    // save message data for future checks
+    publisherInfo->messages[msgId] = dataInfo;
 
     // send publish received
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
@@ -574,10 +578,31 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
 {
     setClientLastMsgTime(srcAddress, srcPort);
 
+    // check if the publisher exists for the given key
+    auto publisherIt = publishers.find(std::make_pair(srcAddress, srcPort));
+    if (publisherIt == publishers.end()) {
+        return;
+    }
+
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
     uint16_t msgId = payload->getMsgId();
 
+    // access the messages associated with the publisher
+    std::map<uint16_t, DataInfo>& messages = publisherIt->second.messages;
+
+    // check if the message exists for the given message ID
+    auto messageIt = messages.find(msgId);
+    if (messageIt == messages.end()) {
+        // message may have already been processed or never arrived
+        return;
+    }
+
+    // process the original publish message only once; required for QoS 2 level
+
     // TO DO -> manage QoS 2 level
+
+    // after processing, delete the message from the map
+    messages.erase(msgId);
 
     // send publish complete
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
@@ -942,15 +967,17 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     return nullptr;
 }
 
-void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const std::string& data)
+void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
 {
+    uint16_t topicId = message.topicId;
+
     // keys with the same topic ID
     std::set<std::pair<uint16_t, QoS>> keys = getSubscriptionKeysByTopicId(topicId);
 
     // iterate for each QoS
     for (const auto& key : keys) {
         // calculate the minimum QoS level between subscription QoS and incoming publish QoS
-        QoS resultQoS = NumericHelper::minQoS(key.second, qos);
+        QoS resultQoS = NumericHelper::minQoS(key.second, message.qos);
 
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
@@ -967,9 +994,9 @@ void MqttSNServer::dispatchPublishToSubscribers(uint16_t topicId, QoS qos, const
                if (resultQoS == QoS::QOS_ZERO) {
                    // send a publish message with QoS zero to the subscriber
                    sendPublish(subscriberAddr, subcriberPort,
-                               false, resultQoS, false, TopicIdType::NORMAL_TOPIC,
+                               message.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
                                topicId, 0,
-                               data);
+                               message.data);
 
                    // continue to the next subscriber
                    continue;
