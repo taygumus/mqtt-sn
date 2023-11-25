@@ -542,9 +542,16 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     QoS qosFlag = (QoS) payload->getQoSFlag();
+    std::string data = payload->getData();
+
+    MessageInfo messageInfo;
+    messageInfo.dup = payload->getDupFlag();
+    messageInfo.qos = qosFlag;
+    messageInfo.topicId = topicId;
+    messageInfo.data = data;
 
     if (qosFlag == QoS::QOS_ZERO) {
-        //dispatchPublishToSubscribers(topicId, qosFlag, payload->getData()); ///
+        dispatchPublishToSubscribers(messageInfo);
         return;
     }
 
@@ -555,7 +562,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     if (qosFlag == QoS::QOS_ONE) {
-        // TO DO -> message to be saved and manage QoS 1 level
+        dispatchPublishToSubscribers(messageInfo);
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;
     }
@@ -565,7 +572,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
     DataInfo dataInfo;
     dataInfo.topicId = topicId;
-    dataInfo.data = payload->getData();
+    dataInfo.data = data;
 
     // save message data for future checks
     publisherInfo->messages[msgId] = dataInfo;
@@ -598,8 +605,15 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
     }
 
     // process the original publish message only once; required for QoS 2 level
+    const DataInfo& dataInfo = messages[msgId];
 
-    // TO DO -> manage QoS 2 level
+    MessageInfo messageInfo;
+    messageInfo.dup = false;
+    messageInfo.qos = QoS::QOS_TWO;
+    messageInfo.topicId = dataInfo.topicId;
+    messageInfo.data = dataInfo.data;
+
+    dispatchPublishToSubscribers(messageInfo);
 
     // after processing, delete the message from the map
     messages.erase(msgId);
