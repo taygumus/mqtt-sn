@@ -48,7 +48,7 @@ class MqttSNServer : public MqttSNApp
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
 
-        std::map<int, MessageInfo> messages;
+        std::map<uint16_t, MessageInfo> messages;
         std::map<uint16_t, RequestInfo> pendingRequests;
 
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;

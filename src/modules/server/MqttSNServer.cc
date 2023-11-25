@@ -599,24 +599,21 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
 
     // check if the message exists for the given message ID
     auto messageIt = messages.find(msgId);
-    if (messageIt == messages.end()) {
-        // message may have already been processed or never arrived
-        return;
+    if (messageIt != messages.end()) {
+        // process the original publish message only once; required for QoS 2 level
+        const DataInfo& dataInfo = messages[msgId];
+
+        MessageInfo messageInfo;
+        messageInfo.dup = false;
+        messageInfo.qos = QoS::QOS_TWO;
+        messageInfo.topicId = dataInfo.topicId;
+        messageInfo.data = dataInfo.data;
+
+        dispatchPublishToSubscribers(messageInfo);
+
+        // after processing, delete the message from the map
+        messages.erase(msgId);
     }
-
-    // process the original publish message only once; required for QoS 2 level
-    const DataInfo& dataInfo = messages[msgId];
-
-    MessageInfo messageInfo;
-    messageInfo.dup = false;
-    messageInfo.qos = QoS::QOS_TWO;
-    messageInfo.topicId = dataInfo.topicId;
-    messageInfo.data = dataInfo.data;
-
-    dispatchPublishToSubscribers(messageInfo);
-
-    // after processing, delete the message from the map
-    messages.erase(msgId);
 
     // send publish complete
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
@@ -998,6 +995,10 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
         if (subscriptionIt != subscriptions.end()) {
             // retrieve subscribers for the current subscription key
             const auto& subscribers = subscriptionIt->second;
+
+            if (!subscribers.empty() && (resultQoS == QoS::QOS_ONE || resultQoS == QoS::QOS_TWO)) {
+                // TO DO
+            }
 
             // iterate for each subscriber
             for (const auto& subscriber : subscribers) {
