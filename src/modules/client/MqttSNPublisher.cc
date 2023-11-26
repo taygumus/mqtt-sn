@@ -396,7 +396,7 @@ void MqttSNPublisher::handleRegistrationEvent()
     sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::getNewMsgId(), topicName);
 
     // schedule register retransmission
-    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNClient::currentMsgId);
 }
 
 void MqttSNPublisher::handlePublishEvent()
@@ -471,7 +471,7 @@ void MqttSNPublisher::handlePublishEvent()
                selectedData.data);
 
     // schedule publish retransmission
-    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNClient::currentMsgId);
 }
 
 void MqttSNPublisher::fillTopicsAndData()

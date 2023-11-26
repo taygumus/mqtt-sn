@@ -148,4 +148,14 @@ bool MqttSNApp::setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& 
     return true;
 }
 
+uint16_t MqttSNApp::getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue,
+                                     const std::string& error)
+{
+    if (!setNextAvailableId(usedIds, currentId, allowMaxValue)) {
+        throw omnetpp::cRuntimeError("%s", error.c_str());
+    }
+
+    return currentId;
+}
+
 } /* namespace mqttsn */

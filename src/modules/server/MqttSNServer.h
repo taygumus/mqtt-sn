@@ -42,14 +42,19 @@ class MqttSNServer : public MqttSNApp
 
         inet::ClockEvent* clientsClearEvent = nullptr;
 
+        std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
+
         std::map<std::string, uint16_t> topicsToIds;
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
-        std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
-
         std::map<uint16_t, MessageInfo> messages;
-        std::map<uint16_t, RequestInfo> pendingRequests;
+        std::set<uint16_t> messageIds;
+        uint16_t currentMessageId = 0;
+
+        std::map<uint16_t, RequestInfo> requests;
+        std::set<uint16_t> requestIds;
+        uint16_t currentRequestId = 0;
 
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
         std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;

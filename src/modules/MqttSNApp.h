@@ -14,7 +14,6 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 {
     protected:
         inet::UdpSocket socket;
-        uint16_t currentMsgId = 0;
 
     protected:
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -36,6 +35,9 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
         virtual bool isSelfBroadcastAddress(const inet::L3Address& address);
         virtual bool setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true);
+
+        virtual uint16_t getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true,
+                                          const std::string& error = "");
 
     public:
         MqttSNApp() {};

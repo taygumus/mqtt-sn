@@ -250,7 +250,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
                   topicName, 0);
 
     // schedule subscribe retransmission
-    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::SUBSCRIBE, MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::SUBSCRIBE, MqttSNClient::currentMsgId);
 }
 
 void MqttSNSubscriber::handleUnsubscriptionEvent()
@@ -291,7 +291,7 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
                     topicName, 0);
 
     // schedule unsubscribe retransmission
-    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::UNSUBSCRIBE, MqttSNApp::currentMsgId);
+    MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::UNSUBSCRIBE, MqttSNClient::currentMsgId);
 }
 
 void MqttSNSubscriber::fillTopics()

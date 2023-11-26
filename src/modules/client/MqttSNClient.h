@@ -49,6 +49,8 @@ class MqttSNClient : public MqttSNApp
 
         inet::ClockEvent* pingEvent = nullptr;
 
+        uint16_t currentMsgId = 0;
+
         // retransmissions management
         std::map<MsgType, UnicastMessageInfo> retransmissions;
 

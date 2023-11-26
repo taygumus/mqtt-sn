@@ -997,7 +997,13 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
             const auto& subscribers = subscriptionIt->second;
 
             if (!subscribers.empty() && (resultQoS == QoS::QOS_ONE || resultQoS == QoS::QOS_TWO)) {
-                // TO DO
+                // set new available message ID if possible; otherwise, throw an exception
+                MqttSNApp::getNewIdentifier(messageIds, currentMessageId,
+                                            "Failed to assign a new message ID. All available message IDs are in use");
+
+                // add the new message in the data structures
+                messages[currentMessageId] = message;
+                messageIds.insert(currentMessageId);
             }
 
             // iterate for each subscriber
@@ -1016,6 +1022,10 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                    // continue to the next subscriber
                    continue;
                }
+
+               // set new available request ID if possible; otherwise, throw an exception
+               MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
+                                           "Failed to assign a new request ID. All available request IDs are in use");
 
                // TO DO -> handling for QoS 1 and QoS 2 levels
             }
