@@ -551,6 +551,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     messageInfo.data = data;
 
     if (qosFlag == QoS::QOS_ZERO) {
+        // handling QoS 0
         dispatchPublishToSubscribers(messageInfo);
         return;
     }
@@ -562,6 +563,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     if (qosFlag == QoS::QOS_ONE) {
+        // handling QoS 1
         dispatchPublishToSubscribers(messageInfo);
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;
@@ -609,6 +611,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
         messageInfo.topicId = dataInfo.topicId;
         messageInfo.data = dataInfo.data;
 
+        // handling QoS 2
         dispatchPublishToSubscribers(messageInfo);
 
         // after processing, delete the message from the map
