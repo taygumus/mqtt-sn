@@ -980,10 +980,8 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
 
 void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
 {
-    uint16_t topicId = message.topicId;
-
     // keys with the same topic ID
-    std::set<std::pair<uint16_t, QoS>> keys = getSubscriptionKeysByTopicId(topicId);
+    std::set<std::pair<uint16_t, QoS>> keys = getSubscriptionKeysByTopicId(message.topicId);
 
     // iterate for each QoS
     for (const auto& key : keys) {
@@ -1016,7 +1014,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                    // send a publish message with QoS zero to the subscriber
                    sendPublish(subscriberAddr, subcriberPort,
                                message.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
-                               topicId, 0,
+                               message.topicId, 0,
                                message.data);
 
                    // continue to the next subscriber
@@ -1027,7 +1025,20 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
                                            "Failed to assign a new request ID. All available request IDs are in use");
 
-               // TO DO -> handling for QoS 1 and QoS 2 levels
+               RequestInfo requestInfo;
+               requestInfo.subscriberAddress = subscriberAddr;
+               requestInfo.subscriberPort = subcriberPort;
+               requestInfo.messagesKey = currentMessageId;
+
+               // add the new request in the data structures
+               requests[currentRequestId] = requestInfo;
+               requestIds.insert(currentRequestId);
+
+               // send a publish message with QoS 1 or QoS 2 to the subscriber
+               sendPublish(subscriberAddr, subcriberPort,
+                           message.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
+                           message.topicId, currentRequestId,
+                           message.data);
             }
         }
     }
