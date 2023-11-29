@@ -194,9 +194,10 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     // handling QoS 2
     DataInfo dataInfo;
     dataInfo.topicId = topicId;
+    dataInfo.topicName = topicIds[topicId].topicName;
     dataInfo.data = data;
 
-    // save message data for future checks
+    // save message data for reuse
     messages[msgId] = dataInfo;
 
     // send publish received

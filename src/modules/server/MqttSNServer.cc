@@ -576,7 +576,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     dataInfo.topicId = topicId;
     dataInfo.data = data;
 
-    // save message data for future checks
+    // save message data for reuse
     publisherInfo->messages[msgId] = dataInfo;
 
     // send publish received

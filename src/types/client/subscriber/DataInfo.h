@@ -3,6 +3,7 @@
 
 struct DataInfo {
     uint16_t topicId = 0;
+    std::string topicName;
     std::string data;
 };
 
