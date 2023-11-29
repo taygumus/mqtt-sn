@@ -9,6 +9,8 @@
 #include "types/client/subscriber/TopicInfo.h"
 #include "types/client/subscriber/LastSubscribeInfo.h"
 #include "types/client/subscriber/LastUnsubscribeInfo.h"
+#include "types/client/subscriber/MessageInfo.h"
+#include "types/client/subscriber/DataInfo.h"
 
 namespace mqttsn {
 
@@ -28,6 +30,8 @@ class MqttSNSubscriber : public MqttSNClient
 
         inet::ClockEvent* unsubscriptionEvent = nullptr;
         LastUnsubscribeInfo lastUnsubscription;
+
+        std::map<uint16_t, DataInfo> messages;
 
     protected:
         virtual void initializeCustom() override;
@@ -60,6 +64,8 @@ class MqttSNSubscriber : public MqttSNClient
                                               MsgType msgType, ReturnCode returnCode,
                                               uint16_t topicId, uint16_t msgId);
 
+        virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
+
         // event handlers
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
         virtual void handleSubscriptionEvent();
@@ -67,6 +73,7 @@ class MqttSNSubscriber : public MqttSNClient
 
         // other methods
         virtual void fillTopics();
+        virtual void printPublishMessage(const MessageInfo& messageInfo);
 
         // retransmissions management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,

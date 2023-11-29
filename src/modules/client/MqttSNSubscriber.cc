@@ -165,12 +165,42 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     }
 
     QoS qosFlag = (QoS) payload->getQoSFlag();
+    std::string data = payload->getData();
+
+    MessageInfo messageInfo;
+    messageInfo.dup = payload->getDupFlag();
+    messageInfo.qos = qosFlag;
+    messageInfo.topicId = topicId;
+    messageInfo.topicName = topicIds[topicId].topicName;
+    messageInfo.data = data;
 
     if (qosFlag == QoS::QOS_ZERO) {
+        printPublishMessage(messageInfo);
         return;
     }
 
-    // TO DO
+    // message ID check needed for QoS 1 and QoS 2
+    if (msgId == 0) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);
+        return;
+    }
+
+    if (qosFlag == QoS::QOS_ONE) {
+        printPublishMessage(messageInfo);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
+        return;
+    }
+
+    // handling QoS 2
+    DataInfo dataInfo;
+    dataInfo.topicId = topicId;
+    dataInfo.data = data;
+
+    // save message data for future checks
+    messages[msgId] = dataInfo;
+
+    // send publish received
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
@@ -232,6 +262,11 @@ void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddre
     MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, returnCode, topicId, msgId),
                              destAddress,
                              destPort);
+}
+
+void MqttSNSubscriber::sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId)
+{
+    MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
 }
 
 void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
@@ -331,6 +366,16 @@ void MqttSNSubscriber::fillTopics()
 
         topics[topicsKey++] = topic;
     }
+}
+
+void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
+{
+    EV << "Received publish message:" << std::endl;
+    EV << "Duplicate flag: " << (messageInfo.dup ? "True" : "False") << std::endl;
+    EV << "QoS: " << (int) messageInfo.qos << std::endl;
+    EV << "Topic ID: " << messageInfo.topicId << std::endl;
+    EV << "Topic name: " << messageInfo.topicName << std::endl;
+    EV << "Data: " << messageInfo.data << std::endl;
 }
 
 void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
