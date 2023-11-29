@@ -6,6 +6,7 @@
 #include "types/shared/MsgType.h"
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
+#include "types/shared/ReturnCode.h"
 
 namespace mqttsn {
 
@@ -19,6 +20,8 @@ class PacketHelper : public BaseHelper
                                               const std::string& data);
 
         static inet::Packet* getBaseWithMsgIdPacket(MsgType msgType, uint16_t msgId);
+
+        static inet::Packet* getMsgIdWithTopicIdPlusPacket(MsgType msgType, ReturnCode returnCode, uint16_t topicId, uint16_t msgId);
 };
 
 } /* namespace mqttsn */

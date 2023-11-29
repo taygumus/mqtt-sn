@@ -3,6 +3,7 @@
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
 #include "helpers/NumericHelper.h"
+#include "helpers/PacketHelper.h"
 #include "messages/MqttSNSubscribe.h"
 #include "messages/MqttSNSubAck.h"
 #include "messages/MqttSNUnsubscribe.h"
@@ -154,6 +155,20 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
 void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNPublish>();
+    uint16_t topicId = payload->getTopicId();
+    uint16_t msgId = payload->getMsgId();
+
+    // check if the topic ID is present; if not, send a return code
+    if (topicIds.find(topicId) == topicIds.end()) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
+        return;
+    }
+
+    QoS qosFlag = (QoS) payload->getQoSFlag();
+
+    if (qosFlag == QoS::QOS_ZERO) {
+        return;
+    }
 
     // TO DO
 }
@@ -208,6 +223,15 @@ void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const
     packet->insertAtBack(payload);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
+}
+
+void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
+                                                MsgType msgType, ReturnCode returnCode,
+                                                uint16_t topicId, uint16_t msgId)
+{
+    MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, returnCode, topicId, msgId),
+                             destAddress,
+                             destPort);
 }
 
 void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)

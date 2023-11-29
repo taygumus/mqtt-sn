@@ -752,32 +752,9 @@ void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, 
                                             MsgType msgType, ReturnCode returnCode,
                                             uint16_t topicId, uint16_t msgId)
 {
-    const auto& payload = inet::makeShared<MqttSNMsgIdWithTopicIdPlus>();
-    payload->setMsgType(msgType);
-    payload->setTopicId(topicId);
-    payload->setMsgId(msgId);
-    payload->setReturnCode(returnCode);
-    payload->setChunkLength(inet::B(payload->getLength()));
-
-    std::string packetName;
-
-    switch(msgType) {
-        case MsgType::REGACK:
-            packetName = "RegAckPacket";
-            break;
-
-        case MsgType::PUBACK:
-            packetName = "PubAckPacket";
-            break;
-
-        default:
-            packetName = "MsgIdWithTopicIdPlus";
-    }
-
-    inet::Packet* packet = new inet::Packet(packetName.c_str());
-    packet->insertAtBack(payload);
-
-    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
+    MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, returnCode, topicId, msgId),
+                             destAddress,
+                             destPort);
 }
 
 void MqttSNServer::sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId)

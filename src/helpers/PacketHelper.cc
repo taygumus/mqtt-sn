@@ -2,6 +2,7 @@
 #include "messages/MqttSNRegister.h"
 #include "messages/MqttSNPublish.h"
 #include "messages/MqttSNBaseWithMsgId.h"
+#include "messages/MqttSNMsgIdWithTopicIdPlus.h"
 
 namespace mqttsn {
 
@@ -68,6 +69,36 @@ inet::Packet* PacketHelper::getBaseWithMsgIdPacket(MsgType msgType, uint16_t msg
 
         default:
             packetName = "BaseWithMsgId";
+    }
+
+    inet::Packet* packet = new inet::Packet(packetName.c_str());
+    packet->insertAtBack(payload);
+
+    return packet;
+}
+
+inet::Packet* PacketHelper::getMsgIdWithTopicIdPlusPacket(MsgType msgType, ReturnCode returnCode, uint16_t topicId, uint16_t msgId)
+{
+    const auto& payload = inet::makeShared<MqttSNMsgIdWithTopicIdPlus>();
+    payload->setMsgType(msgType);
+    payload->setTopicId(topicId);
+    payload->setMsgId(msgId);
+    payload->setReturnCode(returnCode);
+    payload->setChunkLength(inet::B(payload->getLength()));
+
+    std::string packetName;
+
+    switch(msgType) {
+        case MsgType::REGACK:
+            packetName = "RegAckPacket";
+            break;
+
+        case MsgType::PUBACK:
+            packetName = "PubAckPacket";
+            break;
+
+        default:
+            packetName = "MsgIdWithTopicIdPlus";
     }
 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
