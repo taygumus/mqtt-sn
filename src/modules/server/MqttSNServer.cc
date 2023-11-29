@@ -257,6 +257,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::PUBREL:
         case MsgType::SUBSCRIBE:
         case MsgType::UNSUBSCRIBE:
+        case MsgType::PUBACK:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -332,6 +333,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::UNSUBSCRIBE:
             processUnsubscribe(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBACK:
+            processPubAck(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -696,6 +701,35 @@ void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& s
 
     // send ACK message
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::UNSUBACK, payload->getMsgId());
+}
+
+void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    setClientLastMsgTime(srcAddress, srcPort);
+
+    const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
+
+    // TO DO -> msgID check
+
+    // now process and analyze message content as needed
+    ReturnCode returnCode = payload->getReturnCode();
+
+    if (returnCode == ReturnCode::REJECTED_INVALID_TOPIC_ID) {
+        // search and delete the subscriber subscription
+        std::pair<uint16_t, QoS> subscriptionKey;
+        if (findSubscription(srcAddress, srcPort, topicId, subscriptionKey)) {
+            deleteSubscription(srcAddress, srcPort, subscriptionKey);
+        }
+
+        return;
+    }
+
+    if (returnCode != ReturnCode::ACCEPTED) {
+        throw omnetpp::cRuntimeError("Unexpected error: Invalid return code");
+    }
+
+    // handle operations when publish is ACCEPTED
+    // TO DO
 }
 
 void MqttSNServer::sendAdvertise()
