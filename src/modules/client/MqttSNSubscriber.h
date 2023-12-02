@@ -48,6 +48,7 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void processSubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processUnsubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendSubscribe(const inet::L3Address& destAddress, const int& destPort,

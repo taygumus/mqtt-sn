@@ -612,7 +612,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
     // check if the message exists for the given message ID
     auto messageIt = messages.find(msgId);
     if (messageIt != messages.end()) {
-        // process the original publish message only once; required for QoS 2 level
+        // process the original publish message only once; as required for QoS 2 level
         const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
@@ -1061,7 +1061,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                }
 
                // new pending request
-               addNewRequest(subscriberAddr, subcriberPort, MsgType::CONNECT, currentMessageId);
+               addNewRequest(subscriberAddr, subcriberPort, MsgType::PUBLISH, currentMessageId);
 
                // send a publish message with QoS 1 or QoS 2 to the subscriber
                sendPublish(subscriberAddr, subcriberPort,

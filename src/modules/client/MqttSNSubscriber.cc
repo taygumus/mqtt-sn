@@ -66,6 +66,7 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
         case MsgType::SUBACK:
         case MsgType::UNSUBACK:
         case MsgType::PUBLISH:
+        case MsgType::PUBREL:
             if (!MqttSNClient::isConnectedGateway(srcAddress, srcPort)) {
                 return;
             }
@@ -86,6 +87,10 @@ void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Addre
 
         case MsgType::PUBLISH:
             processPublish(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBREL:
+            processPubRel(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -204,6 +209,35 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
 
     // send publish received
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
+}
+
+void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+    uint16_t msgId = payload->getMsgId();
+
+    // check if the message exists for the given message ID
+    auto messageIt = messages.find(msgId);
+    if (messageIt != messages.end()) {
+        // process the original publish message only once; as required for QoS 2 level
+        const DataInfo& dataInfo = messageIt->second;
+
+        MessageInfo messageInfo;
+        messageInfo.dup = false;
+        messageInfo.qos = QoS::QOS_TWO;
+        messageInfo.topicId = dataInfo.topicId;
+        messageInfo.topicName = dataInfo.topicName;
+        messageInfo.data = dataInfo.data;
+
+        // handling QoS 2
+        printPublishMessage(messageInfo);
+
+        // after processing, delete the message from the map
+        messages.erase(messageIt);
+    }
+
+    // send publish complete
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
