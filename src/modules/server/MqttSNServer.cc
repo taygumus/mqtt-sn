@@ -1149,7 +1149,6 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     // remove the request ID from both structures
     requests.erase(requestIt);
     requestIds.erase(requestIdIt);
-
     return true;
 }
 
