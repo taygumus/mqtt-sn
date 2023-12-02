@@ -175,6 +175,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     messageInfo.data = data;
 
     if (qosFlag == QoS::QOS_ZERO) {
+        // handling QoS 0
         printPublishMessage(messageInfo);
         return;
     }
@@ -186,6 +187,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     }
 
     if (qosFlag == QoS::QOS_ONE) {
+        // handling QoS 1
         printPublishMessage(messageInfo);
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;

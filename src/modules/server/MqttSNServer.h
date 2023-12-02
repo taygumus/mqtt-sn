@@ -151,6 +151,8 @@ class MqttSNServer : public MqttSNApp
         virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                         const std::pair<uint16_t, QoS>& subscriptionKey);
 
+        virtual bool processMessageAck(uint16_t msgId, MsgType msgType);
+
     public:
         MqttSNServer() {};
         ~MqttSNServer();

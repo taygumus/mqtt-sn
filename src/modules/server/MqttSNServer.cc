@@ -608,7 +608,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
     auto messageIt = messages.find(msgId);
     if (messageIt != messages.end()) {
         // process the original publish message only once; required for QoS 2 level
-        const DataInfo& dataInfo = messages[msgId];
+        const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
         messageInfo.dup = false;
@@ -620,7 +620,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
         dispatchPublishToSubscribers(messageInfo);
 
         // after processing, delete the message from the map
-        messages.erase(msgId);
+        messages.erase(messageIt);
     }
 
     // send publish complete
@@ -708,8 +708,14 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
     setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
+    uint16_t msgId = payload->getMsgId();
 
-    // TO DO -> msgID check
+    if (msgId > 0) {
+        // check if the ACK is correct; exit if not
+        if (!processMessageAck(msgId, MsgType::PUBLISH)) {
+            return;
+        }
+    }
 
     // now process and analyze message content as needed
     ReturnCode returnCode = payload->getReturnCode();
@@ -717,7 +723,7 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
     if (returnCode == ReturnCode::REJECTED_INVALID_TOPIC_ID) {
         // search and delete the subscriber subscription
         std::pair<uint16_t, QoS> subscriptionKey;
-        if (findSubscription(srcAddress, srcPort, topicId, subscriptionKey)) {
+        if (findSubscription(srcAddress, srcPort, payload->getTopicId(), subscriptionKey)) {
             deleteSubscription(srcAddress, srcPort, subscriptionKey);
         }
 
@@ -727,9 +733,6 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
     if (returnCode != ReturnCode::ACCEPTED) {
         throw omnetpp::cRuntimeError("Unexpected error: Invalid return code");
     }
-
-    // handle operations when publish is ACCEPTED
-    // TO DO
 }
 
 void MqttSNServer::sendAdvertise()
@@ -1042,6 +1045,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                RequestInfo requestInfo;
                requestInfo.subscriberAddress = subscriberAddr;
                requestInfo.subscriberPort = subcriberPort;
+               requestInfo.messageType = MsgType::CONNECT;
                requestInfo.messagesKey = currentMessageId;
 
                // add the new request in the data structures
@@ -1159,6 +1163,31 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
 
     // delete operation is failed
     return false;
+}
+
+bool MqttSNServer::processMessageAck(uint16_t msgId, MsgType msgType)
+{
+    // search for the message ID in the requests
+    auto requestIt = requests.find(msgId);
+    if (requestIt == requests.end()) {
+        return false;
+    }
+
+    // check if the message type matches
+    if (requestIt->second.messageType != msgType) {
+        return false;
+    }
+
+    auto requestIdIt = requestIds.find(msgId);
+    if (requestIdIt == requestIds.end()) {
+        return false;
+    }
+
+    // remove the message ID from both structures
+    requests.erase(requestIt);
+    requestIds.erase(requestIdIt);
+
+    return true;
 }
 
 MqttSNServer::~MqttSNServer()
