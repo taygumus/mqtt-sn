@@ -100,6 +100,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendAdvertise();
@@ -141,6 +142,9 @@ class MqttSNServer : public MqttSNApp
 
         // other methods about subscribers
         virtual void dispatchPublishToSubscribers(const MessageInfo& message);
+
+        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                      MsgType messageType, uint16_t messagesKey = 0);
 
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);

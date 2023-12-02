@@ -258,6 +258,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::SUBSCRIBE:
         case MsgType::UNSUBSCRIBE:
         case MsgType::PUBACK:
+        case MsgType::PUBREC:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -337,6 +338,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::PUBACK:
             processPubAck(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBREC:
+            processPubRec(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -735,6 +740,23 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
     }
 }
 
+void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+    uint16_t msgId = payload->getMsgId();
+
+    // check if the ACK is correct; exit if not
+    if (!processMessageAck(msgId, MsgType::PUBLISH)) {
+        return;
+    }
+
+    // send publish release
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
+
+    // new pending request
+    addNewRequest(srcAddress, srcPort, MsgType::PUBREL);
+}
+
 void MqttSNServer::sendAdvertise()
 {
     const auto& payload = inet::makeShared<MqttSNAdvertise>();
@@ -1038,19 +1060,8 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                    continue;
                }
 
-               // set new available request ID if possible; otherwise, throw an exception
-               MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
-                                           "Failed to assign a new request ID. All available request IDs are in use");
-
-               RequestInfo requestInfo;
-               requestInfo.subscriberAddress = subscriberAddr;
-               requestInfo.subscriberPort = subcriberPort;
-               requestInfo.messageType = MsgType::CONNECT;
-               requestInfo.messagesKey = currentMessageId;
-
-               // add the new request in the data structures
-               requests[currentRequestId] = requestInfo;
-               requestIds.insert(currentRequestId);
+               // new pending request
+               addNewRequest(subscriberAddr, subcriberPort, MsgType::CONNECT, currentMessageId);
 
                // send a publish message with QoS 1 or QoS 2 to the subscriber
                sendPublish(subscriberAddr, subcriberPort,
@@ -1060,6 +1071,24 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
             }
         }
     }
+}
+
+void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                    MsgType messageType, uint16_t messagesKey)
+{
+    // set new available request ID if possible; otherwise, throw an exception
+    MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
+                                "Failed to assign a new request ID. All available request IDs are in use");
+
+    RequestInfo requestInfo;
+    requestInfo.subscriberAddress = subscriberAddress;
+    requestInfo.subscriberPort = subscriberPort;
+    requestInfo.messageType = messageType;
+    requestInfo.messagesKey = messagesKey;
+
+    // add the new request in the data structures
+    requests[currentRequestId] = requestInfo;
+    requestIds.insert(currentRequestId);
 }
 
 bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
