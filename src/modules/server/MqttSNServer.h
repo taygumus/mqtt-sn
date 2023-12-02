@@ -101,6 +101,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPubComp(inet::Packet* pk);
 
         // send packets
         virtual void sendAdvertise();
@@ -144,7 +145,12 @@ class MqttSNServer : public MqttSNApp
         virtual void dispatchPublishToSubscribers(const MessageInfo& message);
 
         virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                      MsgType messageType, uint16_t messagesKey = 0);
+                                   MsgType messageType, uint16_t messagesKey = 0, uint16_t requestId = 0);
+
+        virtual bool isValidRequest(uint16_t requestId, MsgType messageType,
+                                    std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
+
+        virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
@@ -154,8 +160,6 @@ class MqttSNServer : public MqttSNApp
 
         virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                         const std::pair<uint16_t, QoS>& subscriptionKey);
-
-        virtual bool processMessageAck(uint16_t msgId, MsgType msgType);
 
     public:
         MqttSNServer() {};

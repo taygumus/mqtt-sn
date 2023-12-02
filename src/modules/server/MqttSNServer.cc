@@ -259,6 +259,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::UNSUBSCRIBE:
         case MsgType::PUBACK:
         case MsgType::PUBREC:
+        case MsgType::PUBCOMP:
             if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
                 delete pk;
                 return;
@@ -342,6 +343,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
         case MsgType::PUBREC:
             processPubRec(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::PUBCOMP:
+            processPubComp(pk);
             break;
 
         default:
@@ -717,7 +722,7 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
 
     if (msgId > 0) {
         // check if the ACK is correct; exit if not
-        if (!processMessageAck(msgId, MsgType::PUBLISH)) {
+        if (!processRequestAck(msgId, MsgType::PUBLISH)) {
             return;
         }
     }
@@ -745,16 +750,29 @@ void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAdd
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
     uint16_t msgId = payload->getMsgId();
 
-    // check if the ACK is correct; exit if not
-    if (!processMessageAck(msgId, MsgType::PUBLISH)) {
+    std::map<uint16_t, RequestInfo>::iterator requestIt;
+    std::set<uint16_t>::iterator requestIdIt;
+
+    // check if the ACK is valid; exit if not
+    if (!isValidRequest(msgId, MsgType::PUBLISH, requestIt, requestIdIt)) {
         return;
     }
 
     // send publish release
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
 
-    // new pending request
-    addNewRequest(srcAddress, srcPort, MsgType::PUBREL);
+    // change request message type
+    requestIt->second.messageType = MsgType::PUBREL;
+}
+
+void MqttSNServer::processPubComp(inet::Packet* pk)
+{
+    const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
+
+    // check if the ACK is correct; exit if not
+    if (!processRequestAck(payload->getMsgId(), MsgType::PUBREL)) {
+        return;
+    }
 }
 
 void MqttSNServer::sendAdvertise()
@@ -1061,7 +1079,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                }
 
                // new pending request
-               addNewRequest(subscriberAddr, subcriberPort, MsgType::PUBLISH, currentMessageId);
+               addNewRequest(subscriberAddr, subcriberPort, MsgType::PUBLISH, currentMessageId, 0);
 
                // send a publish message with QoS 1 or QoS 2 to the subscriber
                sendPublish(subscriberAddr, subcriberPort,
@@ -1074,11 +1092,13 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
 }
 
 void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                    MsgType messageType, uint16_t messagesKey)
+                                 MsgType messageType, uint16_t messagesKey, uint16_t requestId)
 {
-    // set new available request ID if possible; otherwise, throw an exception
-    MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
-                                "Failed to assign a new request ID. All available request IDs are in use");
+    if (requestId == 0) {
+        // set new available request ID if possible; otherwise, throw an exception
+        MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
+                                    "Failed to assign a new request ID. All available request IDs are in use");
+    }
 
     RequestInfo requestInfo;
     requestInfo.subscriberAddress = subscriberAddress;
@@ -1086,9 +1106,51 @@ void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const
     requestInfo.messageType = messageType;
     requestInfo.messagesKey = messagesKey;
 
+    uint16_t resultId = requestId == 0 ? currentRequestId : requestId;
+
     // add the new request in the data structures
-    requests[currentRequestId] = requestInfo;
-    requestIds.insert(currentRequestId);
+    requests[resultId] = requestInfo;
+    requestIds.insert(resultId);
+}
+
+bool MqttSNServer::isValidRequest(uint16_t requestId, MsgType messageType,
+                                  std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt)
+{
+    // search for the request ID in the map
+    requestIt = requests.find(requestId);
+    if (requestIt == requests.end()) {
+        return false;
+    }
+
+    // check if the request message type matches
+    if (requestIt->second.messageType != messageType) {
+        return false;
+    }
+
+    // search for the request ID in the set
+    requestIdIt = requestIds.find(requestId);
+    if (requestIdIt == requestIds.end()) {
+        return false;
+    }
+
+    return true;
+}
+
+bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
+{
+    std::map<uint16_t, RequestInfo>::iterator requestIt;
+    std::set<uint16_t>::iterator requestIdIt;
+
+    // check if the request is valid and retrieve iterators
+    if (!isValidRequest(requestId, messageType, requestIt, requestIdIt)) {
+        return false;
+    }
+
+    // remove the request ID from both structures
+    requests.erase(requestIt);
+    requestIds.erase(requestIdIt);
+
+    return true;
 }
 
 bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
@@ -1192,31 +1254,6 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
 
     // delete operation is failed
     return false;
-}
-
-bool MqttSNServer::processMessageAck(uint16_t msgId, MsgType msgType)
-{
-    // search for the message ID in the requests
-    auto requestIt = requests.find(msgId);
-    if (requestIt == requests.end()) {
-        return false;
-    }
-
-    // check if the message type matches
-    if (requestIt->second.messageType != msgType) {
-        return false;
-    }
-
-    auto requestIdIt = requestIds.find(msgId);
-    if (requestIdIt == requestIds.end()) {
-        return false;
-    }
-
-    // remove the message ID from both structures
-    requests.erase(requestIt);
-    requestIds.erase(requestIdIt);
-
-    return true;
 }
 
 MqttSNServer::~MqttSNServer()
