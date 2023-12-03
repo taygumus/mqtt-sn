@@ -122,12 +122,7 @@ void MqttSNServer::handleStopOperation(inet::LifecycleOperation* operation)
 
 void MqttSNServer::handleCrashOperation(inet::LifecycleOperation* operation)
 {
-    cancelClockEvent(stateChangeEvent);
-    cancelClockEvent(advertiseEvent);
-    cancelClockEvent(activeClientsCheckEvent);
-    cancelClockEvent(asleepClientsCheckEvent);
-    cancelClockEvent(clientsClearEvent);
-    cancelClockEvent(requestsRetransmissionEvent);
+    cancelOnlineStateClockEvents();
 
     MqttSNApp::socket.destroy();
 }
@@ -171,6 +166,16 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(asleepClientsCheckEvent);
     cancelEvent(clientsClearEvent);
     cancelEvent(requestsRetransmissionEvent);
+}
+
+void MqttSNServer::cancelOnlineStateClockEvents()
+{
+    cancelClockEvent(stateChangeEvent);
+    cancelClockEvent(advertiseEvent);
+    cancelClockEvent(activeClientsCheckEvent);
+    cancelClockEvent(asleepClientsCheckEvent);
+    cancelClockEvent(clientsClearEvent);
+    cancelClockEvent(requestsRetransmissionEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()
