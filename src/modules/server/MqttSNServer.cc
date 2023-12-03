@@ -122,12 +122,7 @@ void MqttSNServer::handleStopOperation(inet::LifecycleOperation* operation)
 
 void MqttSNServer::handleCrashOperation(inet::LifecycleOperation* operation)
 {
-    cancelClockEvent(stateChangeEvent);
-    cancelClockEvent(advertiseEvent);
-    cancelClockEvent(activeClientsCheckEvent);
-    cancelClockEvent(asleepClientsCheckEvent);
-    cancelClockEvent(clientsClearEvent);
-    cancelClockEvent(requestsRetransmissionEvent);
+    cancelOnlineStateClockEvents();
 
     MqttSNApp::socket.destroy();
 }
@@ -149,6 +144,12 @@ void MqttSNServer::handleStateChangeEvent()
     }
 }
 
+void MqttSNServer::updateCurrentState(GatewayState nextState)
+{
+    currentState = nextState;
+    EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
+}
+
 void MqttSNServer::scheduleOnlineStateEvents()
 {
     scheduleClockEventAfter(advertiseInterval, advertiseEvent);
@@ -167,10 +168,14 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(requestsRetransmissionEvent);
 }
 
-void MqttSNServer::updateCurrentState(GatewayState nextState)
+void MqttSNServer::cancelOnlineStateClockEvents()
 {
-    currentState = nextState;
-    EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
+    cancelClockEvent(stateChangeEvent);
+    cancelClockEvent(advertiseEvent);
+    cancelClockEvent(activeClientsCheckEvent);
+    cancelClockEvent(asleepClientsCheckEvent);
+    cancelClockEvent(clientsClearEvent);
+    cancelClockEvent(requestsRetransmissionEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()

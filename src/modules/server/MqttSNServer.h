@@ -76,9 +76,10 @@ class MqttSNServer : public MqttSNApp
 
         // gateway state management
         virtual void handleStateChangeEvent();
+        virtual void updateCurrentState(GatewayState nextState);
         virtual void scheduleOnlineStateEvents();
         virtual void cancelOnlineStateEvents();
-        virtual void updateCurrentState(GatewayState nextState);
+        virtual void cancelOnlineStateClockEvents();
 
         virtual bool fromOfflineToOnline();
         virtual bool fromOnlineToOffline();
