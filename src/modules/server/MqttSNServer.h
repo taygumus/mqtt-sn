@@ -24,6 +24,7 @@ class MqttSNServer : public MqttSNApp
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
         double clientsClearInterval;
+        double retransmissionInterval;
 
         // gateway state management
         inet::ClockEvent* stateChangeEvent = nullptr;
@@ -52,6 +53,7 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> messageIds;
         uint16_t currentMessageId = 0;
 
+        inet::ClockEvent* requestsRetransmissionEvent = nullptr;
         std::map<uint16_t, RequestInfo> requests;
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
@@ -129,6 +131,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleActiveClientsCheckEvent();
         virtual void handleAsleepClientsCheckEvent();
         virtual void handleClientsClearEvent();
+        virtual void handleRequestsRetransmissionEvent();
 
         // other methods
         virtual void registerNewTopic(const std::string& topicName);

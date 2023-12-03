@@ -1,15 +1,12 @@
 package mqttsn.neds.server;
 
-import inet.applications.contract.IApp;
+import mqttsn.neds.MqttSNApp;
 
-simple MqttSNServer like IApp
+module MqttSNServer extends MqttSNApp
 {
     parameters:
-        string localAddress = default("");
-        string broadcastAddress = default("255.255.255.255");
-        
-        int localPort = default(-1);
-        int destPort = default(-1);
+        @class(MqttSNServer);
+        @display("i=block/routing;bgb=20,20");
         
         // time intervals for each state, -1s means forever
         double offlineStateInterval @unit(s) = default(30s);
@@ -23,11 +20,4 @@ simple MqttSNServer like IApp
         int maximumClients = default(10); // maximum clients before congestion
         double clientsClearInterval @unit(s) = default(120s); // clear interval for lost and disconnected clients
         double maximumInactivityTime @unit(s) = default(90s);
-        
-        @display("i=block/routing;bgb=100,82");
-        @class(MqttSNServer);
-
-   	gates:
-		input socketIn;
-        output socketOut;
 }

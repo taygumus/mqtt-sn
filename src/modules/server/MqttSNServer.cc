@@ -53,6 +53,10 @@ void MqttSNServer::initialize(int stage)
 
         clientsClearInterval = par("clientsClearInterval");
         clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
+
+        retransmissionInterval = par("retransmissionInterval");
+
+        requestsRetransmissionEvent = new inet::ClockEvent("requestsRetransmissionTimer");
     }
 }
 
@@ -72,6 +76,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     }
     else if (msg == clientsClearEvent) {
         handleClientsClearEvent();
+    }
+    else if (msg == requestsRetransmissionEvent) {
+        handleRequestsRetransmissionEvent();
     }
     else {
         MqttSNApp::socket.processMessage(msg);
@@ -120,6 +127,7 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation* operation)
     cancelClockEvent(activeClientsCheckEvent);
     cancelClockEvent(asleepClientsCheckEvent);
     cancelClockEvent(clientsClearEvent);
+    cancelClockEvent(requestsRetransmissionEvent);
 
     MqttSNApp::socket.destroy();
 }
@@ -147,6 +155,7 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
     scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
+    scheduleClockEventAfter(retransmissionInterval, requestsRetransmissionEvent);
 }
 
 void MqttSNServer::cancelOnlineStateEvents()
@@ -155,6 +164,7 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(activeClientsCheckEvent);
     cancelEvent(asleepClientsCheckEvent);
     cancelEvent(clientsClearEvent);
+    cancelEvent(requestsRetransmissionEvent);
 }
 
 void MqttSNServer::updateCurrentState(GatewayState nextState)
@@ -947,6 +957,13 @@ void MqttSNServer::handleClientsClearEvent()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
+void MqttSNServer::handleRequestsRetransmissionEvent()
+{
+    // TO DO
+
+    //scheduleClockEventAfter(retransmissionInterval, requestsRetransmissionEvent);
+}
+
 void MqttSNServer::registerNewTopic(const std::string& topicName)
 {
     // add the new topic in the data structures
@@ -1263,6 +1280,7 @@ MqttSNServer::~MqttSNServer()
     cancelAndDelete(activeClientsCheckEvent);
     cancelAndDelete(asleepClientsCheckEvent);
     cancelAndDelete(clientsClearEvent);
+    cancelAndDelete(requestsRetransmissionEvent);
 }
 
 } /* namespace mqttsn */

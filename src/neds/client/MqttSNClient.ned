@@ -1,15 +1,12 @@
 package mqttsn.neds.client;
 
-import inet.applications.contract.IApp;
+import mqttsn.neds.MqttSNApp;
 
-simple MqttSNClient like IApp
+module MqttSNClient extends MqttSNApp
 {
     parameters:
-        string localAddress = default("");
-        string broadcastAddress = default("255.255.255.255");
-        
-        int localPort = default(-1);
-        int destPort = default(-1);
+        @class(MqttSNClient);
+		@display("i=block/routing;bgb=20,20");
         
         // time intervals for each state, -1s means forever
         double disconnectedStateInterval @unit(s) = default(5s);
@@ -33,15 +30,5 @@ simple MqttSNClient like IApp
         
         bool cleanSessionFlag = default(false);
         
-        double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (TRETRY)
-        int retransmissionCounter = default(3); // retransmission retry counter (NRETRY)
-        
         double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
-        
-        @display("i=block/routing;bgb=100,82");
-        @class(MqttSNClient);
-
-   	gates:
-		input socketIn;
-        output socketOut;
 }
