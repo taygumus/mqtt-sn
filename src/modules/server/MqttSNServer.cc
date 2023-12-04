@@ -54,9 +54,8 @@ void MqttSNServer::initialize(int stage)
         clientsClearInterval = par("clientsClearInterval");
         clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
 
-        retransmissionInterval = par("retransmissionInterval");
-
-        requestsRetransmissionEvent = new inet::ClockEvent("requestsRetransmissionTimer");
+        requestsCheckInterval = par("requestsCheckInterval");
+        requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
     }
 }
 
@@ -77,8 +76,8 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     else if (msg == clientsClearEvent) {
         handleClientsClearEvent();
     }
-    else if (msg == requestsRetransmissionEvent) {
-        handleRequestsRetransmissionEvent();
+    else if (msg == requestsCheckEvent) {
+        handleRequestsCheckEvent();
     }
     else {
         MqttSNApp::socket.processMessage(msg);
@@ -156,7 +155,7 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
     scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
-    scheduleClockEventAfter(retransmissionInterval, requestsRetransmissionEvent);
+    scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
 }
 
 void MqttSNServer::cancelOnlineStateEvents()
@@ -165,7 +164,7 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(activeClientsCheckEvent);
     cancelEvent(asleepClientsCheckEvent);
     cancelEvent(clientsClearEvent);
-    cancelEvent(requestsRetransmissionEvent);
+    cancelEvent(requestsCheckEvent);
 }
 
 void MqttSNServer::cancelOnlineStateClockEvents()
@@ -175,7 +174,7 @@ void MqttSNServer::cancelOnlineStateClockEvents()
     cancelClockEvent(activeClientsCheckEvent);
     cancelClockEvent(asleepClientsCheckEvent);
     cancelClockEvent(clientsClearEvent);
-    cancelClockEvent(requestsRetransmissionEvent);
+    cancelClockEvent(requestsCheckEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()
@@ -776,7 +775,8 @@ void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAdd
     // send publish release
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
 
-    // change request message type
+    // update the request
+    requestIt->second.requestTime = getClockTime();
     requestIt->second.messageType = MsgType::PUBREL;
 }
 
@@ -962,11 +962,25 @@ void MqttSNServer::handleClientsClearEvent()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
-void MqttSNServer::handleRequestsRetransmissionEvent()
+void MqttSNServer::handleRequestsCheckEvent()
 {
-    // TO DO
+    inet::clocktime_t currentTime = getClockTime();
 
-    //scheduleClockEventAfter(retransmissionInterval, requestsRetransmissionEvent);
+    for (auto it = requests.begin(); it != requests.end(); ++it) {
+        RequestInfo& requestInfo = it->second;
+
+        if ((currentTime - requestInfo.requestTime) > par("retransmissionInterval")) {
+
+            // check if the number of retries equals the threshold
+            if (requestInfo.retransmissionCounter >= par("retransmissionCounter").intValue()) {
+                // TO DO -> delete request from structures
+            }
+
+            // TO DO
+        }
+    }
+
+    scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
 }
 
 void MqttSNServer::registerNewTopic(const std::string& topicName)
@@ -1123,6 +1137,7 @@ void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const
     }
 
     RequestInfo requestInfo;
+    requestInfo.requestTime = getClockTime();
     requestInfo.subscriberAddress = subscriberAddress;
     requestInfo.subscriberPort = subscriberPort;
     requestInfo.messageType = messageType;
@@ -1285,7 +1300,7 @@ MqttSNServer::~MqttSNServer()
     cancelAndDelete(activeClientsCheckEvent);
     cancelAndDelete(asleepClientsCheckEvent);
     cancelAndDelete(clientsClearEvent);
-    cancelAndDelete(requestsRetransmissionEvent);
+    cancelAndDelete(requestsCheckEvent);
 }
 
 } /* namespace mqttsn */

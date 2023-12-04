@@ -20,4 +20,6 @@ module MqttSNServer extends MqttSNApp
         int maximumClients = default(10); // maximum clients before congestion
         double clientsClearInterval @unit(s) = default(120s); // clear interval for lost and disconnected clients
         double maximumInactivityTime @unit(s) = default(90s);
+        
+        double requestsCheckInterval @unit(s) = default(500ms); // check interval for verifying server requests to subscribers
 }
