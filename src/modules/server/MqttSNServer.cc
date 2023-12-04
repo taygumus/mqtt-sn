@@ -51,11 +51,11 @@ void MqttSNServer::initialize(int stage)
         asleepClientsCheckInterval = par("asleepClientsCheckInterval");
         asleepClientsCheckEvent = new inet::ClockEvent("asleepClientsCheckTimer");
 
-        clientsClearInterval = par("clientsClearInterval");
-        clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
-
         requestsCheckInterval = par("requestsCheckInterval");
         requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
+
+        clientsClearInterval = par("clientsClearInterval");
+        clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
     }
 }
 
@@ -73,11 +73,11 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     else if (msg == asleepClientsCheckEvent) {
         handleAsleepClientsCheckEvent();
     }
-    else if (msg == clientsClearEvent) {
-        handleClientsClearEvent();
-    }
     else if (msg == requestsCheckEvent) {
         handleRequestsCheckEvent();
+    }
+    else if (msg == clientsClearEvent) {
+        handleClientsClearEvent();
     }
     else {
         MqttSNApp::socket.processMessage(msg);
@@ -154,8 +154,8 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(advertiseInterval, advertiseEvent);
     scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
     scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
-    scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
+    scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
 void MqttSNServer::cancelOnlineStateEvents()
@@ -163,8 +163,8 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(advertiseEvent);
     cancelEvent(activeClientsCheckEvent);
     cancelEvent(asleepClientsCheckEvent);
-    cancelEvent(clientsClearEvent);
     cancelEvent(requestsCheckEvent);
+    cancelEvent(clientsClearEvent);
 }
 
 void MqttSNServer::cancelOnlineStateClockEvents()
@@ -173,8 +173,8 @@ void MqttSNServer::cancelOnlineStateClockEvents()
     cancelClockEvent(advertiseEvent);
     cancelClockEvent(activeClientsCheckEvent);
     cancelClockEvent(asleepClientsCheckEvent);
-    cancelClockEvent(clientsClearEvent);
     cancelClockEvent(requestsCheckEvent);
+    cancelClockEvent(clientsClearEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()
@@ -941,6 +941,70 @@ void MqttSNServer::handleAsleepClientsCheckEvent()
     scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
 }
 
+void MqttSNServer::handleRequestsCheckEvent()
+{
+    inet::clocktime_t currentTime = getClockTime();
+
+    // iterate through the requests
+    for (auto requestIt = requests.begin(); requestIt != requests.end(); ++requestIt) {
+        // find the same request ID in the set
+        auto requestIdIt = requestIds.find(requestIt->first);
+        if (requestIdIt == requestIds.end()) {
+            deleteRequest(requestIt, requestIdIt);
+            continue;
+        }
+
+        RequestInfo& requestInfo = requestIt->second;
+
+        // check if the elapsed time from last received message is beyond the retransmission duration
+        if ((currentTime - requestInfo.requestTime) > par("retransmissionInterval")) {
+            // check if the number of retries equals the threshold
+            if (requestInfo.retransmissionCounter >= par("retransmissionCounter").intValue()) {
+                deleteRequest(requestIt, requestIdIt);
+                continue;
+            }
+
+            inet::L3Address subscriberAddress = requestInfo.subscriberAddress;
+            int subscriberPort = requestInfo.subscriberPort;
+
+            const MessageInfo& messageInfo = messages[requestInfo.messagesKey];
+
+            // check for an existing subscription
+            std::pair<uint16_t, QoS> subscriptionKey;
+            if (!findSubscription(subscriberAddress, subscriberPort, messageInfo.topicId, subscriptionKey)) {
+                deleteRequest(requestIt, requestIdIt);
+                continue;
+            }
+
+            // calculate the minimum QoS level between subscription QoS and original publish QoS
+            QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo.qos);
+
+            if (resultQoS == QoS::QOS_ZERO) {
+                // send a publish message with QoS zero to the subscriber
+                sendPublish(subscriberAddress, subscriberPort,
+                            messageInfo.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
+                            messageInfo.topicId, 0,
+                            messageInfo.data);
+
+                deleteRequest(requestIt, requestIdIt);
+                continue;
+            }
+
+            // send a publish message with QoS 1 or QoS 2 to the subscriber
+            sendPublish(subscriberAddress, subscriberPort,
+                        messageInfo.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
+                        messageInfo.topicId, requestIt->first,
+                        messageInfo.data);
+
+            // update the request
+            requestInfo.retransmissionCounter++;
+            requestInfo.requestTime = getClockTime();
+        }
+    }
+
+    scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
+}
+
 void MqttSNServer::handleClientsClearEvent()
 {
     inet::clocktime_t currentTime = getClockTime();
@@ -960,27 +1024,6 @@ void MqttSNServer::handleClientsClearEvent()
     }
 
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
-}
-
-void MqttSNServer::handleRequestsCheckEvent()
-{
-    inet::clocktime_t currentTime = getClockTime();
-
-    for (auto it = requests.begin(); it != requests.end(); ++it) {
-        RequestInfo& requestInfo = it->second;
-
-        if ((currentTime - requestInfo.requestTime) > par("retransmissionInterval")) {
-
-            // check if the number of retries equals the threshold
-            if (requestInfo.retransmissionCounter >= par("retransmissionCounter").intValue()) {
-                // TO DO -> delete request from structures
-            }
-
-            // TO DO
-        }
-    }
-
-    scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
 }
 
 void MqttSNServer::registerNewTopic(const std::string& topicName)
@@ -1014,26 +1057,6 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress,
     }
 
     return nullptr;
-}
-
-std::set<std::pair<uint16_t, QoS>> MqttSNServer::getSubscriptionKeysByTopicId(uint16_t topicId)
-{
-    std::set<std::pair<uint16_t, QoS>> keys = {};
-
-    // check if the topic ID key exists in the map
-    auto topicIt = topicIdToQoS.find(topicId);
-    if (topicIt == topicIdToQoS.end()) {
-        // if the topic ID doesn't exist, return an empty set
-        return keys;
-    }
-
-    const auto& qosSet = topicIt->second;
-    // generate complete <topicId, QoS> keys and insert into the set
-    for (const auto& qos : qosSet) {
-        keys.insert(std::make_pair(topicId, qos));
-    }
-
-    return keys;
 }
 
 void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
@@ -1071,15 +1094,15 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     return nullptr;
 }
 
-void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
+void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
 {
     // keys with the same topic ID
-    std::set<std::pair<uint16_t, QoS>> keys = getSubscriptionKeysByTopicId(message.topicId);
+    std::set<std::pair<uint16_t, QoS>> keys = getSubscriptionKeysByTopicId(messageInfo.topicId);
 
     // iterate for each QoS
     for (const auto& key : keys) {
         // calculate the minimum QoS level between subscription QoS and incoming publish QoS
-        QoS resultQoS = NumericHelper::minQoS(key.second, message.qos);
+        QoS resultQoS = NumericHelper::minQoS(key.second, messageInfo.qos);
 
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
@@ -1093,7 +1116,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
                                             "Failed to assign a new message ID. All available message IDs are in use");
 
                 // add the new message in the data structures
-                messages[currentMessageId] = message;
+                messages[currentMessageId] = messageInfo;
                 messageIds.insert(currentMessageId);
             }
 
@@ -1101,27 +1124,27 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& message)
             for (const auto& subscriber : subscribers) {
                // extract subscriber's address and port
                inet::L3Address subscriberAddr = subscriber.first;
-               int subcriberPort = subscriber.second;
+               int subscriberPort = subscriber.second;
 
                if (resultQoS == QoS::QOS_ZERO) {
                    // send a publish message with QoS zero to the subscriber
-                   sendPublish(subscriberAddr, subcriberPort,
-                               message.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
-                               message.topicId, 0,
-                               message.data);
+                   sendPublish(subscriberAddr, subscriberPort,
+                               messageInfo.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
+                               messageInfo.topicId, 0,
+                               messageInfo.data);
 
                    // continue to the next subscriber
                    continue;
                }
 
                // new pending request
-               addNewRequest(subscriberAddr, subcriberPort, MsgType::PUBLISH, currentMessageId, 0);
+               addNewRequest(subscriberAddr, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
 
                // send a publish message with QoS 1 or QoS 2 to the subscriber
-               sendPublish(subscriberAddr, subcriberPort,
-                           message.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
-                           message.topicId, currentRequestId,
-                           message.data);
+               sendPublish(subscriberAddr, subscriberPort,
+                           messageInfo.dup, resultQoS, false, TopicIdType::NORMAL_TOPIC,
+                           messageInfo.topicId, currentRequestId,
+                           messageInfo.data);
             }
         }
     }
@@ -1148,6 +1171,13 @@ void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const
     // add the new request in the data structures
     requests[resultId] = requestInfo;
     requestIds.insert(resultId);
+}
+
+void  MqttSNServer::deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt)
+{
+    // remove the request from both structures
+    requests.erase(requestIt);
+    requestIds.erase(requestIdIt);
 }
 
 bool MqttSNServer::isValidRequest(uint16_t requestId, MsgType messageType,
@@ -1183,9 +1213,7 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
         return false;
     }
 
-    // remove the request ID from both structures
-    requests.erase(requestIt);
-    requestIds.erase(requestIdIt);
+    deleteRequest(requestIt, requestIdIt);
 
     return true;
 }
@@ -1293,14 +1321,34 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
     return false;
 }
 
+std::set<std::pair<uint16_t, QoS>> MqttSNServer::getSubscriptionKeysByTopicId(uint16_t topicId)
+{
+    std::set<std::pair<uint16_t, QoS>> keys = {};
+
+    // check if the topic ID key exists in the map
+    auto topicIt = topicIdToQoS.find(topicId);
+    if (topicIt == topicIdToQoS.end()) {
+        // if the topic ID doesn't exist, return an empty set
+        return keys;
+    }
+
+    const auto& qosSet = topicIt->second;
+    // generate complete <topicId, QoS> keys and insert into the set
+    for (const auto& qos : qosSet) {
+        keys.insert(std::make_pair(topicId, qos));
+    }
+
+    return keys;
+}
+
 MqttSNServer::~MqttSNServer()
 {
     cancelAndDelete(stateChangeEvent);
     cancelAndDelete(advertiseEvent);
     cancelAndDelete(activeClientsCheckEvent);
     cancelAndDelete(asleepClientsCheckEvent);
-    cancelAndDelete(clientsClearEvent);
     cancelAndDelete(requestsCheckEvent);
+    cancelAndDelete(clientsClearEvent);
 }
 
 } /* namespace mqttsn */

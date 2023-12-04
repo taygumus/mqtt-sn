@@ -23,8 +23,8 @@ class MqttSNServer : public MqttSNApp
         uint16_t advertiseInterval;
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
-        double clientsClearInterval;
         double requestsCheckInterval;
+        double clientsClearInterval;
 
         // gateway state management
         inet::ClockEvent* stateChangeEvent = nullptr;
@@ -40,6 +40,7 @@ class MqttSNServer : public MqttSNApp
 
         inet::ClockEvent* activeClientsCheckEvent = nullptr;
         inet::ClockEvent* asleepClientsCheckEvent = nullptr;
+        inet::ClockEvent* requestsCheckEvent = nullptr;
 
         inet::ClockEvent* clientsClearEvent = nullptr;
 
@@ -53,7 +54,6 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> messageIds;
         uint16_t currentMessageId = 0;
 
-        inet::ClockEvent* requestsCheckEvent = nullptr;
         std::map<uint16_t, RequestInfo> requests;
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
@@ -129,16 +129,17 @@ class MqttSNServer : public MqttSNApp
 
         // event handlers
         virtual void handleAdvertiseEvent();
+
         virtual void handleActiveClientsCheckEvent();
         virtual void handleAsleepClientsCheckEvent();
-        virtual void handleClientsClearEvent();
         virtual void handleRequestsCheckEvent();
+
+        virtual void handleClientsClearEvent();
 
         // other methods
         virtual void registerNewTopic(const std::string& topicName);
         virtual bool isGatewayCongested();
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
-        virtual std::set<std::pair<uint16_t, QoS>> getSubscriptionKeysByTopicId(uint16_t topicId);
 
         // other methods about clients
         virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
@@ -146,16 +147,20 @@ class MqttSNServer : public MqttSNApp
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // other methods about subscribers
-        virtual void dispatchPublishToSubscribers(const MessageInfo& message);
+        virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
+        // other methods about subscribers requests
         virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                    MsgType messageType, uint16_t messagesKey = 0, uint16_t requestId = 0);
+
+        virtual void deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool isValidRequest(uint16_t requestId, MsgType messageType,
                                     std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
+        // other methods about subscribers subscriptions
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
 
@@ -164,6 +169,8 @@ class MqttSNServer : public MqttSNApp
 
         virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                         const std::pair<uint16_t, QoS>& subscriptionKey);
+
+        virtual std::set<std::pair<uint16_t, QoS>> getSubscriptionKeysByTopicId(uint16_t topicId);
 
     public:
         MqttSNServer() {};
