@@ -194,7 +194,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     if (qosFlag == QoS::QOS_ONE) {
         // handling QoS 1
         printPublishMessage(messageInfo);
-        //sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId); ///
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
         return;
     }
 
@@ -237,7 +237,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
     }
 
     // send publish complete
-    //sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId); ///
+    sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
