@@ -454,6 +454,9 @@ void MqttSNPublisher::handlePublishEvent()
     QoS qosFlag = selectedData.qosFlag;
     bool retainFlag = selectedData.retainFlag;
 
+    // print publish message to be sent
+    printPublishMessage(selectedTopicId, topicIds[selectedTopicId].topicName, selectedData);
+
     if (qosFlag == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
                     false, qosFlag, retainFlag, TopicIdType::NORMAL_TOPIC,
@@ -506,6 +509,16 @@ void MqttSNPublisher::retryLastPublish()
 
     cancelEvent(publishEvent);
     scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
+}
+
+void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& topicName, const DataInfo& dataInfo)
+{
+    EV << "Publish message:" << std::endl;
+    EV << "Topic ID: " << topicId << std::endl;
+    EV << "Topic name: " << topicName << std::endl;
+    EV << "Duplicate: " << false << std::endl;
+    EV << "QoS: " << dataInfo.qosFlag << std::endl;
+    EV << "Data: " << dataInfo.data << std::endl;
 }
 
 bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& topicId)

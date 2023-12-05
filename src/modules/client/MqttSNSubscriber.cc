@@ -408,10 +408,10 @@ void MqttSNSubscriber::fillTopics()
 void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
 {
     EV << "Received publish message:" << std::endl;
-    EV << "Duplicate flag: " << (messageInfo.dup ? "True" : "False") << std::endl;
-    EV << "QoS: " << (int) messageInfo.qos << std::endl;
     EV << "Topic ID: " << messageInfo.topicId << std::endl;
     EV << "Topic name: " << messageInfo.topicName << std::endl;
+    EV << "Duplicate: " << (messageInfo.dup ? "True" : "False") << std::endl;
+    EV << "QoS: " << (int) messageInfo.qos << std::endl;
     EV << "Data: " << messageInfo.data << std::endl;
 }
 
