@@ -51,11 +51,11 @@ void MqttSNServer::initialize(int stage)
         asleepClientsCheckInterval = par("asleepClientsCheckInterval");
         asleepClientsCheckEvent = new inet::ClockEvent("asleepClientsCheckTimer");
 
-        requestsCheckInterval = par("requestsCheckInterval");
-        requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
-
         clientsClearInterval = par("clientsClearInterval");
         clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
+
+        requestsCheckInterval = par("requestsCheckInterval");
+        requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
     }
 }
 
@@ -73,11 +73,11 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     else if (msg == asleepClientsCheckEvent) {
         handleAsleepClientsCheckEvent();
     }
-    else if (msg == requestsCheckEvent) {
-        handleRequestsCheckEvent();
-    }
     else if (msg == clientsClearEvent) {
         handleClientsClearEvent();
+    }
+    else if (msg == requestsCheckEvent) {
+        handleRequestsCheckEvent();
     }
     else {
         MqttSNApp::socket.processMessage(msg);
@@ -154,8 +154,8 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(advertiseInterval, advertiseEvent);
     scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
     scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
-    scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
+    scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
 }
 
 void MqttSNServer::cancelOnlineStateEvents()
@@ -163,8 +163,8 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(advertiseEvent);
     cancelEvent(activeClientsCheckEvent);
     cancelEvent(asleepClientsCheckEvent);
-    cancelEvent(requestsCheckEvent);
     cancelEvent(clientsClearEvent);
+    cancelEvent(requestsCheckEvent);
 }
 
 void MqttSNServer::cancelOnlineStateClockEvents()
@@ -173,8 +173,8 @@ void MqttSNServer::cancelOnlineStateClockEvents()
     cancelClockEvent(advertiseEvent);
     cancelClockEvent(activeClientsCheckEvent);
     cancelClockEvent(asleepClientsCheckEvent);
-    cancelClockEvent(requestsCheckEvent);
     cancelClockEvent(clientsClearEvent);
+    cancelClockEvent(requestsCheckEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()
@@ -1347,8 +1347,8 @@ MqttSNServer::~MqttSNServer()
     cancelAndDelete(advertiseEvent);
     cancelAndDelete(activeClientsCheckEvent);
     cancelAndDelete(asleepClientsCheckEvent);
-    cancelAndDelete(requestsCheckEvent);
     cancelAndDelete(clientsClearEvent);
+    cancelAndDelete(requestsCheckEvent);
 }
 
 } /* namespace mqttsn */

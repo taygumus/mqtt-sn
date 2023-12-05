@@ -23,8 +23,8 @@ class MqttSNServer : public MqttSNApp
         uint16_t advertiseInterval;
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
-        double requestsCheckInterval;
         double clientsClearInterval;
+        double requestsCheckInterval;
 
         // gateway state management
         inet::ClockEvent* stateChangeEvent = nullptr;
@@ -40,8 +40,6 @@ class MqttSNServer : public MqttSNApp
 
         inet::ClockEvent* activeClientsCheckEvent = nullptr;
         inet::ClockEvent* asleepClientsCheckEvent = nullptr;
-        inet::ClockEvent* requestsCheckEvent = nullptr;
-
         inet::ClockEvent* clientsClearEvent = nullptr;
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
@@ -57,6 +55,8 @@ class MqttSNServer : public MqttSNApp
         std::map<uint16_t, RequestInfo> requests;
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
+
+        inet::ClockEvent* requestsCheckEvent = nullptr;
 
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
         std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;
