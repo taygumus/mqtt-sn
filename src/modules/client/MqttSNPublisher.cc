@@ -517,7 +517,7 @@ void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& t
     EV << "Topic ID: " << topicId << std::endl;
     EV << "Topic name: " << topicName << std::endl;
     EV << "Duplicate: " << false << std::endl;
-    EV << "QoS: " << dataInfo.qosFlag << std::endl;
+    EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qosFlag) << std::endl;
     EV << "Retain: " << dataInfo.retainFlag << std::endl;
     EV << "Data: " << dataInfo.data << std::endl;
 }

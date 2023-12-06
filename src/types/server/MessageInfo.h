@@ -4,6 +4,7 @@
 struct MessageInfo {
     bool dup = false;
     QoS qos = QoS::QOS_ZERO;
+    bool retain = false;
     uint16_t topicId = 0;
     std::string data;
 };

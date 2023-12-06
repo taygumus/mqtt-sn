@@ -170,11 +170,13 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     }
 
     QoS qosFlag = (QoS) payload->getQoSFlag();
+    bool retainFlag = payload->getRetainFlag();
     std::string data = payload->getData();
 
     MessageInfo messageInfo;
     messageInfo.dup = payload->getDupFlag();
     messageInfo.qos = qosFlag;
+    messageInfo.retain = retainFlag;
     messageInfo.topicId = topicId;
     messageInfo.topicName = topicIds[topicId].topicName;
     messageInfo.data = data;
@@ -200,6 +202,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
 
     // handling QoS 2
     DataInfo dataInfo;
+    dataInfo.retainFlag = retainFlag;
     dataInfo.topicId = topicId;
     dataInfo.topicName = topicIds[topicId].topicName;
     dataInfo.data = data;
@@ -225,6 +228,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
         MessageInfo messageInfo;
         messageInfo.dup = false;
         messageInfo.qos = QoS::QOS_TWO;
+        messageInfo.retain = dataInfo.retainFlag;
         messageInfo.topicId = dataInfo.topicId;
         messageInfo.topicName = dataInfo.topicName;
         messageInfo.data = dataInfo.data;
@@ -411,7 +415,8 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "Topic ID: " << messageInfo.topicId << std::endl;
     EV << "Topic name: " << messageInfo.topicName << std::endl;
     EV << "Duplicate: " << (messageInfo.dup ? "True" : "False") << std::endl;
-    EV << "QoS: " << (int) messageInfo.qos << std::endl;
+    EV << "QoS: " << ConversionHelper::qosToInt(messageInfo.qos) << std::endl;
+    EV << "Retain: " << messageInfo.retain << std::endl;
     EV << "Data: " << messageInfo.data << std::endl;
 }
 
