@@ -13,6 +13,7 @@
 #include "types/server/PublisherInfo.h"
 #include "types/server/MessageInfo.h"
 #include "types/server/RequestInfo.h"
+#include "types/server/RetainMessageInfo.h"
 
 namespace mqttsn {
 
@@ -48,15 +49,17 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
+        std::map<uint16_t, RetainMessageInfo> retainMessages;
+
         std::map<uint16_t, MessageInfo> messages;
         std::set<uint16_t> messageIds;
         uint16_t currentMessageId = 0;
 
+        inet::ClockEvent* requestsCheckEvent = nullptr;
+
         std::map<uint16_t, RequestInfo> requests;
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
-
-        inet::ClockEvent* requestsCheckEvent = nullptr;
 
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
         std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;
@@ -104,7 +107,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
-        virtual void processPubComp(inet::Packet* pk);
+        virtual void processPubComp(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
         // send packets
         virtual void sendAdvertise();

@@ -360,7 +360,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
             break;
 
         case MsgType::PUBCOMP:
-            processPubComp(pk);
+            processPubComp(pk, srcAddress, srcPort);
             break;
 
         default:
@@ -570,14 +570,25 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
+    bool dupFlag = payload->getDupFlag();
     QoS qosFlag = (QoS) payload->getQoSFlag();
     std::string data = payload->getData();
 
+    // store message as retained for the topic if retain flag is set
+    if (payload->getRetainFlag()) {
+        RetainMessageInfo retainMessageInfo;
+        retainMessageInfo.dup = dupFlag;
+        retainMessageInfo.qos = qosFlag;
+        retainMessageInfo.data = data;
+
+        retainMessages[topicId] = retainMessageInfo;
+    }
+
     MessageInfo messageInfo;
-    messageInfo.dup = payload->getDupFlag();
-    messageInfo.qos = qosFlag;
-    messageInfo.topicId = topicId;
-    messageInfo.data = data;
+        messageInfo.dup = dupFlag;
+        messageInfo.qos = qosFlag;
+        messageInfo.topicId = topicId;
+        messageInfo.data = data;
 
     if (qosFlag == QoS::QOS_ZERO) {
         // handling QoS 0
@@ -761,6 +772,8 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
 
 void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
+    setClientLastMsgTime(srcAddress, srcPort);
+
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
     uint16_t msgId = payload->getMsgId();
 
@@ -780,8 +793,10 @@ void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAdd
     requestIt->second.messageType = MsgType::PUBREL;
 }
 
-void MqttSNServer::processPubComp(inet::Packet* pk)
+void MqttSNServer::processPubComp(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
+    setClientLastMsgTime(srcAddress, srcPort);
+
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
 
     // check if the ACK is correct; exit if not
