@@ -594,16 +594,6 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         retainMessages[topicId] = retainMessageInfo;
     }
 
-    /// Stampa di tutti gli elementi della mappa
-            EV << "yolooo!" << std::endl;
-            for (const auto& pair : retainMessages) {
-                EV << "Chiave Topic: " << pair.first << ", Valore: ";
-                EV << "dup = " << pair.second.dup << ", ";
-                EV << "qos = " << static_cast<int>(pair.second.qos) << ", ";
-                EV << "data = " << pair.second.data << std::endl;
-            }
-    ///
-
     MessageInfo messageInfo;
         messageInfo.dup = dupFlag;
         messageInfo.qos = qosFlag;
@@ -738,14 +728,14 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
         // retrieve retained message information
         const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
 
-
-
         MessageInfo messageInfo;
         messageInfo.dup = retainMessageInfo.dup;
-        messageInfo.qos = NumericHelper::minQoS(qosFlag, retainMessageInfo.qos);
         messageInfo.retain = true;
         messageInfo.topicId = topicId;
         messageInfo.data = retainMessageInfo.data;
+
+        // calculate the minimum QoS level between subscription QoS and original publish QoS
+        messageInfo.qos = NumericHelper::minQoS(qosFlag, retainMessageInfo.qos);
 
         // store the pending retain message for the subscriber
         pendingRetainMessages[std::make_pair(srcAddress, srcPort)] = messageInfo;
@@ -1001,15 +991,15 @@ void MqttSNServer::handleAsleepClientsCheckEvent()
 void MqttSNServer::handlePendingRetainCheckEvent()
 {
     for (auto it = pendingRetainMessages.begin(); it != pendingRetainMessages.end(); ++it) {
-
+        // extract the information
+        std::pair<inet::L3Address, int> subscriber = it->first;
         const MessageInfo& messageInfo = it->second;
 
-        /*
         // send the retained message to the subscriber with appropriate QoS
-        saveAndSendPublishRequest(srcAddress, srcPort,
-                                  messageInfo, NumericHelper::minQoS(qosFlag, messageInfo.qos),
-                                  0, topicId);
-        */
+        saveAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, messageInfo.qos, 0, messageInfo.topicId);
+
+        // remove the subscriber after sending the message
+        pendingRetainMessages.erase(it);
     }
 
     scheduleClockEventAfter(pendingRetainCheckInterval, pendingRetainCheckEvent);
