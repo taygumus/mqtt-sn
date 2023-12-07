@@ -595,11 +595,11 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     MessageInfo messageInfo;
-        messageInfo.dup = dupFlag;
-        messageInfo.qos = qosFlag;
-        messageInfo.retain = retainFlag;
-        messageInfo.topicId = topicId;
-        messageInfo.data = data;
+    messageInfo.dup = dupFlag;
+    messageInfo.qos = qosFlag;
+    messageInfo.retain = retainFlag;
+    messageInfo.topicId = topicId;
+    messageInfo.data = data;
 
     if (qosFlag == QoS::QOS_ZERO) {
         // handling QoS 0
