@@ -21,5 +21,6 @@ module MqttSNServer extends MqttSNApp
         double clientsClearInterval @unit(s) = default(120s); // clear interval for lost and disconnected clients
         double maximumInactivityTime @unit(s) = default(90s);
         
+        double pendingRetainCheckInterval @unit(s) = default(500ms); // check interval for verifying pending retain messages
         double requestsCheckInterval @unit(s) = default(500ms); // check interval for verifying requests to subscribers
 }

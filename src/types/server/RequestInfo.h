@@ -8,6 +8,7 @@ struct RequestInfo {
     int subscriberPort;
     MsgType messageType;
     uint16_t messagesKey = 0;
+    uint16_t retainMessagesKey = 0;
 };
 
 #endif /* TYPES_SERVER_REQUESTINFO_H_ */

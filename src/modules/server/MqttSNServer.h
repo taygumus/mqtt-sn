@@ -25,6 +25,7 @@ class MqttSNServer : public MqttSNApp
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
         double clientsClearInterval;
+        double pendingRetainCheckInterval;
         double requestsCheckInterval;
 
         // gateway state management
@@ -49,14 +50,15 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
+        inet::ClockEvent* pendingRetainCheckEvent = nullptr;
         std::map<uint16_t, RetainMessageInfo> retainMessages;
+        std::map<std::pair<inet::L3Address, int>, MessageInfo> pendingRetainMessages;
 
         std::map<uint16_t, MessageInfo> messages;
         std::set<uint16_t> messageIds;
         uint16_t currentMessageId = 0;
 
         inet::ClockEvent* requestsCheckEvent = nullptr;
-
         std::map<uint16_t, RequestInfo> requests;
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
@@ -135,6 +137,7 @@ class MqttSNServer : public MqttSNApp
 
         virtual void handleActiveClientsCheckEvent();
         virtual void handleAsleepClientsCheckEvent();
+        virtual void handlePendingRetainCheckEvent();
         virtual void handleRequestsCheckEvent();
 
         virtual void handleClientsClearEvent();
@@ -153,8 +156,9 @@ class MqttSNServer : public MqttSNApp
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
         // other methods about subscribers requests
-        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                   MsgType messageType, uint16_t messagesKey = 0, uint16_t requestId = 0);
+        virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                               const MessageInfo& messageInfo, QoS requestQoS,
+                                               uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
         virtual void deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 
