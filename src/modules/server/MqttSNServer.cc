@@ -722,24 +722,8 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     // create a new subscription
     insertSubscription(srcAddress, srcPort, topicId, qosFlag);
 
-    // check for retained message on the subscribed topic
-    auto retainMsgIt = retainMessages.find(topicId);
-    if (retainMsgIt != retainMessages.end()) {
-        // retrieve retained message information
-        const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
-
-        MessageInfo messageInfo;
-        messageInfo.dup = retainMessageInfo.dup;
-        messageInfo.retain = true;
-        messageInfo.topicId = topicId;
-        messageInfo.data = retainMessageInfo.data;
-
-        // calculate the minimum QoS level between subscription QoS and original publish QoS
-        messageInfo.qos = NumericHelper::minQoS(qosFlag, retainMessageInfo.qos);
-
-        // store the pending retain message for the subscriber
-        pendingRetainMessages[std::make_pair(srcAddress, srcPort)] = messageInfo;
-    }
+    // check for existing retain message and add in the queue if found
+    addNewPendingRetainMessage(srcAddress, srcPort, topicId, qosFlag);
 
     // send ACK message with ACCEPTED code
     sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::ACCEPTED, topicId, msgId);
@@ -1031,24 +1015,24 @@ void MqttSNServer::handleRequestsCheckEvent()
             inet::L3Address subscriberAddress = requestInfo.subscriberAddress;
             int subscriberPort = requestInfo.subscriberPort;
 
-            const MessageInfo& messageInfo = messages[requestInfo.messagesKey];
+            MessageInfo* messageInfo = getRequestMessageInfo(requestInfo);
 
             // check for an existing subscription
             std::pair<uint16_t, QoS> subscriptionKey;
-            if (!findSubscription(subscriberAddress, subscriberPort, messageInfo.topicId, subscriptionKey)) {
+            if (!findSubscription(subscriberAddress, subscriberPort, messageInfo->topicId, subscriptionKey)) {
                 deleteRequest(requestIt, requestIdIt);
                 continue;
             }
 
             // calculate the minimum QoS level between subscription QoS and original publish QoS
-            QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo.qos);
+            QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
 
             if (resultQoS == QoS::QOS_ZERO) {
                 // send a publish message with QoS 0 to the subscriber
                 sendPublish(subscriberAddress, subscriberPort,
-                            messageInfo.dup, resultQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC,
-                            messageInfo.topicId, 0,
-                            messageInfo.data);
+                            messageInfo->dup, resultQoS, messageInfo->retain, TopicIdType::NORMAL_TOPIC,
+                            messageInfo->topicId, 0,
+                            messageInfo->data);
 
                 deleteRequest(requestIt, requestIdIt);
                 continue;
@@ -1056,9 +1040,11 @@ void MqttSNServer::handleRequestsCheckEvent()
 
             // send a publish message with QoS 1 or QoS 2 to the subscriber
             sendPublish(subscriberAddress, subscriberPort,
-                        messageInfo.dup, resultQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC,
-                        messageInfo.topicId, requestIt->first,
-                        messageInfo.data);
+                        messageInfo->dup, resultQoS, messageInfo->retain, TopicIdType::NORMAL_TOPIC,
+                        messageInfo->topicId, requestIt->first,
+                        messageInfo->data);
+
+            deleteRequestMessageInfo(requestInfo, messageInfo);
 
             // update the request
             requestInfo.retransmissionCounter++;
@@ -1207,6 +1193,18 @@ void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAd
         return;
     }
 
+    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, messagesKey, retainMessagesKey);
+
+    // send a publish message with QoS 1 or QoS 2 to the subscriber
+    sendPublish(subscriberAddress, subscriberPort,
+                messageInfo.dup, requestQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC,
+                messageInfo.topicId, currentRequestId,
+                messageInfo.data);
+}
+
+void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                 MsgType messageType, uint16_t messagesKey, uint16_t retainMessagesKey)
+{
     // set new available request ID if possible; otherwise, throw an exception
     MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
                                 "Failed to assign a new request ID. All available request IDs are in use");
@@ -1215,7 +1213,7 @@ void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAd
     requestInfo.requestTime = getClockTime();
     requestInfo.subscriberAddress = subscriberAddress;
     requestInfo.subscriberPort = subscriberPort;
-    requestInfo.messageType = MsgType::PUBLISH;
+    requestInfo.messageType = messageType;
 
     if (messagesKey > 0) {
         requestInfo.messagesKey = messagesKey;
@@ -1228,15 +1226,9 @@ void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAd
     // add the new request in the data structures
     requests[currentRequestId] = requestInfo;
     requestIds.insert(currentRequestId);
-
-    // send a publish message with QoS 1 or QoS 2 to the subscriber
-    sendPublish(subscriberAddress, subscriberPort,
-                messageInfo.dup, requestQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC,
-                messageInfo.topicId, currentRequestId,
-                messageInfo.data);
 }
 
-void  MqttSNServer::deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt)
+void MqttSNServer::deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt)
 {
     // remove the request from both structures
     requests.erase(requestIt);
@@ -1279,6 +1271,73 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     deleteRequest(requestIt, requestIdIt);
 
     return true;
+}
+
+void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                              uint16_t topicId, QoS qos)
+{
+    // check for retained message on the subscribed topic
+    auto retainMsgIt = retainMessages.find(topicId);
+    if (retainMsgIt != retainMessages.end()) {
+        // retrieve retained message information
+        const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
+
+        MessageInfo messageInfo;
+        messageInfo.dup = retainMessageInfo.dup;
+        messageInfo.retain = true;
+        messageInfo.topicId = topicId;
+        messageInfo.data = retainMessageInfo.data;
+
+        // calculate the minimum QoS level between subscription QoS and original publish QoS
+        messageInfo.qos = NumericHelper::minQoS(qos, retainMessageInfo.qos);
+
+        // store the pending retain message for the subscriber
+        pendingRetainMessages[std::make_pair(subscriberAddress, subscriberPort)] = messageInfo;
+    }
+}
+
+void MqttSNServer::deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo)
+{
+    // deallocate memory if allocated for retain message
+    if (messageInfo != nullptr && requestInfo.retainMessagesKey > 0) {
+        delete messageInfo;
+        messageInfo = nullptr;
+    }
+}
+
+MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo)
+{
+    MessageInfo* messageInfo = nullptr;
+
+    if (requestInfo.messagesKey > 0) {
+        // check if the key exists in the messages map
+        auto messageIt = messages.find(requestInfo.messagesKey);
+        if (messageIt != messages.end()) {
+            messageInfo = &messageIt->second;
+        }
+    }
+    else if (requestInfo.retainMessagesKey > 0) {
+        // check if the key exists in the retain messages map
+        auto retainMessageIt = retainMessages.find(requestInfo.retainMessagesKey);
+        if (retainMessageIt != retainMessages.end()) {
+            const RetainMessageInfo& retainMessageInfo = retainMessageIt->second;
+
+            // allocate memory for a new object
+            messageInfo = new MessageInfo;
+
+            // populate the fields of the new object
+            messageInfo->dup = retainMessageInfo.dup;
+            messageInfo->qos = retainMessageInfo.qos;
+            messageInfo->retain = true;
+            messageInfo->topicId = requestInfo.retainMessagesKey;
+            messageInfo->data = retainMessageInfo.data;
+        }
+    }
+    else {
+        throw omnetpp::cRuntimeError("Expecting at least one valid message key");
+    }
+
+    return messageInfo;
 }
 
 bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,

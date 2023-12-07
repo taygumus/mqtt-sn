@@ -51,8 +51,8 @@ class MqttSNServer : public MqttSNApp
         uint16_t currentTopicId = 0;
 
         inet::ClockEvent* pendingRetainCheckEvent = nullptr;
-        std::map<uint16_t, RetainMessageInfo> retainMessages;
         std::map<std::pair<inet::L3Address, int>, MessageInfo> pendingRetainMessages;
+        std::map<uint16_t, RetainMessageInfo> retainMessages;
 
         std::map<uint16_t, MessageInfo> messages;
         std::set<uint16_t> messageIds;
@@ -160,12 +160,22 @@ class MqttSNServer : public MqttSNApp
                                                const MessageInfo& messageInfo, QoS requestQoS,
                                                uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
+        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                   MsgType messageType, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
+
         virtual void deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool isValidRequest(uint16_t requestId, MsgType messageType,
                                     std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
+
+        // other methods about subscribers requests messages
+        virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                                uint16_t topicId, QoS qos);
+
+        virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
+        virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
 
         // other methods about subscribers subscriptions
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
