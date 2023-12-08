@@ -397,7 +397,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
 
     // prevent new client connections when the gateway is congested
-    if (isGatewayCongested() && clientInfo->isNew) {
+    if (checkClientsCongestion() && clientInfo->isNew) {
         sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
         return;
     }
@@ -1091,32 +1091,6 @@ void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, cons
     retainMessages[topicId] = retainMessageInfo;
 }
 
-bool MqttSNServer::isGatewayCongested()
-{
-    // check for gateway congestion based on clients count
-    return clients.size() >= (unsigned int) par("maximumClients");
-}
-
-PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
-{
-    // check if the publisher with the specified address and port is present in the data structure
-    auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));
-
-    if (publisherIterator != publishers.end()) {
-        return &publisherIterator->second;
-    }
-
-    if (insertIfNotFound) {
-        // insert a new empty publisher
-        PublisherInfo newPublisherInfo;
-        publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
-
-        return &publishers[std::make_pair(srcAddress, srcPort)];
-    }
-
-    return nullptr;
-}
-
 void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
 {
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
@@ -1130,6 +1104,12 @@ bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int&
 
     // return true if the client is found and its state matches the requested state, otherwise return false
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
+}
+
+bool MqttSNServer::checkClientsCongestion()
+{
+    // verify congestion based on the number of clients connected to the gateway
+    return clients.size() >= (unsigned int) par("maximumClients");
 }
 
 ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
@@ -1147,6 +1127,26 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
         clients[std::make_pair(srcAddress, srcPort)] = newClientInfo;
 
         return &clients[std::make_pair(srcAddress, srcPort)];
+    }
+
+    return nullptr;
+}
+
+PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
+{
+    // check if the publisher with the specified address and port is present in the data structure
+    auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));
+
+    if (publisherIterator != publishers.end()) {
+        return &publisherIterator->second;
+    }
+
+    if (insertIfNotFound) {
+        // insert a new empty publisher
+        PublisherInfo newPublisherInfo;
+        publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
+
+        return &publishers[std::make_pair(srcAddress, srcPort)];
     }
 
     return nullptr;
