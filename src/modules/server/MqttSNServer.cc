@@ -584,14 +584,9 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     bool retainFlag = payload->getRetainFlag();
     std::string data = payload->getData();
 
-    // store message as retained for the topic if retain flag is set
     if (retainFlag) {
-        RetainMessageInfo retainMessageInfo;
-        retainMessageInfo.dup = dupFlag;
-        retainMessageInfo.qos = qosFlag;
-        retainMessageInfo.data = data;
-
-        retainMessages[topicId] = retainMessageInfo;
+        // adds a new retained message for the specified topic
+        addNewRetainMessage(topicId, dupFlag, qosFlag, data);
     }
 
     MessageInfo messageInfo;
@@ -1015,6 +1010,7 @@ void MqttSNServer::handleRequestsCheckEvent()
             inet::L3Address subscriberAddress = requestInfo.subscriberAddress;
             int subscriberPort = requestInfo.subscriberPort;
 
+            // gets a message info pointer for regular or retained messages; memory allocation occurs for retained messages
             MessageInfo* messageInfo = getRequestMessageInfo(requestInfo);
 
             // check for an existing subscription
@@ -1044,6 +1040,7 @@ void MqttSNServer::handleRequestsCheckEvent()
                         messageInfo->topicId, requestIt->first,
                         messageInfo->data);
 
+            // deallocates memory for retain message info
             deleteRequestMessageInfo(requestInfo, messageInfo);
 
             // update the request
@@ -1081,6 +1078,17 @@ void MqttSNServer::registerNewTopic(const std::string& topicName)
     // add the new topic in the data structures
     topicsToIds[topicName] = currentTopicId;
     topicIds.insert(currentTopicId);
+}
+
+void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, const std::string& data)
+{
+    // store message as retained for the topic
+    RetainMessageInfo retainMessageInfo;
+    retainMessageInfo.dup = dup;
+    retainMessageInfo.qos = qos;
+    retainMessageInfo.data = data;
+
+    retainMessages[topicId] = retainMessageInfo;
 }
 
 bool MqttSNServer::isGatewayCongested()
@@ -1178,6 +1186,29 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
     }
 }
 
+void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                              uint16_t topicId, QoS qos)
+{
+    // check for retained message on the subscribed topic
+    auto retainMsgIt = retainMessages.find(topicId);
+    if (retainMsgIt != retainMessages.end()) {
+        // retrieve retained message information
+        const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
+
+        MessageInfo messageInfo;
+        messageInfo.dup = retainMessageInfo.dup;
+        messageInfo.retain = true;
+        messageInfo.topicId = topicId;
+        messageInfo.data = retainMessageInfo.data;
+
+        // calculate the minimum QoS level between subscription QoS and original publish QoS
+        messageInfo.qos = NumericHelper::minQoS(qos, retainMessageInfo.qos);
+
+        // store the pending retain message for the subscriber
+        pendingRetainMessages[std::make_pair(subscriberAddress, subscriberPort)] = messageInfo;
+    }
+}
+
 void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                              const MessageInfo& messageInfo, QoS requestQoS,
                                              uint16_t messagesKey, uint16_t retainMessagesKey)
@@ -1271,29 +1302,6 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     deleteRequest(requestIt, requestIdIt);
 
     return true;
-}
-
-void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                              uint16_t topicId, QoS qos)
-{
-    // check for retained message on the subscribed topic
-    auto retainMsgIt = retainMessages.find(topicId);
-    if (retainMsgIt != retainMessages.end()) {
-        // retrieve retained message information
-        const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
-
-        MessageInfo messageInfo;
-        messageInfo.dup = retainMessageInfo.dup;
-        messageInfo.retain = true;
-        messageInfo.topicId = topicId;
-        messageInfo.data = retainMessageInfo.data;
-
-        // calculate the minimum QoS level between subscription QoS and original publish QoS
-        messageInfo.qos = NumericHelper::minQoS(qos, retainMessageInfo.qos);
-
-        // store the pending retain message for the subscriber
-        pendingRetainMessages[std::make_pair(subscriberAddress, subscriberPort)] = messageInfo;
-    }
 }
 
 void MqttSNServer::deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo)

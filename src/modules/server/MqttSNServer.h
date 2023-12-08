@@ -144,6 +144,7 @@ class MqttSNServer : public MqttSNApp
 
         // other methods
         virtual void registerNewTopic(const std::string& topicName);
+        virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, const std::string& data);
         virtual bool isGatewayCongested();
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
@@ -152,10 +153,12 @@ class MqttSNServer : public MqttSNApp
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
-        // other methods about subscribers
+        // other methods about subscribers requests
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
-        // other methods about subscribers requests
+        virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                                uint16_t topicId, QoS qos);
+
         virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                                const MessageInfo& messageInfo, QoS requestQoS,
                                                uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
@@ -170,10 +173,7 @@ class MqttSNServer : public MqttSNApp
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
-        // other methods about subscribers requests messages
-        virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                                uint16_t topicId, QoS qos);
-
+        // other methods about subscribers request messages
         virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
         virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
 
