@@ -159,7 +159,7 @@ class MqttSNServer : public MqttSNApp
         virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                                 uint16_t topicId, QoS qos);
 
-        // other methods about subscribers requests
+        // other methods about subscribers; handling requests
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
         virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
@@ -176,7 +176,7 @@ class MqttSNServer : public MqttSNApp
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
-        // other methods about subscribers request messages
+        // other methods about subscribers; handling requests messages
         virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
         virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
 
