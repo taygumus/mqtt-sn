@@ -1152,6 +1152,29 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     return nullptr;
 }
 
+void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                              uint16_t topicId, QoS qos)
+{
+    // check for retained message on the subscribed topic
+    auto retainMsgIt = retainMessages.find(topicId);
+    if (retainMsgIt != retainMessages.end()) {
+        // retrieve retained message information
+        const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
+
+        MessageInfo messageInfo;
+        messageInfo.dup = retainMessageInfo.dup;
+        messageInfo.retain = true;
+        messageInfo.topicId = topicId;
+        messageInfo.data = retainMessageInfo.data;
+
+        // calculate the minimum QoS level between subscription QoS and original publish QoS
+        messageInfo.qos = NumericHelper::minQoS(qos, retainMessageInfo.qos);
+
+        // store the pending retain message for the subscriber
+        pendingRetainMessages[std::make_pair(subscriberAddress, subscriberPort)] = messageInfo;
+    }
+}
+
 void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
 {
     // keys with the same topic ID
@@ -1183,29 +1206,6 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                 saveAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, resultQoS, currentMessageId);
             }
         }
-    }
-}
-
-void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                              uint16_t topicId, QoS qos)
-{
-    // check for retained message on the subscribed topic
-    auto retainMsgIt = retainMessages.find(topicId);
-    if (retainMsgIt != retainMessages.end()) {
-        // retrieve retained message information
-        const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
-
-        MessageInfo messageInfo;
-        messageInfo.dup = retainMessageInfo.dup;
-        messageInfo.retain = true;
-        messageInfo.topicId = topicId;
-        messageInfo.data = retainMessageInfo.data;
-
-        // calculate the minimum QoS level between subscription QoS and original publish QoS
-        messageInfo.qos = NumericHelper::minQoS(qos, retainMessageInfo.qos);
-
-        // store the pending retain message for the subscriber
-        pendingRetainMessages[std::make_pair(subscriberAddress, subscriberPort)] = messageInfo;
     }
 }
 

@@ -153,11 +153,12 @@ class MqttSNServer : public MqttSNApp
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
-        // other methods about subscribers requests
-        virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
-
+        // other methods about subscribers
         virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                                 uint16_t topicId, QoS qos);
+
+        // other methods about subscribers requests
+        virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
         virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                                const MessageInfo& messageInfo, QoS requestQoS,
