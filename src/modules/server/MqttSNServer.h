@@ -52,7 +52,9 @@ class MqttSNServer : public MqttSNApp
 
         inet::ClockEvent* pendingRetainCheckEvent = nullptr;
         std::map<std::pair<inet::L3Address, int>, MessageInfo> pendingRetainMessages;
+
         std::map<uint16_t, RetainMessageInfo> retainMessages;
+        std::set<uint16_t> retainMessageIds;
 
         std::map<uint16_t, MessageInfo> messages;
         std::set<uint16_t> messageIds;
@@ -146,10 +148,14 @@ class MqttSNServer : public MqttSNApp
         virtual void registerNewTopic(const std::string& topicName);
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, const std::string& data);
 
+        // other methods about congestions
+        virtual bool checkClientsCongestion();
+        virtual bool checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue = true);
+        virtual bool checkPublishCongestion(QoS qosFlag, bool retainFlag);
+
         // other methods about clients
         virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
-        virtual bool checkClientsCongestion();
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // other methods about publishers

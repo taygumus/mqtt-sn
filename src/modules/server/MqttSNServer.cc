@@ -572,16 +572,17 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    // check if the server is congested; if yes, send a return code
-    bool isCongested = false; // TO DO -> checkCongestion(); ///
-    if (isCongested) {
+    QoS qosFlag = (QoS) payload->getQoSFlag();
+    bool retainFlag = payload->getRetainFlag();
+
+    // check for congestion; if congested, send a rejection code
+    if (checkPublishCongestion(qosFlag, retainFlag)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
+        EV << "congestionnn" << std::endl;
         return;
     }
 
     bool dupFlag = payload->getDupFlag();
-    QoS qosFlag = (QoS) payload->getQoSFlag();
-    bool retainFlag = payload->getRetainFlag();
     std::string data = payload->getData();
 
     if (retainFlag) {
@@ -1089,6 +1090,47 @@ void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, cons
     retainMessageInfo.data = data;
 
     retainMessages[topicId] = retainMessageInfo;
+    retainMessageIds.insert(topicId);
+}
+
+bool MqttSNServer::checkClientsCongestion()
+{
+    // verify congestion based on the number of clients connected
+    return clients.size() >= (unsigned int) par("maximumClients");
+}
+
+bool MqttSNServer::checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue)
+{
+    // check for invalid message ID; ID=0 is invalid
+    if (usedIds.find(0) != usedIds.end()) {
+        throw omnetpp::cRuntimeError("Invalid message ID=0 detected in the set");
+    }
+
+    // check for invalid message ID; ID=UINT16_MAX can be considered invalid
+    if (!allowMaxValue && usedIds.find(UINT16_MAX) != usedIds.end()) {
+        throw omnetpp::cRuntimeError("Invalid message ID=UINT16_MAX detected in the set");
+    }
+
+    uint16_t maxValue = allowMaxValue ? UINT16_MAX : UINT16_MAX - 1;
+
+    // check if the size equals the maximum valid range of IDs
+    return (usedIds.size() == maxValue);
+}
+
+bool MqttSNServer::checkPublishCongestion(QoS qosFlag, bool retainFlag)
+{
+    // check congestion for retained messages
+    if (retainFlag && checkIDSpaceCongestion(retainMessageIds, false)) {
+        return true;
+    }
+
+    // check congestion for QoS levels 1 and 2
+    if (qosFlag == QoS::QOS_ONE || qosFlag == QoS::QOS_TWO) {
+        return (checkIDSpaceCongestion(requestIds) || checkIDSpaceCongestion(messageIds));
+    }
+
+    // no congestion detected
+    return false;
 }
 
 void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
@@ -1104,12 +1146,6 @@ bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int&
 
     // return true if the client is found and its state matches the requested state, otherwise return false
     return (clientInfo != nullptr && clientInfo->currentState == clientState);
-}
-
-bool MqttSNServer::checkClientsCongestion()
-{
-    // verify congestion based on the number of clients connected to the gateway
-    return clients.size() >= (unsigned int) par("maximumClients");
 }
 
 ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
