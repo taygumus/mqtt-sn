@@ -578,7 +578,6 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     // check for congestion; if congested, send a rejection code
     if (checkPublishCongestion(qosFlag, retainFlag)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
-        EV << "congestionnn" << std::endl;
         return;
     }
 
