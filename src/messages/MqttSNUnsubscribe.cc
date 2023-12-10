@@ -22,7 +22,7 @@ void MqttSNUnsubscribe::setTopicName(const std::string& name)
 {
     uint8_t topicIdFlag = getTopicIdTypeFlag();
 
-    if (topicIdFlag == TopicIdType::NORMAL_TOPIC)
+    if (topicIdFlag == TopicIdType::NORMAL_TOPIC_ID)
         MqttSNBase::setStringField(
                 name,
                 Length::ZERO_OCTETS,
@@ -30,7 +30,7 @@ void MqttSNUnsubscribe::setTopicName(const std::string& name)
                 "Topic name length out of range",
                 topicName
         );
-    else if (topicIdFlag == TopicIdType::SHORT_TOPIC_NAME)
+    else if (topicIdFlag == TopicIdType::SHORT_TOPIC_ID)
         MqttSNBase::setStringField(
                 name,
                 Length::ZERO_OCTETS,

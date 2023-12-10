@@ -345,7 +345,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     }
 
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  false, qosFlag, TopicIdType::NORMAL_TOPIC,
+                  false, qosFlag, TopicIdType::NORMAL_TOPIC_ID,
                   MqttSNClient::getNewMsgId(),
                   topicName, 0);
 
@@ -386,7 +386,7 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
     }
 
     sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                    TopicIdType::NORMAL_TOPIC,
+                    TopicIdType::NORMAL_TOPIC_ID,
                     MqttSNClient::getNewMsgId(),
                     topicName, 0);
 
@@ -440,7 +440,7 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
 void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  true, topics[lastSubscription.info.topicsKey].qosFlag, TopicIdType::NORMAL_TOPIC,
+                  true, topics[lastSubscription.info.topicsKey].qosFlag, TopicIdType::NORMAL_TOPIC_ID,
                   std::stoi(msg->par("msgId").stringValue()),
                   lastSubscription.info.topicName, 0);
 }
@@ -448,7 +448,7 @@ void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, c
 void MqttSNSubscriber::retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  TopicIdType::NORMAL_TOPIC,
+                  TopicIdType::NORMAL_TOPIC_ID,
                   std::stoi(msg->par("msgId").stringValue()),
                   lastUnsubscription.info.topicName, 0);
 }

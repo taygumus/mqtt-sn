@@ -1026,7 +1026,7 @@ void MqttSNServer::handleRequestsCheckEvent()
             if (resultQoS == QoS::QOS_ZERO) {
                 // send a publish message with QoS 0 to the subscriber
                 sendPublish(subscriberAddress, subscriberPort,
-                            messageInfo->dup, resultQoS, messageInfo->retain, TopicIdType::NORMAL_TOPIC,
+                            messageInfo->dup, resultQoS, messageInfo->retain, TopicIdType::NORMAL_TOPIC_ID,
                             messageInfo->topicId, 0,
                             messageInfo->data);
 
@@ -1036,7 +1036,7 @@ void MqttSNServer::handleRequestsCheckEvent()
 
             // send a publish message with QoS 1 or QoS 2 to the subscriber
             sendPublish(subscriberAddress, subscriberPort,
-                        messageInfo->dup, resultQoS, messageInfo->retain, TopicIdType::NORMAL_TOPIC,
+                        messageInfo->dup, resultQoS, messageInfo->retain, TopicIdType::NORMAL_TOPIC_ID,
                         messageInfo->topicId, requestIt->first,
                         messageInfo->data);
 
@@ -1251,7 +1251,7 @@ void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAd
     if (requestQoS == QoS::QOS_ZERO) {
         // send a publish message with QoS 0 to the subscriber
         sendPublish(subscriberAddress, subscriberPort,
-                    messageInfo.dup, requestQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC,
+                    messageInfo.dup, requestQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC_ID,
                     messageInfo.topicId, 0,
                     messageInfo.data);
 
@@ -1263,7 +1263,7 @@ void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAd
 
     // send a publish message with QoS 1 or QoS 2 to the subscriber
     sendPublish(subscriberAddress, subscriberPort,
-                messageInfo.dup, requestQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC,
+                messageInfo.dup, requestQoS, messageInfo.retain, TopicIdType::NORMAL_TOPIC_ID,
                 messageInfo.topicId, currentRequestId,
                 messageInfo.data);
 }

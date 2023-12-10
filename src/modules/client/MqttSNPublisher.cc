@@ -1,5 +1,6 @@
 #include "MqttSNPublisher.h"
 #include "externals/nlohmann/json.hpp"
+#include "types/shared/Length.h"
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
 #include "helpers/PacketHelper.h"
@@ -385,7 +386,18 @@ void MqttSNPublisher::handleRegistrationEvent()
         auto it = topicsAndData.begin();
         std::advance(it, intuniform(0, topicsAndData.size() - 1));
 
-        topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.counter);
+        TopicIdType topicIdTypeFlag = it->second.topicIdTypeFlag;
+        int counter = it->second.counter;
+
+        // short topics are registered only once; predefined topics are ignored for registration
+        if ((topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID && counter == 1) ||
+            (topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID)) {
+
+            scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, registrationEvent);
+            return;
+        }
+
+        topicName = StringHelper::appendCounterToString(it->second.topicName, counter);
 
         // update information about the last element
         lastRegistration.info.topicName = topicName;
@@ -402,6 +414,7 @@ void MqttSNPublisher::handleRegistrationEvent()
 void MqttSNPublisher::handlePublishEvent()
 {
     uint16_t selectedTopicId;
+    RegisterInfo registerInfo;
     DataInfo selectedData;
 
     // if it's a retry, use the last sent element
@@ -412,6 +425,7 @@ void MqttSNPublisher::handlePublishEvent()
         }
 
         selectedTopicId = lastPublish.topicId;
+        registerInfo = lastPublish.registerInfo;
         selectedData = lastPublish.dataInfo;
     }
     else {
@@ -425,7 +439,10 @@ void MqttSNPublisher::handlePublishEvent()
         auto topicIterator = topicIds.begin();
         std::advance(topicIterator, intuniform(0, topicIds.size() - 1));
 
-        std::map<int, DataInfo> data = topicsAndData[topicIterator->second.topicsAndDataKey].data;
+        selectedTopicId = topicIterator->first;
+        registerInfo = topicIterator->second;
+
+        std::map<int, DataInfo> data = topicsAndData[registerInfo.topicsAndDataKey].data;
 
         // check for data availability
         if (data.empty()) {
@@ -437,12 +454,11 @@ void MqttSNPublisher::handlePublishEvent()
         auto dataIterator = data.begin();
         std::advance(dataIterator, intuniform(0, data.size() - 1));
 
-        selectedTopicId = topicIterator->first;
         selectedData = dataIterator->second;
 
         // update information about the last element
         lastPublish.topicId = selectedTopicId;
-        lastPublish.registerInfo = topicIterator->second;
+        lastPublish.registerInfo = registerInfo;
         lastPublish.dataInfo = selectedData;
 
         // retry after publisher reconnection to a server
@@ -453,13 +469,14 @@ void MqttSNPublisher::handlePublishEvent()
 
     QoS qosFlag = selectedData.qosFlag;
     bool retainFlag = selectedData.retainFlag;
+    TopicIdType topicIdTypeFlag = topicsAndData[registerInfo.topicsAndDataKey].topicIdTypeFlag;
 
     // print publish message to be sent
-    printPublishMessage(selectedTopicId, topicIds[selectedTopicId].topicName, selectedData);
+    printPublishMessage(selectedTopicId, topicIds[selectedTopicId], selectedData);
 
     if (qosFlag == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                    false, qosFlag, retainFlag, TopicIdType::NORMAL_TOPIC,
+                    false, qosFlag, retainFlag, topicIdTypeFlag,
                     selectedTopicId, 0,
                     selectedData.data);
 
@@ -469,7 +486,7 @@ void MqttSNPublisher::handlePublishEvent()
     }
 
     sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-               false, qosFlag, retainFlag, TopicIdType::NORMAL_TOPIC,
+               false, qosFlag, retainFlag, topicIdTypeFlag,
                selectedTopicId, MqttSNClient::getNewMsgId(),
                selectedData.data);
 
@@ -484,13 +501,37 @@ void MqttSNPublisher::fillTopicsAndData()
 
     // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
+
+        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
+        std::string topicName = it.key();
+
+        if (topicIdType == TopicIdType::SHORT_TOPIC_ID &&
+            !StringHelper::checkStringLength(topicName, Length::TWO_OCTETS)) {
+
+            throw omnetpp::cRuntimeError("Short topic names must have exactly two characters");
+        }
+
+        if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+            uint16_t topicId = it.value()["id"];
+            if (topicId == 0 || topicId == UINT16_MAX) {
+                throw omnetpp::cRuntimeError("Invalid predefined topic ID value");
+            }
+
+            RegisterInfo registerInfo;
+            registerInfo.topicName = topicName;
+            registerInfo.topicsAndDataKey = topicsKey;
+
+            topicIds[topicId] = registerInfo;
+        }
+
         TopicAndData topicAndData;
-        topicAndData.topicName = it.key();
+        topicAndData.topicIdTypeFlag = topicIdType;
+        topicAndData.topicName = topicName;
 
         int dataKey = 0;
 
         // iterate over json array elements (data)
-        for (const auto& data : it.value()) {
+        for (const auto& data : it.value()["data"]) {
             DataInfo dataInfo;
             dataInfo.qosFlag = ConversionHelper::intToQoS(data["qos"]);
             dataInfo.retainFlag = data["retain"];
@@ -511,11 +552,11 @@ void MqttSNPublisher::retryLastPublish()
     scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
 }
 
-void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& topicName, const DataInfo& dataInfo)
+void MqttSNPublisher::printPublishMessage(uint16_t topicId, const RegisterInfo& registerInfo, const DataInfo& dataInfo)
 {
     EV << "Publish message to be sent:" << std::endl;
     EV << "Topic ID: " << topicId << std::endl;
-    EV << "Topic name: " << topicName << std::endl;
+    EV << "Topic name: " << registerInfo.topicName << std::endl;
     EV << "Duplicate: " << false << std::endl;
     EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qosFlag) << std::endl;
     EV << "Retain: " << dataInfo.retainFlag << std::endl;
@@ -584,7 +625,8 @@ void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, con
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendPublish(destAddress, destPort,
-                true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag, TopicIdType::NORMAL_TOPIC,
+                true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag,
+                topicsAndData[lastPublish.registerInfo.topicsAndDataKey].topicIdTypeFlag,
                 lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()),
                 lastPublish.dataInfo.data);
 }

@@ -44,4 +44,38 @@ int ConversionHelper::qosToInt(QoS value)
     }
 }
 
+TopicIdType ConversionHelper::stringToTopicIdType(const std::string& idType)
+{
+    // convert from a string identifier to a topic ID type enumeration
+    if (idType == "normal") {
+        return TopicIdType::NORMAL_TOPIC_ID;
+    }
+    else if (idType == "predefined") {
+        return TopicIdType::PRE_DEFINED_TOPIC_ID;
+    }
+    else if (idType == "short") {
+        return TopicIdType::SHORT_TOPIC_ID;
+    }
+
+    throw omnetpp::cRuntimeError("Invalid topic ID type");
+}
+
+std::string ConversionHelper::topicIdTypeToString(TopicIdType idType)
+{
+    // convert a topic ID type enumeration to its corresponding string identifier
+    switch (idType) {
+        case TopicIdType::NORMAL_TOPIC_ID:
+            return "normal";
+
+        case TopicIdType::PRE_DEFINED_TOPIC_ID:
+            return "predefined";
+
+        case TopicIdType::SHORT_TOPIC_ID:
+            return "short";
+
+        default:
+            throw omnetpp::cRuntimeError("Invalid topic ID type");
+    }
+}
+
 } /* namespace mqttsn */
