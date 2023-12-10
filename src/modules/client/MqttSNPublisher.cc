@@ -413,9 +413,9 @@ void MqttSNPublisher::handleRegistrationEvent()
 
 void MqttSNPublisher::handlePublishEvent()
 {
-    uint16_t selectedTopicId;
+    uint16_t topicId;
     RegisterInfo registerInfo;
-    DataInfo selectedData;
+    DataInfo dataInfo;
 
     // if it's a retry, use the last sent element
     if (lastPublish.retry) {
@@ -424,9 +424,9 @@ void MqttSNPublisher::handlePublishEvent()
             findTopicByName(lastPublish.registerInfo.topicName, lastPublish.topicId);
         }
 
-        selectedTopicId = lastPublish.topicId;
+        topicId = lastPublish.topicId;
         registerInfo = lastPublish.registerInfo;
-        selectedData = lastPublish.dataInfo;
+        dataInfo = lastPublish.dataInfo;
     }
     else {
         // check for topics availability
@@ -439,10 +439,10 @@ void MqttSNPublisher::handlePublishEvent()
         auto topicIterator = topicIds.begin();
         std::advance(topicIterator, intuniform(0, topicIds.size() - 1));
 
-        selectedTopicId = topicIterator->first;
+        topicId = topicIterator->first;
         registerInfo = topicIterator->second;
 
-        std::map<int, DataInfo> data = topicsAndData[registerInfo.topicsAndDataKey].data;
+        const std::map<int, DataInfo>& data = topicsAndData[registerInfo.topicsAndDataKey].data;
 
         // check for data availability
         if (data.empty()) {
@@ -454,31 +454,31 @@ void MqttSNPublisher::handlePublishEvent()
         auto dataIterator = data.begin();
         std::advance(dataIterator, intuniform(0, data.size() - 1));
 
-        selectedData = dataIterator->second;
+        dataInfo = dataIterator->second;
 
         // update information about the last element
-        lastPublish.topicId = selectedTopicId;
+        lastPublish.topicId = topicId;
         lastPublish.registerInfo = registerInfo;
-        lastPublish.dataInfo = selectedData;
+        lastPublish.dataInfo = dataInfo;
 
         // retry after publisher reconnection to a server
-        if (selectedData.qosFlag != QoS::QOS_ZERO) {
+        if (dataInfo.qosFlag != QoS::QOS_ZERO) {
             lastPublish.retry = true;
         }
     }
 
-    QoS qosFlag = selectedData.qosFlag;
-    bool retainFlag = selectedData.retainFlag;
+    QoS qosFlag = dataInfo.qosFlag;
+    bool retainFlag = dataInfo.retainFlag;
     TopicIdType topicIdTypeFlag = topicsAndData[registerInfo.topicsAndDataKey].topicIdTypeFlag;
 
     // print publish message to be sent
-    printPublishMessage(selectedTopicId, topicIds[selectedTopicId], selectedData);
+    printPublishMessage(topicId, registerInfo, dataInfo);
 
     if (qosFlag == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
                     false, qosFlag, retainFlag, topicIdTypeFlag,
-                    selectedTopicId, 0,
-                    selectedData.data);
+                    topicId, 0,
+                    dataInfo.data);
 
         // no need to wait for an ACK
         scheduleClockEventAfter(publishInterval, publishEvent);
@@ -486,9 +486,9 @@ void MqttSNPublisher::handlePublishEvent()
     }
 
     sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-               false, qosFlag, retainFlag, topicIdTypeFlag,
-               selectedTopicId, MqttSNClient::getNewMsgId(),
-               selectedData.data);
+                false, qosFlag, retainFlag, topicIdTypeFlag,
+                topicId, MqttSNClient::getNewMsgId(),
+                dataInfo.data);
 
     // schedule publish retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNClient::currentMsgId);
