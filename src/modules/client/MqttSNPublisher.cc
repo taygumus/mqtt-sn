@@ -496,32 +496,39 @@ void MqttSNPublisher::handlePublishEvent()
 
 void MqttSNPublisher::fillTopicsAndData()
 {
+    std::map<std::string, uint16_t> predefinedTopics = MqttSNApp::getPredefinedTopics();
+
     json jsonData = json::parse(par("topicsAndDataJson").stringValue());
     int topicsKey = 0;
 
     // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
-
         TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
         std::string topicName = it.key();
 
+        // check constraints for short topics
         if (topicIdType == TopicIdType::SHORT_TOPIC_ID &&
             !StringHelper::checkStringLength(topicName, Length::TWO_OCTETS)) {
 
             throw omnetpp::cRuntimeError("Short topic names must have exactly two characters");
         }
 
+        // check constraints for predefined topics
         if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
-            uint16_t topicId = it.value()["id"];
-            if (topicId == 0 || topicId == UINT16_MAX) {
-                throw omnetpp::cRuntimeError("Invalid predefined topic ID value");
+            // if the topic is predefined, retrieve its ID
+            std::string encodedTopicName = StringHelper::base64Encode(topicName);
+
+            // check if the predefined topic exists
+            auto predefinedTopicsIt = predefinedTopics.find(encodedTopicName);
+            if (predefinedTopicsIt == predefinedTopics.end()) {
+                throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
             }
 
             RegisterInfo registerInfo;
             registerInfo.topicName = topicName;
             registerInfo.topicsAndDataKey = topicsKey;
 
-            topicIds[topicId] = registerInfo;
+            topicIds[predefinedTopicsIt->second] = registerInfo;
         }
 
         TopicAndData topicAndData;

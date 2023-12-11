@@ -15,6 +15,8 @@ simple MqttSNApp like IApp
 
         double retransmissionInterval @unit(s) = default(10s); // retransmission retry interval (TRETRY)
         int retransmissionCounter = default(3); // retransmission retry counter (NRETRY)
+        
+        string predefinedTopicsJson; // json string with topic names and their associated predefined ids
 
     gates:
         input socketIn;

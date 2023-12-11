@@ -1,9 +1,13 @@
 #include "MqttSNApp.h"
+#include "externals/nlohmann/json.hpp"
+#include "helpers/StringHelper.h"
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNPingReq.h"
 #include "messages/MqttSNDisconnect.h"
 
 namespace mqttsn {
+
+using json = nlohmann::json;
 
 void MqttSNApp::socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet)
 {
@@ -156,6 +160,32 @@ uint16_t MqttSNApp::getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t
     }
 
     return currentId;
+}
+
+std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
+{
+    json jsonData = json::parse(par("predefinedTopicsJson").stringValue());
+    std::map<std::string, uint16_t> result;
+
+    // iterate over json object keys (topics)
+    for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
+        // extract the predefined topic ID from JSON
+        int topicId = it.value();
+
+        // check if the topic ID is within the range
+        if (topicId <= std::numeric_limits<uint16_t>::min() ||
+            topicId >= std::numeric_limits<uint16_t>::max()) {
+
+            throw omnetpp::cRuntimeError("Invalid predefined topic ID value");
+        }
+
+        // encode the sanitized topic name to Base64 for consistent key handling
+        std::string encodedTopicName = StringHelper::base64Encode(it.key());
+
+        result[encodedTopicName] = topicId;
+    }
+
+    return result;
 }
 
 } /* namespace mqttsn */

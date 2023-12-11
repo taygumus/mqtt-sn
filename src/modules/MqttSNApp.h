@@ -39,6 +39,8 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual uint16_t getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true,
                                           const std::string& error = "");
 
+        virtual std::map<std::string, uint16_t> getPredefinedTopics();
+
     public:
         MqttSNApp() {};
         ~MqttSNApp() {};
