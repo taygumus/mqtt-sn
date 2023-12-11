@@ -81,6 +81,7 @@ class MqttSNPublisher : public MqttSNClient
 
         // other methods
         virtual void fillTopicsAndData();
+        virtual void resetAndPopulateTopics();
         virtual void retryLastPublish();
         virtual void printPublishMessage(uint16_t topicId, const RegisterInfo& registerInfo, const DataInfo& data);
         virtual bool findTopicByName(const std::string& topicName, uint16_t& topicId);

@@ -50,7 +50,7 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
 {
-    topicIds.clear();
+    resetAndPopulateTopics();
     lastPublish.topicId = 0;
 }
 
@@ -496,8 +496,6 @@ void MqttSNPublisher::handlePublishEvent()
 
 void MqttSNPublisher::fillTopicsAndData()
 {
-    std::map<std::string, uint16_t> predefinedTopics = MqttSNApp::getPredefinedTopics();
-
     json jsonData = json::parse(par("topicsAndDataJson").stringValue());
     int topicsKey = 0;
 
@@ -511,24 +509,6 @@ void MqttSNPublisher::fillTopicsAndData()
             !StringHelper::checkStringLength(topicName, Length::TWO_OCTETS)) {
 
             throw omnetpp::cRuntimeError("Short topic names must have exactly two characters");
-        }
-
-        // check constraints for predefined topics
-        if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
-            // if the topic is predefined, retrieve its ID
-            std::string encodedTopicName = StringHelper::base64Encode(topicName);
-
-            // check if the predefined topic exists
-            auto predefinedTopicsIt = predefinedTopics.find(encodedTopicName);
-            if (predefinedTopicsIt == predefinedTopics.end()) {
-                throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
-            }
-
-            RegisterInfo registerInfo;
-            registerInfo.topicName = topicName;
-            registerInfo.topicsAndDataKey = topicsKey;
-
-            topicIds[predefinedTopicsIt->second] = registerInfo;
         }
 
         TopicAndData topicAndData;
@@ -548,6 +528,27 @@ void MqttSNPublisher::fillTopicsAndData()
         }
 
         topicsAndData[topicsKey++] = topicAndData;
+    }
+}
+
+void MqttSNPublisher::resetAndPopulateTopics()
+{
+    topicIds.clear();
+
+    for (auto& pair : topicsAndData) {
+        TopicAndData& topicAndData = pair.second;
+
+        if (topicAndData.topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) {
+            topicAndData.counter = 0;
+        }
+
+        if (topicAndData.topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+            RegisterInfo registerInfo;
+            registerInfo.topicName = topicAndData.topicName;
+            registerInfo.topicsAndDataKey = pair.first;
+
+            topicIds[MqttSNClient::getPredefinedTopicId(topicAndData.topicName)] = registerInfo;
+        }
     }
 }
 

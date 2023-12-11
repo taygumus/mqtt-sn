@@ -51,6 +51,8 @@ class MqttSNClient : public MqttSNApp
 
         uint16_t currentMsgId = 0;
 
+        std::map<std::string, uint16_t> predefinedTopics;
+
         // retransmissions management
         std::map<MsgType, UnicastMessageInfo> retransmissions;
 
@@ -117,6 +119,7 @@ class MqttSNClient : public MqttSNApp
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual std::string generateClientId();
+        virtual uint16_t getPredefinedTopicId(const std::string& topicName);
 
         // other methods about message ID
         virtual void scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msgId);

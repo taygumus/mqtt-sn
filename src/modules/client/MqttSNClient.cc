@@ -3,6 +3,7 @@
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
 #include "types/shared/Length.h"
+#include "helpers/StringHelper.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
 #include "messages/MqttSNGwInfo.h"
@@ -44,6 +45,8 @@ void MqttSNClient::initialize(int stage)
         retransmissionInterval = par("retransmissionInterval");
 
         waitingInterval = par("waitingInterval");
+
+        predefinedTopics = MqttSNApp::getPredefinedTopics();
 
         initializeCustom();
     }
@@ -859,6 +862,17 @@ std::string MqttSNClient::generateClientId()
     }
 
     return clientId;
+}
+
+uint16_t MqttSNClient::getPredefinedTopicId(const std::string& topicName)
+{
+    // check if the predefined topic exists
+    auto predefinedTopicsIt = predefinedTopics.find(StringHelper::base64Encode(topicName));
+    if (predefinedTopicsIt == predefinedTopics.end()) {
+        throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
+    }
+
+    return predefinedTopicsIt->second;
 }
 
 void MqttSNClient::scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msgId)
