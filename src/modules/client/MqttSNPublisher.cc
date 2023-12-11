@@ -624,9 +624,10 @@ void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, con
 
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
+    TopicIdType topicIdTypeFlag = topicsAndData[lastPublish.registerInfo.topicsAndDataKey].topicIdTypeFlag;
+
     sendPublish(destAddress, destPort,
-                true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag,
-                topicsAndData[lastPublish.registerInfo.topicsAndDataKey].topicIdTypeFlag,
+                true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag, topicIdTypeFlag,
                 lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()),
                 lastPublish.dataInfo.data);
 }
