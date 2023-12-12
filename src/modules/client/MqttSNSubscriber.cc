@@ -16,7 +16,7 @@ Define_Module(MqttSNSubscriber);
 
 using json = nlohmann::json;
 
-void MqttSNSubscriber::initializeCustom()
+void MqttSNSubscriber::levelTwoInit()
 {
     fillTopics();
 

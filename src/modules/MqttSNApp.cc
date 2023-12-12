@@ -9,6 +9,16 @@ namespace mqttsn {
 
 using json = nlohmann::json;
 
+void MqttSNApp::initialize(int stage)
+{
+    ClockUserModuleMixin::initialize(stage);
+
+    if (stage == inet::INITSTAGE_LOCAL) {
+        fillPredefinedTopics();
+        levelOneInit();
+    }
+}
+
 void MqttSNApp::socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet)
 {
     processPacket(packet);
@@ -162,10 +172,9 @@ uint16_t MqttSNApp::getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t
     return currentId;
 }
 
-std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
+void MqttSNApp::fillPredefinedTopics()
 {
     json jsonData = json::parse(par("predefinedTopicsJson").stringValue());
-    std::map<std::string, uint16_t> result;
 
     // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
@@ -182,10 +191,19 @@ std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
         // encode the sanitized topic name to Base64 for consistent key handling
         std::string encodedTopicName = StringHelper::base64Encode(it.key());
 
-        result[encodedTopicName] = topicId;
+        predefinedTopics[encodedTopicName] = topicId;
+    }
+}
+
+uint16_t MqttSNApp::getPredefinedTopicId(const std::string& topicName)
+{
+    // check if the predefined topic exists
+    auto predefinedTopicsIt = predefinedTopics.find(StringHelper::base64Encode(topicName));
+    if (predefinedTopicsIt == predefinedTopics.end()) {
+        throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
     }
 
-    return result;
+    return predefinedTopicsIt->second;
 }
 
 } /* namespace mqttsn */

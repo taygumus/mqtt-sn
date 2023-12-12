@@ -3,7 +3,6 @@
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
 #include "types/shared/Length.h"
-#include "helpers/StringHelper.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
 #include "messages/MqttSNGwInfo.h"
@@ -13,43 +12,37 @@
 
 namespace mqttsn {
 
-void MqttSNClient::initialize(int stage)
+void MqttSNClient::levelOneInit()
 {
-    ClockUserModuleMixin::initialize(stage);
+    stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
+    currentState = ClientState::DISCONNECTED;
 
-    if (stage == inet::INITSTAGE_LOCAL) {
-        stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
-        currentState = ClientState::DISCONNECTED;
+    checkGatewaysInterval = par("checkGatewaysInterval");
+    checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
 
-        checkGatewaysInterval = par("checkGatewaysInterval");
-        checkGatewaysEvent = new inet::ClockEvent("checkGatewaysTimer");
+    searchGatewayMaxDelay = par("searchGatewayMaxDelay");
+    searchGatewayInterval = uniform(SEARCH_GATEWAY_MIN_DELAY, searchGatewayMaxDelay);
+    searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
 
-        searchGatewayMaxDelay = par("searchGatewayMaxDelay");
-        searchGatewayInterval = uniform(SEARCH_GATEWAY_MIN_DELAY, searchGatewayMaxDelay);
-        searchGatewayEvent = new inet::ClockEvent("searchGatewayTimer");
+    temporaryDuration = par("temporaryDuration");
 
-        temporaryDuration = par("temporaryDuration");
+    gatewayInfoMaxDelay = par("gatewayInfoMaxDelay");
+    gatewayInfoInterval = uniform(0, gatewayInfoMaxDelay);
+    gatewayInfoEvent = new inet::ClockEvent("gatewayInfoTimer");
 
-        gatewayInfoMaxDelay = par("gatewayInfoMaxDelay");
-        gatewayInfoInterval = uniform(0, gatewayInfoMaxDelay);
-        gatewayInfoEvent = new inet::ClockEvent("gatewayInfoTimer");
+    checkConnectionInterval = par("checkConnectionInterval");
+    checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
 
-        checkConnectionInterval = par("checkConnectionInterval");
-        checkConnectionEvent = new inet::ClockEvent("checkConnectionTimer");
+    clientId = generateClientId();
 
-        clientId = generateClientId();
+    keepAlive = par("keepAlive");
+    pingEvent = new inet::ClockEvent("pingTimer");
 
-        keepAlive = par("keepAlive");
-        pingEvent = new inet::ClockEvent("pingTimer");
+    retransmissionInterval = par("retransmissionInterval");
 
-        retransmissionInterval = par("retransmissionInterval");
+    waitingInterval = par("waitingInterval");
 
-        waitingInterval = par("waitingInterval");
-
-        predefinedTopics = MqttSNApp::getPredefinedTopics();
-
-        initializeCustom();
-    }
+    levelTwoInit();
 }
 
 void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage* msg)
@@ -862,17 +855,6 @@ std::string MqttSNClient::generateClientId()
     }
 
     return clientId;
-}
-
-uint16_t MqttSNClient::getPredefinedTopicId(const std::string& topicName)
-{
-    // check if the predefined topic exists
-    auto predefinedTopicsIt = predefinedTopics.find(StringHelper::base64Encode(topicName));
-    if (predefinedTopicsIt == predefinedTopics.end()) {
-        throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
-    }
-
-    return predefinedTopicsIt->second;
 }
 
 void MqttSNClient::scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msgId)

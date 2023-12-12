@@ -51,13 +51,11 @@ class MqttSNClient : public MqttSNApp
 
         uint16_t currentMsgId = 0;
 
-        std::map<std::string, uint16_t> predefinedTopics;
-
         // retransmissions management
         std::map<MsgType, UnicastMessageInfo> retransmissions;
 
     protected:
-        virtual void initialize(int stage) override;
+        virtual void levelOneInit() override;
         virtual void handleMessageWhenUp(omnetpp::cMessage* msg) override;
         virtual void finish() override;
         virtual void refreshDisplay() const override;
@@ -119,9 +117,8 @@ class MqttSNClient : public MqttSNApp
         virtual bool isConnectedGateway(const inet::L3Address& srcAddress, const int& srcPort);
         virtual std::pair<uint8_t, GatewayInfo> selectGateway();
         virtual std::string generateClientId();
-        virtual uint16_t getPredefinedTopicId(const std::string& topicName);
 
-        // other methods about message ID
+        // other methods about message identifiers
         virtual void scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msgId);
         virtual bool checkMsgIdForType(MsgType msgType, uint16_t msgId);
         virtual bool processAckForMsgType(MsgType msgType, uint16_t msgId);
@@ -140,7 +137,7 @@ class MqttSNClient : public MqttSNApp
         virtual void retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
 
         // pure virtual functions
-        virtual void initializeCustom() = 0;
+        virtual void levelTwoInit() = 0;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) = 0;
 
         virtual void scheduleActiveStateEventsCustom() = 0;

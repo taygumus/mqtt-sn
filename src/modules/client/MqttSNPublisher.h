@@ -34,7 +34,7 @@ class MqttSNPublisher : public MqttSNClient
         LastPublishInfo lastPublish;
 
     protected:
-        virtual void initializeCustom() override;
+        virtual void levelTwoInit() override;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
         // active state management

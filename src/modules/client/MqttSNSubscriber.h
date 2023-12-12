@@ -34,7 +34,7 @@ class MqttSNSubscriber : public MqttSNClient
         std::map<uint16_t, DataInfo> messages;
 
     protected:
-        virtual void initializeCustom() override;
+        virtual void levelTwoInit() override;
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
         // active state management

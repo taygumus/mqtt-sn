@@ -17,7 +17,7 @@ Define_Module(MqttSNPublisher);
 
 using json = nlohmann::json;
 
-void MqttSNPublisher::initializeCustom()
+void MqttSNPublisher::levelTwoInit()
 {
     willQoSFlag = par("willQoSFlag");
     willRetainFlag = par("willRetainFlag");
@@ -547,7 +547,7 @@ void MqttSNPublisher::resetAndPopulateTopics()
             registerInfo.topicName = topicAndData.topicName;
             registerInfo.topicsAndDataKey = pair.first;
 
-            topicIds[MqttSNClient::getPredefinedTopicId(topicAndData.topicName)] = registerInfo;
+            topicIds[MqttSNApp::getPredefinedTopicId(topicAndData.topicName)] = registerInfo;
         }
     }
 }

@@ -26,40 +26,38 @@ Define_Module(MqttSNServer);
 
 int MqttSNServer::gatewayIdCounter = -1;
 
-void MqttSNServer::initialize(int stage)
+void MqttSNServer::levelOneInit()
 {
-    ClockUserModuleMixin::initialize(stage);
+    stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
+    currentState = GatewayState::OFFLINE;
 
-    if (stage == inet::INITSTAGE_LOCAL) {
-        stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
-        currentState = GatewayState::OFFLINE;
+    advertiseInterval = par("advertiseInterval");
+    advertiseEvent = new inet::ClockEvent("advertiseTimer");
 
-        advertiseInterval = par("advertiseInterval");
-        advertiseEvent = new inet::ClockEvent("advertiseTimer");
-
-        if (gatewayIdCounter < UINT8_MAX) {
-            gatewayIdCounter++;
-        }
-        else {
-            throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
-        }
-        gatewayId = gatewayIdCounter;
-
-        activeClientsCheckInterval = par("activeClientsCheckInterval");
-        activeClientsCheckEvent = new inet::ClockEvent("activeClientsCheckTimer");
-
-        asleepClientsCheckInterval = par("asleepClientsCheckInterval");
-        asleepClientsCheckEvent = new inet::ClockEvent("asleepClientsCheckTimer");
-
-        clientsClearInterval = par("clientsClearInterval");
-        clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
-
-        pendingRetainCheckInterval = par("pendingRetainCheckInterval");
-        pendingRetainCheckEvent = new inet::ClockEvent("pendingRetainCheckTimer");
-
-        requestsCheckInterval = par("requestsCheckInterval");
-        requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
+    if (gatewayIdCounter < UINT8_MAX) {
+        gatewayIdCounter++;
     }
+    else {
+        throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
+    }
+    gatewayId = gatewayIdCounter;
+
+    activeClientsCheckInterval = par("activeClientsCheckInterval");
+    activeClientsCheckEvent = new inet::ClockEvent("activeClientsCheckTimer");
+
+    asleepClientsCheckInterval = par("asleepClientsCheckInterval");
+    asleepClientsCheckEvent = new inet::ClockEvent("asleepClientsCheckTimer");
+
+    clientsClearInterval = par("clientsClearInterval");
+    clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
+
+    fillWithPredefinedTopics();
+
+    pendingRetainCheckInterval = par("pendingRetainCheckInterval");
+    pendingRetainCheckEvent = new inet::ClockEvent("pendingRetainCheckTimer");
+
+    requestsCheckInterval = par("requestsCheckInterval");
+    requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
 }
 
 void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
@@ -529,6 +527,10 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 
     // extract and sanitize the topic name from the payload
     std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
+
+    ///
+    // TO DO
+    ///
 
     // if the topic name is empty, reject the registration and send REGACK with error code
     if (topicName.empty()) {
@@ -1071,6 +1073,17 @@ void MqttSNServer::handleClientsClearEvent()
     }
 
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
+}
+
+void MqttSNServer::fillWithPredefinedTopics()
+{
+    // retrieve predefined topics and their IDs
+    topicsToIds = MqttSNApp::predefinedTopics;
+
+    // populate the set with the IDs of predefined topics
+    for (const auto& entry : topicsToIds) {
+        topicIds.insert(entry.second);
+    }
 }
 
 void MqttSNServer::registerNewTopic(const std::string& topicName)

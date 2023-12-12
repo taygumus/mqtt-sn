@@ -72,7 +72,7 @@ class MqttSNServer : public MqttSNApp
         int numAdvertiseSent = 0;
 
     protected:
-        virtual void initialize(int stage) override;
+        virtual void levelOneInit() override;
         virtual void handleMessageWhenUp(omnetpp::cMessage* msg) override;
         virtual void finish() override;
         virtual void refreshDisplay() const override;
@@ -145,6 +145,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // other methods
+        virtual void fillWithPredefinedTopics();
         virtual void registerNewTopic(const std::string& topicName);
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, const std::string& data);
 
@@ -182,7 +183,7 @@ class MqttSNServer : public MqttSNApp
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
-        // other methods about subscribers; handling requests messages
+        // other methods about subscribers; handling request messages
         virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
         virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
 
