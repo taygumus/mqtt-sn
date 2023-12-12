@@ -472,7 +472,7 @@ void MqttSNPublisher::handlePublishEvent()
     TopicIdType topicIdTypeFlag = topicsAndData[registerInfo.topicsAndDataKey].topicIdTypeFlag;
 
     // print publish message to be sent
-    printPublishMessage(topicId, registerInfo, dataInfo);
+    printPublishMessage(topicId, registerInfo.topicName, topicIdTypeFlag, dataInfo);
 
     if (qosFlag == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
@@ -560,11 +560,13 @@ void MqttSNPublisher::retryLastPublish()
     scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
 }
 
-void MqttSNPublisher::printPublishMessage(uint16_t topicId, const RegisterInfo& registerInfo, const DataInfo& dataInfo)
+void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType,
+                                          const DataInfo& dataInfo)
 {
     EV << "Publish message to be sent:" << std::endl;
     EV << "Topic ID: " << topicId << std::endl;
-    EV << "Topic name: " << registerInfo.topicName << std::endl;
+    EV << "Topic name: " << topicName << std::endl;
+    EV << "Topic type: " << ConversionHelper::topicIdTypeToString(topicIdType) << std::endl;
     EV << "Duplicate: " << false << std::endl;
     EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qosFlag) << std::endl;
     EV << "Retain: " << dataInfo.retainFlag << std::endl;
