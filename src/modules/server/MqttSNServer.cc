@@ -528,10 +528,6 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
     // extract and sanitize the topic name from the payload
     std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
 
-    ///
-    // TO DO
-    ///
-
     // if the topic name is empty, reject the registration and send REGACK with error code
     if (topicName.empty()) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);

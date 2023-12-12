@@ -25,9 +25,6 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void socketErrorArrived(inet::UdpSocket* socket, inet::Indication* indication) override;
         virtual void socketClosed(inet::UdpSocket* socket) override;
 
-        // process received packets
-        virtual void processPacket(inet::Packet* pk) = 0;
-
         // send packets
         virtual void sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress = "", uint16_t gatewayPort = 0);
         virtual void sendPingReq(const inet::L3Address& destAddress, const int& destPort, const std::string& clientId = "");
@@ -50,6 +47,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
         // pure virtual functions
         virtual void levelOneInit() = 0;
+        virtual void processPacket(inet::Packet* pk) = 0;
 
     public:
         MqttSNApp() {};
