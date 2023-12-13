@@ -11,7 +11,6 @@ class StringHelper : public BaseHelper
         static std::string appendCounterToString(const std::string& inputString, int counter);
         static std::string base64Encode(const std::string& inputString);
         static std::string sanitizeSpaces(const std::string& inputString);
-        static bool checkStringLength(const std::string& inputString, int expectedLength);
 };
 
 } /* namespace mqttsn */

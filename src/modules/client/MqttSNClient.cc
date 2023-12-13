@@ -2,6 +2,7 @@
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
+#include "helpers/StringHelper.h"
 #include "types/shared/Length.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNSearchGw.h"
@@ -41,6 +42,8 @@ void MqttSNClient::levelOneInit()
     retransmissionInterval = par("retransmissionInterval");
 
     waitingInterval = par("waitingInterval");
+
+    predefinedTopics = MqttSNApp::getPredefinedTopics();
 
     levelTwoInit();
 }
@@ -919,6 +922,33 @@ std::set<uint16_t> MqttSNClient::getUsedMsgIds()
     }
 
     return usedIds;
+}
+
+void MqttSNClient::checkTopicConsistency(const std::string& topicName, TopicIdType topicIdType, bool isFound)
+{
+    if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        // topic name must be present in the predefined topics definition
+        if (!isFound) {
+            throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
+        }
+    }
+    else {
+        // topic name should not be present in the predefined topics definition
+        if (isFound) {
+            throw omnetpp::cRuntimeError("Topic '%s' has an ambiguous type", topicName.c_str());
+        }
+    }
+}
+
+uint16_t MqttSNClient::getPredefinedTopicId(const std::string& topicName)
+{
+    // check if the predefined topic exists
+    auto predefinedTopicsIt = predefinedTopics.find(StringHelper::base64Encode(topicName));
+    if (predefinedTopicsIt == predefinedTopics.end()) {
+        throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
+    }
+
+    return predefinedTopicsIt->second;
 }
 
 void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort,

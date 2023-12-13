@@ -3,6 +3,7 @@
 
 struct DataInfo {
     bool retainFlag = false;
+    TopicIdType topicIdTypeFlag = TopicIdType::NORMAL_TOPIC_ID;
     uint16_t topicId = 0;
     std::string data;
 };

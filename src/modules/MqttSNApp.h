@@ -5,6 +5,7 @@
 #include "inet/common/clock/ClockUserModuleMixin.h"
 #include "inet/transportlayer/contract/udp/UdpSocket.h"
 #include "types/shared/MsgType.h"
+#include "types/shared/TopicIdType.h"
 
 extern template class inet::ClockUserModuleMixin<inet::ApplicationBase>;
 
@@ -13,9 +14,7 @@ namespace mqttsn {
 class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, public inet::UdpSocket::ICallback
 {
     protected:
-        // application state
         inet::UdpSocket socket;
-        std::map<std::string, uint16_t> predefinedTopics;
 
     protected:
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
@@ -41,9 +40,9 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual uint16_t getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true,
                                           const std::string& error = "");
 
-        // other methods about predefined topics
-        virtual void fillPredefinedTopics();
-        virtual uint16_t getPredefinedTopicId(const std::string& topicName);
+        // other methods about topics
+        virtual void checkTopicLength(const std::string& topicName, TopicIdType topicIdType);
+        virtual std::map<std::string, uint16_t> getPredefinedTopics();
 
         // pure virtual functions
         virtual void levelOneInit() = 0;

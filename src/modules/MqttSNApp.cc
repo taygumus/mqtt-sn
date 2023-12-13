@@ -1,6 +1,7 @@
 #include "MqttSNApp.h"
 #include "externals/nlohmann/json.hpp"
 #include "helpers/StringHelper.h"
+#include "types/shared/Length.h"
 #include "messages/MqttSNGwInfo.h"
 #include "messages/MqttSNPingReq.h"
 #include "messages/MqttSNDisconnect.h"
@@ -14,7 +15,6 @@ void MqttSNApp::initialize(int stage)
     ClockUserModuleMixin::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
-        fillPredefinedTopics();
         levelOneInit();
     }
 }
@@ -172,12 +172,35 @@ uint16_t MqttSNApp::getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t
     return currentId;
 }
 
-void MqttSNApp::fillPredefinedTopics()
+void MqttSNApp::checkTopicLength(const std::string& topicName, TopicIdType topicIdType)
+{
+    int topicNameLength = topicName.length();
+
+    if (topicNameLength < Length::TWO_OCTETS) {
+        throw omnetpp::cRuntimeError("Topic name must be at least two characters long");
+    }
+
+    if (topicNameLength == Length::TWO_OCTETS && topicIdType != TopicIdType::SHORT_TOPIC_ID) {
+        throw omnetpp::cRuntimeError("A two-character topic name must be identified as a short topic");
+    }
+
+    if (topicNameLength > Length::TWO_OCTETS && topicIdType == TopicIdType::SHORT_TOPIC_ID) {
+        throw omnetpp::cRuntimeError("Short topic names must have exactly two characters");
+    }
+}
+
+std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
 {
     json jsonData = json::parse(par("predefinedTopicsJson").stringValue());
+    std::map<std::string, uint16_t> result;
 
     // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
+        std::string topicName = it.key();
+
+        // validate topic name length and type against specified criteria
+        checkTopicLength(topicName, TopicIdType::PRE_DEFINED_TOPIC_ID);
+
         // extract the predefined topic ID from JSON
         int topicId = it.value();
 
@@ -188,22 +211,10 @@ void MqttSNApp::fillPredefinedTopics()
             throw omnetpp::cRuntimeError("Invalid predefined topic ID value");
         }
 
-        // encode the sanitized topic name to Base64 for consistent key handling
-        std::string encodedTopicName = StringHelper::base64Encode(it.key());
-
-        predefinedTopics[encodedTopicName] = topicId;
-    }
-}
-
-uint16_t MqttSNApp::getPredefinedTopicId(const std::string& topicName)
-{
-    // check if the predefined topic exists
-    auto predefinedTopicsIt = predefinedTopics.find(StringHelper::base64Encode(topicName));
-    if (predefinedTopicsIt == predefinedTopics.end()) {
-        throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
+        result[StringHelper::base64Encode(topicName)] = topicId;
     }
 
-    return predefinedTopicsIt->second;
+    return result;
 }
 
 } /* namespace mqttsn */

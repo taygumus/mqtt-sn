@@ -147,7 +147,7 @@ class MqttSNServer : public MqttSNApp
         // other methods
         virtual void fillWithPredefinedTopics();
         virtual void registerNewTopic(const std::string& topicName);
-        virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, const std::string& data);
+        virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
 
         // other methods about congestions
         virtual bool checkClientsCongestion();

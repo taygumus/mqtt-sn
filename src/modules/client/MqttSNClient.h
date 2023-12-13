@@ -51,6 +51,8 @@ class MqttSNClient : public MqttSNApp
 
         uint16_t currentMsgId = 0;
 
+        std::map<std::string, uint16_t> predefinedTopics;
+
         // retransmissions management
         std::map<MsgType, UnicastMessageInfo> retransmissions;
 
@@ -124,6 +126,10 @@ class MqttSNClient : public MqttSNApp
         virtual bool processAckForMsgType(MsgType msgType, uint16_t msgId);
         virtual uint16_t getNewMsgId();
         virtual std::set<uint16_t> getUsedMsgIds();
+
+        // other methods about topics
+        virtual void checkTopicConsistency(const std::string& topicName, TopicIdType topicIdType, bool isFound);
+        virtual uint16_t getPredefinedTopicId(const std::string& topicName);
 
         // retransmissions management
         virtual void scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort,

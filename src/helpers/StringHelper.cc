@@ -47,9 +47,4 @@ std::string StringHelper::sanitizeSpaces(const std::string& inputString)
     return sanitizedString;
 }
 
-bool StringHelper::checkStringLength(const std::string& inputString, int expectedLength)
-{
-    return inputString.length() == expectedLength;
-}
-
 } /* namespace mqttsn */

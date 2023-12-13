@@ -1,6 +1,5 @@
 #include "MqttSNPublisher.h"
 #include "externals/nlohmann/json.hpp"
-#include "types/shared/Length.h"
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
 #include "helpers/PacketHelper.h"
@@ -501,15 +500,17 @@ void MqttSNPublisher::fillTopicsAndData()
 
     // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
-        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
         std::string topicName = it.key();
+        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
 
-        // check constraints for short topics
-        if (topicIdType == TopicIdType::SHORT_TOPIC_ID &&
-            !StringHelper::checkStringLength(topicName, Length::TWO_OCTETS)) {
+        // validate topic name length and type against specified criteria
+        MqttSNApp::checkTopicLength(topicName, topicIdType);
 
-            throw omnetpp::cRuntimeError("Short topic names must have exactly two characters");
-        }
+        // validate topic consistency
+        MqttSNClient::checkTopicConsistency(
+                topicName, topicIdType,
+                predefinedTopics.find(StringHelper::base64Encode(topicName)) != predefinedTopics.end()
+        );
 
         TopicAndData topicAndData;
         topicAndData.topicIdTypeFlag = topicIdType;
@@ -538,16 +539,18 @@ void MqttSNPublisher::resetAndPopulateTopics()
     for (auto& pair : topicsAndData) {
         TopicAndData& topicAndData = pair.second;
 
+        // reset the counter if the topic uses a short ID type
         if (topicAndData.topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) {
             topicAndData.counter = 0;
         }
 
+        // fetch the predefined topic ID
         if (topicAndData.topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID) {
             RegisterInfo registerInfo;
             registerInfo.topicName = topicAndData.topicName;
             registerInfo.topicsAndDataKey = pair.first;
 
-            topicIds[MqttSNApp::getPredefinedTopicId(topicAndData.topicName)] = registerInfo;
+            topicIds[MqttSNClient::getPredefinedTopicId(topicAndData.topicName)] = registerInfo;
         }
     }
 }

@@ -4,6 +4,7 @@
 struct RetainMessageInfo {
     bool dup = false;
     QoS qos = QoS::QOS_ZERO;
+    TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
     std::string data;
 };
 
