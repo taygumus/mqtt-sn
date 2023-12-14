@@ -41,7 +41,8 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
                                           const std::string& error = "");
 
         // other methods about topics
-        virtual void checkTopicLength(const std::string& topicName, TopicIdType topicIdType);
+        virtual void checkTopicLength(uint16_t topicLength, TopicIdType topicIdType);
+        virtual bool isMinTopicLength(uint16_t topicLength);
         virtual std::map<std::string, uint16_t> getPredefinedTopics();
 
         // pure virtual functions

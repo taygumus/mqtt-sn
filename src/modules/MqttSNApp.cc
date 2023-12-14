@@ -172,19 +172,27 @@ uint16_t MqttSNApp::getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t
     return currentId;
 }
 
-void MqttSNApp::checkTopicLength(const std::string& topicName, TopicIdType topicIdType)
+bool MqttSNApp::isMinTopicLength(uint16_t topicLength)
 {
-    int topicNameLength = topicName.length();
+    // validate whether the topic name meets the minimum required length
+    if (topicLength < Length::TWO_OCTETS) {
+        return false;
+    }
 
-    if (topicNameLength < Length::TWO_OCTETS) {
+    return true;
+}
+
+void MqttSNApp::checkTopicLength(uint16_t topicLength, TopicIdType topicIdType)
+{
+    if (!isMinTopicLength(topicLength)) {
         throw omnetpp::cRuntimeError("Topic name must be at least two characters long");
     }
 
-    if (topicNameLength == Length::TWO_OCTETS && topicIdType != TopicIdType::SHORT_TOPIC_ID) {
+    if (topicLength == Length::TWO_OCTETS && topicIdType != TopicIdType::SHORT_TOPIC_ID) {
         throw omnetpp::cRuntimeError("A two-character topic name must be identified as a short topic");
     }
 
-    if (topicNameLength > Length::TWO_OCTETS && topicIdType == TopicIdType::SHORT_TOPIC_ID) {
+    if (topicLength > Length::TWO_OCTETS && topicIdType == TopicIdType::SHORT_TOPIC_ID) {
         throw omnetpp::cRuntimeError("Short topic names must have exactly two characters");
     }
 }
@@ -199,7 +207,7 @@ std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
         std::string topicName = it.key();
 
         // validate topic name length and type against specified criteria
-        checkTopicLength(topicName, TopicIdType::PRE_DEFINED_TOPIC_ID);
+        checkTopicLength(topicName.length(), TopicIdType::PRE_DEFINED_TOPIC_ID);
 
         // extract the predefined topic ID from JSON
         int topicId = it.value();

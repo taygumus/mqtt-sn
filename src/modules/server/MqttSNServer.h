@@ -9,6 +9,7 @@
 #include "types/shared/ClientState.h"
 #include "types/server/GatewayState.h"
 #include "types/server/ClientInfo.h"
+#include "types/server/TopicInfo.h"
 #include "types/server/DataInfo.h"
 #include "types/server/PublisherInfo.h"
 #include "types/server/MessageInfo.h"
@@ -46,7 +47,7 @@ class MqttSNServer : public MqttSNApp
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
 
-        std::map<std::string, uint16_t> topicsToIds;
+        std::map<std::string, TopicInfo> topics;
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
@@ -145,9 +146,12 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // other methods
-        virtual void fillWithPredefinedTopics();
-        virtual void registerNewTopic(const std::string& topicName);
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
+
+        // other methods about topics
+        virtual void fillWithPredefinedTopics();
+        virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
+        virtual TopicIdType getTopicIdType(uint16_t topicLength);
 
         // other methods about congestions
         virtual bool checkClientsCongestion();

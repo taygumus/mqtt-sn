@@ -504,7 +504,7 @@ void MqttSNPublisher::fillTopicsAndData()
         TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
 
         // validate topic name length and type against specified criteria
-        MqttSNApp::checkTopicLength(topicName, topicIdType);
+        MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
 
         // validate topic consistency
         MqttSNClient::checkTopicConsistency(
