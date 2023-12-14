@@ -44,7 +44,7 @@ bool MqttSNSubscriber::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 {
-    topicIds.clear();
+    resetAndPopulateTopics();
 }
 
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
@@ -401,11 +401,48 @@ void MqttSNSubscriber::fillTopics()
 
     // iterate over json object keys (topics)
     for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
+        std::string topicName = it.key();
+        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
+
+        // validate topic name length and type against specified criteria
+        MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
+
+        // validate topic consistency
+        MqttSNClient::checkTopicConsistency(
+                topicName, topicIdType,
+                MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName)) != MqttSNClient::predefinedTopics.end()
+        );
+
         Topic topic;
         topic.topicName = it.key();
+        topic.topicIdTypeFlag = topicIdType;
         topic.qosFlag = ConversionHelper::intToQoS(it.value()["qos"]);
 
         topics[topicsKey++] = topic;
+    }
+}
+
+void MqttSNSubscriber::resetAndPopulateTopics()
+{
+    topicIds.clear();
+
+    for (auto& pair : topics) {
+        Topic& topic = pair.second;
+
+        // reset the counters if the topic uses a short ID type
+        if (topic.topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) {
+            topic.subscribeCounter = 0;
+            topic.unsubscribeCounter = 0;
+        }
+
+        // fetch the predefined topic ID
+        if (topic.topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+            TopicInfo topicInfo;
+            topicInfo.topicName = topic.topicName;
+            topicInfo.topicsKey = pair.first;
+
+            topicIds[MqttSNClient::getPredefinedTopicId(topic.topicName)] = topicInfo;
+        }
     }
 }
 

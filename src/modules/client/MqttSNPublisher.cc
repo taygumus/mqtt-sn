@@ -509,12 +509,12 @@ void MqttSNPublisher::fillTopicsAndData()
         // validate topic consistency
         MqttSNClient::checkTopicConsistency(
                 topicName, topicIdType,
-                predefinedTopics.find(StringHelper::base64Encode(topicName)) != predefinedTopics.end()
+                MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName)) != MqttSNClient::predefinedTopics.end()
         );
 
         TopicAndData topicAndData;
-        topicAndData.topicIdTypeFlag = topicIdType;
         topicAndData.topicName = topicName;
+        topicAndData.topicIdTypeFlag = topicIdType;
 
         int dataKey = 0;
 

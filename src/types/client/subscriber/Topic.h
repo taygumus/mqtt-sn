@@ -3,6 +3,7 @@
 
 struct Topic {
     std::string topicName;
+    TopicIdType topicIdTypeFlag = TopicIdType::NORMAL_TOPIC_ID;
     QoS qosFlag = QoS::QOS_ZERO;
     int subscribeCounter = 0;
     int unsubscribeCounter = 0;

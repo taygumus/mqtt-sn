@@ -74,6 +74,7 @@ class MqttSNSubscriber : public MqttSNClient
 
         // other methods
         virtual void fillTopics();
+        virtual void resetAndPopulateTopics();
         virtual void printPublishMessage(const MessageInfo& messageInfo);
 
         // retransmissions management
