@@ -47,7 +47,8 @@ class MqttSNServer : public MqttSNApp
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
 
-        std::map<std::string, TopicInfo> topics;
+        std::map<std::string, uint16_t> topicsToIds;
+        std::map<uint16_t, TopicInfo> idsToTopics;
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 

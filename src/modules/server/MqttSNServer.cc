@@ -540,13 +540,13 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
     std::string encodedTopicName = StringHelper::base64Encode(topicName);
 
     // check if the topic is already registered; if yes, send ACCEPTED response, otherwise register the topic
-    auto it = topics.find(encodedTopicName);
-    if (it != topics.end()) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::ACCEPTED, it->second.topicId, msgId);
+    auto it = topicsToIds.find(encodedTopicName);
+    if (it != topicsToIds.end()) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::ACCEPTED, it->second, msgId);
         return;
     }
 
-    // check if the maximum number of topics is reached; if not, set a new available topic ID
+    // check if the maximum number of topicsToIds is reached; if not, set a new available topic ID
     if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
         return;
@@ -567,8 +567,17 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     uint16_t msgId = payload->getMsgId();
 
     // check if the topic is registered; if not, send a return code
-    if (topicIds.find(topicId) == topicIds.end()) {
+    auto it = idsToTopics.find(topicId);
+    if (it == idsToTopics.end()) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
+        return;
+    }
+
+    TopicIdType topicIdTypeFlag = (TopicIdType) payload->getTopicIdTypeFlag();
+
+    // check for inconsistency in the received topic ID type
+    if (it->second.topicIdTypeFlag != topicIdTypeFlag) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);
         return;
     }
 
@@ -582,7 +591,6 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     bool dupFlag = payload->getDupFlag();
-    TopicIdType topicIdTypeFlag = (TopicIdType) payload->getTopicIdTypeFlag();
     std::string data = payload->getData();
 
     if (retainFlag) {
@@ -696,11 +704,11 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     std::string encodedTopicName = StringHelper::base64Encode(topicName);
 
     // check if the topic is already registered; if not, register it
-    auto it = topics.find(encodedTopicName);
+    auto it = topicsToIds.find(encodedTopicName);
     uint16_t topicId;
 
-    if (it == topics.end()) {
-        // check if the maximum number of topics is reached; if not, set a new available topic ID
+    if (it == topicsToIds.end()) {
+        // check if the maximum number of topicsToIds is reached; if not, set a new available topic ID
         if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
             sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_CONGESTION, 0, msgId);
             return;
@@ -710,7 +718,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
         topicId = currentTopicId;
     }
     else {
-        topicId = it->second.topicId;
+        topicId = it->second;
     }
 
     // check for an existing subscription and delete it if found
@@ -740,11 +748,11 @@ void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& s
 
     if (!topicName.empty()) {
         // check if the topic is present
-        auto it = topics.find(StringHelper::base64Encode(topicName));
-        if (it != topics.end()) {
+        auto it = topicsToIds.find(StringHelper::base64Encode(topicName));
+        if (it != topicsToIds.end()) {
             // check for an existing subscription and delete it if found
             std::pair<uint16_t, QoS> subscriptionKey;
-            if (findSubscription(srcAddress, srcPort, it->second.topicId, subscriptionKey)) {
+            if (findSubscription(srcAddress, srcPort, it->second, subscriptionKey)) {
                 deleteSubscription(srcAddress, srcPort, subscriptionKey);
             }
         }
@@ -1093,7 +1101,7 @@ void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, Topi
 
 void MqttSNServer::fillWithPredefinedTopics()
 {
-    // retrieve predefined topics and their IDs
+    // retrieve predefined topicsToIds and their IDs
     std::map<std::string, uint16_t> predefinedTopics = MqttSNApp::getPredefinedTopics();
 
     for (const auto& topic : predefinedTopics) {
@@ -1103,12 +1111,12 @@ void MqttSNServer::fillWithPredefinedTopics()
 
 void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType)
 {
-    // add the new topic in the data structures
     TopicInfo topicInfo;
-    topicInfo.topicId = topicId;
     topicInfo.topicIdTypeFlag = topicIdType;
 
-    topics[topicName] = topicInfo;
+    // add the new topic in the data structures
+    topicsToIds[topicName] = topicId;
+    idsToTopics[topicId] = topicInfo;
     topicIds.insert(topicId);
 }
 
