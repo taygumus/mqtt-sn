@@ -546,7 +546,7 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
         return;
     }
 
-    // check if the maximum number of topicsToIds is reached; if not, set a new available topic ID
+    // check if the maximum number of topics is reached; if not, set a new available topic ID
     if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
         return;
@@ -708,7 +708,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     uint16_t topicId;
 
     if (it == topicsToIds.end()) {
-        // check if the maximum number of topicsToIds is reached; if not, set a new available topic ID
+        // check if the maximum number of topics is reached; if not, set a new available topic ID
         if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
             sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_CONGESTION, 0, msgId);
             return;
@@ -1101,7 +1101,7 @@ void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, Topi
 
 void MqttSNServer::fillWithPredefinedTopics()
 {
-    // retrieve predefined topicsToIds and their IDs
+    // retrieve predefined topics and their IDs
     std::map<std::string, uint16_t> predefinedTopics = MqttSNApp::getPredefinedTopics();
 
     for (const auto& topic : predefinedTopics) {
