@@ -365,7 +365,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     }
 
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  false, qosFlag, topicIdTypeFlag,
+                  false, qosFlag, TopicIdType::NORMAL_TOPIC_ID,
                   MqttSNClient::getNewMsgId(),
                   topicName, 0);
 
