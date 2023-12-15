@@ -317,13 +317,20 @@ void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& d
 
 void MqttSNSubscriber::handleSubscriptionEvent()
 {
-    std::string topicName;
-    QoS qosFlag;
+    std::string topicName; ///
+    TopicIdType topicIdTypeFlag;///
+    QoS qosFlag;///
+
+    TopicInfo topicInfo;
 
     // if it's a retry, use the last sent element
     if (lastSubscription.retry) {
-        topicName = lastSubscription.info.topicName;
-        qosFlag = topics[lastSubscription.info.topicsKey].qosFlag;
+
+        topicName = lastSubscription.info.topicName;///
+        topicIdTypeFlag = topics[lastSubscription.info.topicsKey].topicIdTypeFlag;///
+        qosFlag = topics[lastSubscription.info.topicsKey].qosFlag;///
+
+        topicInfo = lastSubscription.info;
     }
     else {
         // check for topics availability
@@ -335,17 +342,30 @@ void MqttSNSubscriber::handleSubscriptionEvent()
         auto it = topics.begin();
         std::advance(it, intuniform(0, topics.size() - 1));
 
-        topicName = StringHelper::appendCounterToString(it->second.topicName, it->second.subscribeCounter);
-        qosFlag = it->second.qosFlag;
+        topicIdTypeFlag = it->second.topicIdTypeFlag;
+        int subscribeCounter = it->second.subscribeCounter;
+
+        // predefined and short topics are subscribed only once
+        if ((topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID || topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) &&
+             subscribeCounter == 1) {
+
+            scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, subscriptionEvent);
+            return;
+        }
+
+        topicName = StringHelper::appendCounterToString(it->second.topicName, subscribeCounter); ///
+        qosFlag = it->second.qosFlag; ///
+
+        topicInfo.topicName = StringHelper::appendCounterToString(it->second.topicName, subscribeCounter);
+        topicInfo.topicsKey = it->first;
 
         // update information about the last element
-        lastSubscription.info.topicName = topicName;
-        lastSubscription.info.topicsKey = it->first;
+        lastSubscription.info = topicInfo;
         lastSubscription.retry = true;
     }
 
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  false, qosFlag, TopicIdType::NORMAL_TOPIC_ID,
+                  false, qosFlag, topicIdTypeFlag,
                   MqttSNClient::getNewMsgId(),
                   topicName, 0);
 
@@ -407,15 +427,18 @@ void MqttSNSubscriber::fillTopics()
         // validate topic name length and type against specified criteria
         MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
 
+        auto predefinedTopicIt = MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName));
+
         // validate topic consistency
         MqttSNClient::checkTopicConsistency(
                 topicName, topicIdType,
-                MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName)) != MqttSNClient::predefinedTopics.end()
+                predefinedTopicIt != MqttSNClient::predefinedTopics.end()
         );
 
         Topic topic;
         topic.topicName = it.key();
         topic.topicIdTypeFlag = topicIdType;
+        topic.predefinedTopicId = predefinedTopicIt->second;
         topic.qosFlag = ConversionHelper::intToQoS(it.value()["qos"]);
 
         topics[topicsKey++] = topic;

@@ -719,6 +719,17 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     }
     else {
         topicId = it->second;
+
+        /*
+        //TopicIdType topicIdTypeFlag = (TopicIdType) payload->getTopicIdTypeFlag();
+
+        TopicInfo topicInfo = idsToTopics[topicId];
+
+        if (payload->getTopicIdTypeFlag() != topicInfo.topicIdTypeFlag) {
+            sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
+            return;
+        }
+        */
     }
 
     // check for an existing subscription and delete it if found
