@@ -52,11 +52,11 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> topicIds;
         uint16_t currentTopicId = 0;
 
-        inet::ClockEvent* pendingRetainCheckEvent = nullptr;
-        std::map<std::pair<inet::L3Address, int>, MessageInfo> pendingRetainMessages;
-
         std::map<uint16_t, RetainMessageInfo> retainMessages;
         std::set<uint16_t> retainMessageIds;
+
+        inet::ClockEvent* pendingRetainCheckEvent = nullptr;
+        std::map<std::pair<inet::L3Address, int>, MessageInfo> pendingRetainMessages;
 
         std::map<uint16_t, MessageInfo> messages;
         std::set<uint16_t> messageIds;
@@ -146,19 +146,6 @@ class MqttSNServer : public MqttSNApp
 
         virtual void handleClientsClearEvent();
 
-        // retain message methods
-        virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
-
-        // topic methods
-        virtual void fillWithPredefinedTopics();
-        virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
-        virtual TopicIdType getTopicIdType(uint16_t topicLength);
-
-        // congestion methods
-        virtual bool checkClientsCongestion();
-        virtual bool checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue = true);
-        virtual bool checkPublishCongestion(QoS qosFlag, bool retainFlag);
-
         // client methods
         virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
@@ -167,10 +154,20 @@ class MqttSNServer : public MqttSNApp
         // publisher methods
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
-        // subscriber methods
+        // topic methods
+        virtual void fillWithPredefinedTopics();
+        virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
+        virtual TopicIdType getTopicIdType(uint16_t topicLength);
+
+        // retain message methods
+        virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
         virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos);
 
-        // subscriber request handling methods
+        // request message methods
+        virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
+        virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
+
+        // request handling methods
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
         virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
@@ -186,11 +183,7 @@ class MqttSNServer : public MqttSNApp
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
-        // subscriber request message handling methods
-        virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
-        virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
-
-        // subscriber subscription methods
+        // subscription methods
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
 
@@ -200,6 +193,11 @@ class MqttSNServer : public MqttSNApp
                                         const std::pair<uint16_t, QoS>& subscriptionKey);
 
         virtual std::set<std::pair<uint16_t, QoS>> getSubscriptionKeysByTopicId(uint16_t topicId);
+
+        // congestion methods
+        virtual bool checkClientsCongestion();
+        virtual bool checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue = true);
+        virtual bool checkPublishCongestion(QoS qosFlag, bool retainFlag);
 
     public:
         MqttSNServer() {};

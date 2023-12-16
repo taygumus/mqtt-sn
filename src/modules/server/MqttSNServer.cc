@@ -61,34 +61,6 @@ void MqttSNServer::levelOneInit()
     requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
 }
 
-void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
-{
-    if (msg == stateChangeEvent) {
-        handleStateChangeEvent();
-    }
-    else if (msg == advertiseEvent) {
-        handleAdvertiseEvent();
-    }
-    else if (msg == activeClientsCheckEvent) {
-        handleActiveClientsCheckEvent();
-    }
-    else if (msg == asleepClientsCheckEvent) {
-        handleAsleepClientsCheckEvent();
-    }
-    else if (msg == clientsClearEvent) {
-        handleClientsClearEvent();
-    }
-    else if (msg == pendingRetainCheckEvent) {
-        handlePendingRetainCheckEvent();
-    }
-    else if (msg == requestsCheckEvent) {
-        handleRequestsCheckEvent();
-    }
-    else {
-        MqttSNApp::socket.processMessage(msg);
-    }
-}
-
 void MqttSNServer::finish()
 {
     inet::ApplicationBase::finish();
@@ -129,6 +101,34 @@ void MqttSNServer::handleCrashOperation(inet::LifecycleOperation* operation)
     cancelOnlineStateClockEvents();
 
     MqttSNApp::socket.destroy();
+}
+
+void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
+{
+    if (msg == stateChangeEvent) {
+        handleStateChangeEvent();
+    }
+    else if (msg == advertiseEvent) {
+        handleAdvertiseEvent();
+    }
+    else if (msg == activeClientsCheckEvent) {
+        handleActiveClientsCheckEvent();
+    }
+    else if (msg == asleepClientsCheckEvent) {
+        handleAsleepClientsCheckEvent();
+    }
+    else if (msg == clientsClearEvent) {
+        handleClientsClearEvent();
+    }
+    else if (msg == pendingRetainCheckEvent) {
+        handlePendingRetainCheckEvent();
+    }
+    else if (msg == requestsCheckEvent) {
+        handleRequestsCheckEvent();
+    }
+    else {
+        MqttSNApp::socket.processMessage(msg);
+    }
 }
 
 void MqttSNServer::handleStateChangeEvent()
@@ -1092,92 +1092,6 @@ void MqttSNServer::handleClientsClearEvent()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
-void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data)
-{
-    // store message as retained for the topic
-    RetainMessageInfo retainMessageInfo;
-    retainMessageInfo.dup = dup;
-    retainMessageInfo.qos = qos;
-    retainMessageInfo.topicIdType = topicIdType;
-    retainMessageInfo.data = data;
-
-    retainMessages[topicId] = retainMessageInfo;
-    retainMessageIds.insert(topicId);
-}
-
-void MqttSNServer::fillWithPredefinedTopics()
-{
-    // retrieve predefined topics and their IDs
-    std::map<std::string, uint16_t> predefinedTopics = MqttSNApp::getPredefinedTopics();
-
-    for (const auto& topic : predefinedTopics) {
-        addNewTopic(topic.first, topic.second, TopicIdType::PRE_DEFINED_TOPIC_ID);
-    }
-}
-
-void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType)
-{
-    TopicInfo topicInfo;
-    topicInfo.topicIdTypeFlag = topicIdType;
-
-    // add the new topic in the data structures
-    topicsToIds[topicName] = topicId;
-    idsToTopics[topicId] = topicInfo;
-    topicIds.insert(topicId);
-}
-
-TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
-{
-    if (topicLength == Length::TWO_OCTETS) {
-        return TopicIdType::SHORT_TOPIC_ID;
-    }
-    else if (topicLength > Length::TWO_OCTETS) {
-        return TopicIdType::NORMAL_TOPIC_ID;
-    }
-
-    throw omnetpp::cRuntimeError("Invalid topic length");
-}
-
-bool MqttSNServer::checkClientsCongestion()
-{
-    // verify congestion based on the number of clients connected
-    return clients.size() >= (unsigned int) par("maximumClients");
-}
-
-bool MqttSNServer::checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue)
-{
-    // check for invalid message ID; ID=0 is invalid
-    if (usedIds.find(0) != usedIds.end()) {
-        throw omnetpp::cRuntimeError("Invalid message ID=0 detected in the set");
-    }
-
-    // check for invalid message ID; ID=UINT16_MAX can be considered invalid
-    if (!allowMaxValue && usedIds.find(UINT16_MAX) != usedIds.end()) {
-        throw omnetpp::cRuntimeError("Invalid message ID=UINT16_MAX detected in the set");
-    }
-
-    uint16_t maxValue = allowMaxValue ? UINT16_MAX : UINT16_MAX - 1;
-
-    // check if the size equals the maximum valid range of IDs
-    return (usedIds.size() == maxValue);
-}
-
-bool MqttSNServer::checkPublishCongestion(QoS qosFlag, bool retainFlag)
-{
-    // check congestion for retained messages
-    if (retainFlag && checkIDSpaceCongestion(retainMessageIds, false)) {
-        return true;
-    }
-
-    // check congestion for QoS levels 1 and 2
-    if (qosFlag == QoS::QOS_ONE || qosFlag == QoS::QOS_TWO) {
-        return (checkIDSpaceCongestion(requestIds) || checkIDSpaceCongestion(messageIds));
-    }
-
-    // no congestion detected
-    return false;
-}
-
 void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
 {
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
@@ -1233,6 +1147,52 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress,
     return nullptr;
 }
 
+void MqttSNServer::fillWithPredefinedTopics()
+{
+    // retrieve predefined topics and their IDs
+    std::map<std::string, uint16_t> predefinedTopics = MqttSNApp::getPredefinedTopics();
+
+    for (const auto& topic : predefinedTopics) {
+        addNewTopic(topic.first, topic.second, TopicIdType::PRE_DEFINED_TOPIC_ID);
+    }
+}
+
+void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType)
+{
+    TopicInfo topicInfo;
+    topicInfo.topicIdTypeFlag = topicIdType;
+
+    // add the new topic in the data structures
+    topicsToIds[topicName] = topicId;
+    idsToTopics[topicId] = topicInfo;
+    topicIds.insert(topicId);
+}
+
+TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
+{
+    if (topicLength == Length::TWO_OCTETS) {
+        return TopicIdType::SHORT_TOPIC_ID;
+    }
+    else if (topicLength > Length::TWO_OCTETS) {
+        return TopicIdType::NORMAL_TOPIC_ID;
+    }
+
+    throw omnetpp::cRuntimeError("Invalid topic length");
+}
+
+void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data)
+{
+    // store message as retained for the topic
+    RetainMessageInfo retainMessageInfo;
+    retainMessageInfo.dup = dup;
+    retainMessageInfo.qos = qos;
+    retainMessageInfo.topicIdType = topicIdType;
+    retainMessageInfo.data = data;
+
+    retainMessages[topicId] = retainMessageInfo;
+    retainMessageIds.insert(topicId);
+}
+
 void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos)
 {
     // check for retained message on the subscribed topic
@@ -1254,6 +1214,51 @@ void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberA
         // store the pending retain message for the subscriber
         pendingRetainMessages[std::make_pair(subscriberAddress, subscriberPort)] = messageInfo;
     }
+}
+
+void MqttSNServer::deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo)
+{
+    // deallocate memory if allocated for retain message
+    if (messageInfo != nullptr && requestInfo.retainMessagesKey > 0) {
+        delete messageInfo;
+        messageInfo = nullptr;
+    }
+}
+
+MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo)
+{
+    MessageInfo* messageInfo = nullptr;
+
+    if (requestInfo.messagesKey > 0) {
+        // check if the key exists in the messages map
+        auto messageIt = messages.find(requestInfo.messagesKey);
+        if (messageIt != messages.end()) {
+            messageInfo = &messageIt->second;
+        }
+    }
+    else if (requestInfo.retainMessagesKey > 0) {
+        // check if the key exists in the retain messages map
+        auto retainMessageIt = retainMessages.find(requestInfo.retainMessagesKey);
+        if (retainMessageIt != retainMessages.end()) {
+            const RetainMessageInfo& retainMessageInfo = retainMessageIt->second;
+
+            // allocate memory for a new object
+            messageInfo = new MessageInfo;
+
+            // populate the fields of the new object
+            messageInfo->dup = retainMessageInfo.dup;
+            messageInfo->qos = retainMessageInfo.qos;
+            messageInfo->retain = true;
+            messageInfo->topicIdType = retainMessageInfo.topicIdType;
+            messageInfo->topicId = requestInfo.retainMessagesKey;
+            messageInfo->data = retainMessageInfo.data;
+        }
+    }
+    else {
+        throw omnetpp::cRuntimeError("Expecting at least one valid message key");
+    }
+
+    return messageInfo;
 }
 
 void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
@@ -1384,51 +1389,6 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     return true;
 }
 
-void MqttSNServer::deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo)
-{
-    // deallocate memory if allocated for retain message
-    if (messageInfo != nullptr && requestInfo.retainMessagesKey > 0) {
-        delete messageInfo;
-        messageInfo = nullptr;
-    }
-}
-
-MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo)
-{
-    MessageInfo* messageInfo = nullptr;
-
-    if (requestInfo.messagesKey > 0) {
-        // check if the key exists in the messages map
-        auto messageIt = messages.find(requestInfo.messagesKey);
-        if (messageIt != messages.end()) {
-            messageInfo = &messageIt->second;
-        }
-    }
-    else if (requestInfo.retainMessagesKey > 0) {
-        // check if the key exists in the retain messages map
-        auto retainMessageIt = retainMessages.find(requestInfo.retainMessagesKey);
-        if (retainMessageIt != retainMessages.end()) {
-            const RetainMessageInfo& retainMessageInfo = retainMessageIt->second;
-
-            // allocate memory for a new object
-            messageInfo = new MessageInfo;
-
-            // populate the fields of the new object
-            messageInfo->dup = retainMessageInfo.dup;
-            messageInfo->qos = retainMessageInfo.qos;
-            messageInfo->retain = true;
-            messageInfo->topicIdType = retainMessageInfo.topicIdType;
-            messageInfo->topicId = requestInfo.retainMessagesKey;
-            messageInfo->data = retainMessageInfo.data;
-        }
-    }
-    else {
-        throw omnetpp::cRuntimeError("Expecting at least one valid message key");
-    }
-
-    return messageInfo;
-}
-
 bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                     std::pair<uint16_t, QoS>& subscriptionKey)
 {
@@ -1549,6 +1509,46 @@ std::set<std::pair<uint16_t, QoS>> MqttSNServer::getSubscriptionKeysByTopicId(ui
     }
 
     return keys;
+}
+
+bool MqttSNServer::checkClientsCongestion()
+{
+    // verify congestion based on the number of clients connected
+    return clients.size() >= (unsigned int) par("maximumClients");
+}
+
+bool MqttSNServer::checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue)
+{
+    // check for invalid message ID; ID=0 is invalid
+    if (usedIds.find(0) != usedIds.end()) {
+        throw omnetpp::cRuntimeError("Invalid message ID=0 detected in the set");
+    }
+
+    // check for invalid message ID; ID=UINT16_MAX can be considered invalid
+    if (!allowMaxValue && usedIds.find(UINT16_MAX) != usedIds.end()) {
+        throw omnetpp::cRuntimeError("Invalid message ID=UINT16_MAX detected in the set");
+    }
+
+    uint16_t maxValue = allowMaxValue ? UINT16_MAX : UINT16_MAX - 1;
+
+    // check if the size equals the maximum valid range of IDs
+    return (usedIds.size() == maxValue);
+}
+
+bool MqttSNServer::checkPublishCongestion(QoS qosFlag, bool retainFlag)
+{
+    // check congestion for retained messages
+    if (retainFlag && checkIDSpaceCongestion(retainMessageIds, false)) {
+        return true;
+    }
+
+    // check congestion for QoS levels 1 and 2
+    if (qosFlag == QoS::QOS_ONE || qosFlag == QoS::QOS_TWO) {
+        return (checkIDSpaceCongestion(requestIds) || checkIDSpaceCongestion(messageIds));
+    }
+
+    // no congestion detected
+    return false;
 }
 
 MqttSNServer::~MqttSNServer()
