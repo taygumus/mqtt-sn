@@ -61,7 +61,6 @@ class MqttSNPublisher : public MqttSNClient
                                            bool retainFlag, const std::string& willTopic);
 
         virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, const std::string& willMsg);
-
         virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName);
 
         virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
