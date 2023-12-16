@@ -34,7 +34,10 @@ class MqttSNSubscriber : public MqttSNClient
         std::map<uint16_t, DataInfo> messages;
 
     protected:
+        // initialization
         virtual void levelTwoInit() override;
+
+        // message handling
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
         // active state management
@@ -42,7 +45,7 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void cancelActiveStateEventsCustom() override;
         virtual void cancelActiveStateClockEventsCustom() override;
 
-        // process received packets
+        // incoming packet handling
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
         virtual void processConnAckCustom() override;
         virtual void processSubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
@@ -50,19 +53,14 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
-        // send packets
-        virtual void sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
-                                   bool dupFlag, QoS qosFlag, TopicIdType topicIdTypeFlag,
-                                   uint16_t msgId,
-                                   const std::string& topicName, uint16_t topicId);
+        // outgoing packet handling
+        virtual void sendSubscribe(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag,
+                                   TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId);
 
-        virtual void sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort,
-                                     TopicIdType topicIdTypeFlag,
-                                     uint16_t msgId,
+        virtual void sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort, TopicIdType topicIdTypeFlag, uint16_t msgId,
                                      const std::string& topicName, uint16_t topicId);
 
-        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
-                                              MsgType msgType, ReturnCode returnCode,
+        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
                                               uint16_t topicId, uint16_t msgId);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
@@ -72,14 +70,16 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void handleSubscriptionEvent();
         virtual void handleUnsubscriptionEvent();
 
-        // other methods
+        // topic methods
         virtual void fillTopics();
         virtual void resetAndPopulateTopics();
+
+        // publication methods
         virtual void printPublishMessage(const MessageInfo& messageInfo);
 
-        // retransmissions management
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
-                                                     omnetpp::cMessage* msg, MsgType msgType) override;
+        // retransmission management
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
+                                                     MsgType msgType) override;
 
         virtual void retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
         virtual void retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);

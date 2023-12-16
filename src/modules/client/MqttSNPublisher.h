@@ -34,7 +34,10 @@ class MqttSNPublisher : public MqttSNClient
         LastPublishInfo lastPublish;
 
     protected:
+        // initialization
         virtual void levelTwoInit() override;
+
+        // message handling
         virtual bool handleMessageWhenUpCustom(omnetpp::cMessage* msg) override;
 
         // active state management
@@ -42,7 +45,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void cancelActiveStateEventsCustom() override;
         virtual void cancelActiveStateClockEventsCustom() override;
 
-        // process received packets
+        // incoming packet handling
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
         virtual void processConnAckCustom() override;
         virtual void processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort);
@@ -53,24 +56,16 @@ class MqttSNPublisher : public MqttSNClient
         virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubComp(inet::Packet* pk);
 
-        // send packets
-        virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
-                                           MsgType msgType,
-                                           QoS qosFlag, bool retainFlag,
-                                           const std::string& willTopic);
+        // outgoing packet handling
+        virtual void sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag,
+                                           bool retainFlag, const std::string& willTopic);
 
-        virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort,
-                                         MsgType msgType,
-                                         const std::string& willMsg);
+        virtual void sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, const std::string& willMsg);
 
-        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort,
-                                  uint16_t msgId,
-                                  const std::string& topicName);
+        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName);
 
-        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort,
-                                 bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
-                                 uint16_t topicId, uint16_t msgId,
-                                 const std::string& data);
+        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
+                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 
@@ -79,19 +74,18 @@ class MqttSNPublisher : public MqttSNClient
         virtual void handleRegistrationEvent();
         virtual void handlePublishEvent();
 
-        // other methods
+        // topic methods
         virtual void fillTopicsAndData();
         virtual void resetAndPopulateTopics();
-        virtual void retryLastPublish();
-
-        virtual void printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType,
-                                         const DataInfo& dataInfo);
-
         virtual bool findTopicByName(const std::string& topicName, uint16_t& topicId);
 
-        // retransmissions management
-        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
-                                                     omnetpp::cMessage* msg, MsgType msgType) override;
+        // publication methods
+        virtual void retryLastPublish();
+        virtual void printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType, const DataInfo& dataInfo);
+
+        // retransmission management
+        virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
+                                                     MsgType msgType) override;
 
         virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort);

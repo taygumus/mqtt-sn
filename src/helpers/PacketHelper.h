@@ -15,12 +15,10 @@ class PacketHelper : public BaseHelper
     public:
         static inet::Packet* getRegisterPacket(uint16_t msgId, const std::string& topicName);
 
-        static inet::Packet* getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
-                                              uint16_t topicId, uint16_t msgId,
-                                              const std::string& data);
+        static inet::Packet* getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId,
+                                              uint16_t msgId, const std::string& data);
 
         static inet::Packet* getBaseWithMsgIdPacket(MsgType msgType, uint16_t msgId);
-
         static inet::Packet* getMsgIdWithTopicIdPlusPacket(MsgType msgType, ReturnCode returnCode, uint16_t topicId, uint16_t msgId);
 };
 

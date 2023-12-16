@@ -74,14 +74,19 @@ class MqttSNServer : public MqttSNApp
         int numAdvertiseSent = 0;
 
     protected:
+        // initialization
         virtual void levelOneInit() override;
-        virtual void handleMessageWhenUp(omnetpp::cMessage* msg) override;
+
         virtual void finish() override;
         virtual void refreshDisplay() const override;
 
+        // lifecycle
         virtual void handleStartOperation(inet::LifecycleOperation* operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation* operation) override;
         virtual void handleCrashOperation(inet::LifecycleOperation* operation) override;
+
+        // message handling
+        virtual void handleMessageWhenUp(omnetpp::cMessage* msg) override;
 
         // gateway state management
         virtual void handleStateChangeEvent();
@@ -97,7 +102,7 @@ class MqttSNServer : public MqttSNApp
         virtual double getStateInterval(GatewayState currentState);
         virtual std::string getGatewayStateAsString();
 
-        // process received packets
+        // incoming packet handling
         virtual void processPacket(inet::Packet* pk) override;
         virtual void processSearchGw();
         virtual void processConnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
@@ -115,26 +120,21 @@ class MqttSNServer : public MqttSNApp
         virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubComp(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
 
-        // send packets
+        // outgoing packet handling
         virtual void sendAdvertise();
 
-        virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort,
-                                            MsgType msgType, ReturnCode returnCode);
+        virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode);
 
-        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
-                                              MsgType msgType, ReturnCode returnCode,
+        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
                                               uint16_t topicId, uint16_t msgId);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 
-        virtual void sendSubAck(const inet::L3Address& destAddress, const int& destPort,
-                                QoS qosFlag, ReturnCode returnCode,
-                                uint16_t topicId, uint16_t msgId);
+        virtual void sendSubAck(const inet::L3Address& destAddress, const int& destPort, QoS qosFlag, ReturnCode returnCode, uint16_t topicId,
+                                uint16_t msgId);
 
-        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort,
-                                 bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
-                                 uint16_t topicId, uint16_t msgId,
-                                 const std::string& data);
+        virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
+                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
 
         // event handlers
         virtual void handleAdvertiseEvent();
@@ -146,58 +146,55 @@ class MqttSNServer : public MqttSNApp
 
         virtual void handleClientsClearEvent();
 
-        // other methods
+        // retain message methods
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
 
-        // other methods about topics
+        // topic methods
         virtual void fillWithPredefinedTopics();
         virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
         virtual TopicIdType getTopicIdType(uint16_t topicLength);
 
-        // other methods about congestions
+        // congestion methods
         virtual bool checkClientsCongestion();
         virtual bool checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue = true);
         virtual bool checkPublishCongestion(QoS qosFlag, bool retainFlag);
 
-        // other methods about clients
+        // client methods
         virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
         virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
-        // other methods about publishers
+        // publisher methods
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
-        // other methods about subscribers
-        virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                                uint16_t topicId, QoS qos);
+        // subscriber methods
+        virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos);
 
-        // other methods about subscribers; handling requests
+        // subscriber request handling methods
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
-        virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                               const MessageInfo& messageInfo, QoS requestQoS,
-                                               uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
+        virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                               QoS requestQoS, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
-        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                   MsgType messageType, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
+        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
+                                   uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
         virtual void deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 
-        virtual bool isValidRequest(uint16_t requestId, MsgType messageType,
-                                    std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
+        virtual bool isValidRequest(uint16_t requestId, MsgType messageType, std::map<uint16_t, RequestInfo>::iterator& requestIt,
+                                    std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
-        // other methods about subscribers; handling request messages
+        // subscriber request message handling methods
         virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
         virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
 
-        // other methods about subscribers subscriptions
+        // subscriber subscription methods
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
 
-        virtual bool insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                        uint16_t topicId, QoS qos);
+        virtual bool insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos);
 
         virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                         const std::pair<uint16_t, QoS>& subscriptionKey);

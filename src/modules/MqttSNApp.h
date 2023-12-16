@@ -17,30 +17,32 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         inet::UdpSocket socket;
 
     protected:
+        // initialization
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
-
         virtual void initialize(int stage) override;
+
+        // socket handling
         virtual void socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet) override;
         virtual void socketErrorArrived(inet::UdpSocket* socket, inet::Indication* indication) override;
         virtual void socketClosed(inet::UdpSocket* socket) override;
 
-        // send packets
+        // outgoing packet handling
         virtual void sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress = "", uint16_t gatewayPort = 0);
         virtual void sendPingReq(const inet::L3Address& destAddress, const int& destPort, const std::string& clientId = "");
         virtual void sendBase(const inet::L3Address& destAddress, const int& destPort, MsgType msgType);
         virtual void sendDisconnect(const inet::L3Address& destAddress, const int& destPort, uint16_t duration = 0);
 
-        // other methods
+        // check methods
         virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
         virtual bool isSelfBroadcastAddress(const inet::L3Address& address);
 
-        // other methods about identifiers
+        // identifier methods
         virtual bool setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true);
 
         virtual uint16_t getNewIdentifier(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true,
                                           const std::string& error = "");
 
-        // other methods about topics
+        // topic methods
         virtual void checkTopicLength(uint16_t topicLength, TopicIdType topicIdType);
         virtual bool isMinTopicLength(uint16_t topicLength);
         virtual std::map<std::string, uint16_t> getPredefinedTopics();

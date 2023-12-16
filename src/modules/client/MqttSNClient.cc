@@ -48,34 +48,6 @@ void MqttSNClient::levelOneInit()
     levelTwoInit();
 }
 
-void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage* msg)
-{
-    if (msg == stateChangeEvent) {
-        handleStateChangeEvent();
-    }
-    else if (msg->hasPar("isRetransmissionEvent")) {
-        handleRetransmissionEvent(msg);
-    }
-    else if (msg == checkGatewaysEvent) {
-        handleCheckGatewaysEvent();
-    }
-    else if(msg == searchGatewayEvent) {
-        handleSearchGatewayEvent();
-    }
-    else if (msg == gatewayInfoEvent) {
-        handleGatewayInfoEvent();
-    }
-    else if (msg == checkConnectionEvent) {
-        handleCheckConnectionEvent();
-    }
-    else if (msg == pingEvent) {
-        handlePingEvent();
-    }
-    else if (!handleMessageWhenUpCustom(msg)) {
-        MqttSNApp::socket.processMessage(msg);
-    }
-}
-
 void MqttSNClient::finish()
 {
     inet::ApplicationBase::finish();
@@ -118,6 +90,34 @@ void MqttSNClient::handleCrashOperation(inet::LifecycleOperation* operation)
     clearRetransmissions();
 
     MqttSNApp::socket.destroy();
+}
+
+void MqttSNClient::handleMessageWhenUp(omnetpp::cMessage* msg)
+{
+    if (msg == stateChangeEvent) {
+        handleStateChangeEvent();
+    }
+    else if (msg->hasPar("isRetransmissionEvent")) {
+        handleRetransmissionEvent(msg);
+    }
+    else if (msg == checkGatewaysEvent) {
+        handleCheckGatewaysEvent();
+    }
+    else if(msg == searchGatewayEvent) {
+        handleSearchGatewayEvent();
+    }
+    else if (msg == gatewayInfoEvent) {
+        handleGatewayInfoEvent();
+    }
+    else if (msg == checkConnectionEvent) {
+        handleCheckConnectionEvent();
+    }
+    else if (msg == pingEvent) {
+        handlePingEvent();
+    }
+    else if (!handleMessageWhenUpCustom(msg)) {
+        MqttSNApp::socket.processMessage(msg);
+    }
 }
 
 void MqttSNClient::handleStateChangeEvent()
@@ -687,8 +687,7 @@ void MqttSNClient::sendSearchGw()
     MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort,
-                               bool willFlag, bool cleanSessionFlag,
+void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag,
                                uint16_t duration)
 {
     const auto& payload = inet::makeShared<MqttSNConnect>();
@@ -951,8 +950,8 @@ uint16_t MqttSNClient::getPredefinedTopicId(const std::string& topicName)
     return predefinedTopicsIt->second;
 }
 
-void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort,
-                                             MsgType msgType, std::map<std::string, std::string>* parameters)
+void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType,
+                                             std::map<std::string, std::string>* parameters)
 {
     // check if a message of the same type is already scheduled for retransmission
     if (retransmissions.find(msgType) != retransmissions.end()) {

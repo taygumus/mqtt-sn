@@ -720,7 +720,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     else {
         topicId = it->second;
 
-        /*
+        /* TO DO
         //TopicIdType topicIdTypeFlag = (TopicIdType) payload->getTopicIdTypeFlag();
 
         TopicInfo topicInfo = idsToTopics[topicId];
@@ -857,8 +857,7 @@ void MqttSNServer::sendAdvertise()
     numAdvertiseSent++;
 }
 
-void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort,
-                                          MsgType msgType, ReturnCode returnCode)
+void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithReturnCode>();
     payload->setMsgType(msgType);
@@ -890,8 +889,7 @@ void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, co
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
-                                            MsgType msgType, ReturnCode returnCode,
+void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
                                             uint16_t topicId, uint16_t msgId)
 {
     MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, returnCode, topicId, msgId),
@@ -904,9 +902,8 @@ void MqttSNServer::sendBaseWithMsgId(const inet::L3Address& destAddress, const i
     MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
 }
 
-void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& destPort,
-                              QoS qosFlag, ReturnCode returnCode,
-                              uint16_t topicId, uint16_t msgId)
+void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& destPort, QoS qosFlag, ReturnCode returnCode, uint16_t topicId,
+                              uint16_t msgId)
 {
     const auto& payload = inet::makeShared<MqttSNSubAck>();
     payload->setMsgType(MsgType::SUBACK);
@@ -922,10 +919,8 @@ void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& des
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNServer::sendPublish(const inet::L3Address& destAddress, const int& destPort,
-                               bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
-                               uint16_t topicId, uint16_t msgId,
-                               const std::string& data)
+void MqttSNServer::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
+                               TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
 {
     MqttSNApp::socket.sendTo(
             PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data),
@@ -1238,8 +1233,7 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress,
     return nullptr;
 }
 
-void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                              uint16_t topicId, QoS qos)
+void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos)
 {
     // check for retained message on the subscribed topic
     auto retainMsgIt = retainMessages.find(topicId);
@@ -1296,9 +1290,8 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
     }
 }
 
-void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                             const MessageInfo& messageInfo, QoS requestQoS,
-                                             uint16_t messagesKey, uint16_t retainMessagesKey)
+void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                             QoS requestQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
     if (requestQoS == QoS::QOS_ZERO) {
         // send a publish message with QoS 0 to the subscriber
@@ -1320,8 +1313,8 @@ void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAd
                 messageInfo.data);
 }
 
-void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                 MsgType messageType, uint16_t messagesKey, uint16_t retainMessagesKey)
+void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
+                                 uint16_t messagesKey, uint16_t retainMessagesKey)
 {
     // set new available request ID if possible; otherwise, throw an exception
     MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
@@ -1353,8 +1346,8 @@ void MqttSNServer::deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requ
     requestIds.erase(requestIdIt);
 }
 
-bool MqttSNServer::isValidRequest(uint16_t requestId, MsgType messageType,
-                                  std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt)
+bool MqttSNServer::isValidRequest(uint16_t requestId, MsgType messageType, std::map<uint16_t, RequestInfo>::iterator& requestIt,
+                                  std::set<uint16_t>::iterator& requestIdIt)
 {
     // search for the request ID in the map
     requestIt = requests.find(requestId);
@@ -1463,8 +1456,7 @@ bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, co
     return false;
 }
 
-bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
-                                      uint16_t topicId, QoS qos)
+bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos)
 {
     // create key pairs
     std::pair<uint16_t, QoS> subscriptionKey = std::make_pair(topicId, qos);

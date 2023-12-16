@@ -244,10 +244,8 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
 }
 
-void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort,
-                                     bool dupFlag, QoS qosFlag, TopicIdType topicIdTypeFlag,
-                                     uint16_t msgId,
-                                     const std::string& topicName, uint16_t topicId)
+void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag,
+                                     TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId)
 {
     const auto& payload = inet::makeShared<MqttSNSubscribe>();
     payload->setMsgType(MsgType::SUBSCRIBE);
@@ -271,9 +269,7 @@ void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const i
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort,
-                                       TopicIdType topicIdTypeFlag,
-                                       uint16_t msgId,
+void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort, TopicIdType topicIdTypeFlag, uint16_t msgId,
                                        const std::string& topicName, uint16_t topicId)
 {
     const auto& payload = inet::makeShared<MqttSNUnsubscribe>();
@@ -296,8 +292,7 @@ void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort,
-                                                MsgType msgType, ReturnCode returnCode,
+void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
                                                 uint16_t topicId, uint16_t msgId)
 {
     MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, returnCode, topicId, msgId),
@@ -480,8 +475,8 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "Data: " << messageInfo.data << std::endl;
 }
 
-void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
-                                                       omnetpp::cMessage* msg, MsgType msgType)
+void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
+                                                       MsgType msgType)
 {
     switch (msgType) {
         case MsgType::SUBSCRIBE:

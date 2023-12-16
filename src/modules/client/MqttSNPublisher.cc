@@ -275,10 +275,8 @@ void MqttSNPublisher::processPubComp(inet::Packet* pk)
     scheduleClockEventAfter(publishInterval, publishEvent);
 }
 
-void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort,
-                                            MsgType msgType,
-                                            QoS qosFlag, bool retainFlag,
-                                            const std::string& willTopic)
+void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag,
+                                            bool retainFlag, const std::string& willTopic)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillTopic>();
     payload->setMsgType(msgType);
@@ -308,9 +306,7 @@ void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort,
-                                          MsgType msgType,
-                                          const std::string& willMsg)
+void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, const std::string& willMsg)
 {
     const auto& payload = inet::makeShared<MqttSNBaseWithWillMsg>();
     payload->setMsgType(msgType);
@@ -345,10 +341,8 @@ void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int
     MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(msgId, topicName), destAddress, destPort);
 }
 
-void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort,
-                                  bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag,
-                                  uint16_t topicId, uint16_t msgId,
-                                  const std::string& data)
+void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
+                                  TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
 {
     MqttSNApp::socket.sendTo(
             PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data),
@@ -555,27 +549,6 @@ void MqttSNPublisher::resetAndPopulateTopics()
     }
 }
 
-void MqttSNPublisher::retryLastPublish()
-{
-    lastPublish.retry = true;
-
-    cancelEvent(publishEvent);
-    scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
-}
-
-void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType,
-                                          const DataInfo& dataInfo)
-{
-    EV << "Publish message to be sent:" << std::endl;
-    EV << "Topic ID: " << topicId << std::endl;
-    EV << "Topic name: " << topicName << std::endl;
-    EV << "Topic type: " << ConversionHelper::topicIdTypeToString(topicIdType) << std::endl;
-    EV << "Duplicate: " << false << std::endl;
-    EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qosFlag) << std::endl;
-    EV << "Retain: " << dataInfo.retainFlag << std::endl;
-    EV << "Data: " << dataInfo.data << std::endl;
-}
-
 bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& topicId)
 {
     // iterate through the map to find the specified topic name
@@ -591,8 +564,28 @@ bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& to
     return false;
 }
 
-void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort,
-                                                      omnetpp::cMessage* msg, MsgType msgType)
+void MqttSNPublisher::retryLastPublish()
+{
+    lastPublish.retry = true;
+
+    cancelEvent(publishEvent);
+    scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
+}
+
+void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType, const DataInfo& dataInfo)
+{
+    EV << "Publish message to be sent:" << std::endl;
+    EV << "Topic ID: " << topicId << std::endl;
+    EV << "Topic name: " << topicName << std::endl;
+    EV << "Topic type: " << ConversionHelper::topicIdTypeToString(topicIdType) << std::endl;
+    EV << "Duplicate: " << false << std::endl;
+    EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qosFlag) << std::endl;
+    EV << "Retain: " << dataInfo.retainFlag << std::endl;
+    EV << "Data: " << dataInfo.data << std::endl;
+}
+
+void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
+                                                      MsgType msgType)
 {
     switch (msgType) {
         case MsgType::WILLTOPICUPD:
