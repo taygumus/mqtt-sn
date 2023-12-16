@@ -3,6 +3,9 @@ package mqttsn.neds.client;
 module MqttSNPublisher extends MqttSNClient
 {
     parameters:
+        @class(MqttSNPublisher);
+        @display("i=block/routing;bgb=20,20");
+        
         bool willFlag = default(false);
         int willQoSFlag = default(0); // valid QoS values: 0, 1, 2 and -1
         bool willRetainFlag = default(false);
@@ -13,7 +16,4 @@ module MqttSNPublisher extends MqttSNClient
         
         double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
         double publishInterval @unit(s) = default(5s); // publish interval for new messages
-          
-        @display("i=block/routing;bgb=38,25");
-        @class(MqttSNPublisher);
 }
