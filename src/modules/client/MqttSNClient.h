@@ -5,7 +5,7 @@
 #include "types/shared/ClientState.h"
 #include "types/shared/MsgType.h"
 #include "types/client/GatewayInfo.h"
-#include "types/client/UnicastMessageInfo.h"
+#include "types/client/RetransmissionInfo.h"
 
 namespace mqttsn {
 
@@ -34,7 +34,7 @@ class MqttSNClient : public MqttSNApp
 
         // active client state
         inet::ClockEvent* checkGatewaysEvent = nullptr;
-        std::map<uint8_t, GatewayInfo> activeGateways;
+        std::map<uint8_t, GatewayInfo> gateways;
 
         inet::ClockEvent* searchGatewayEvent = nullptr;
         bool maxIntervalReached = false;
@@ -54,7 +54,7 @@ class MqttSNClient : public MqttSNApp
         std::map<std::string, uint16_t> predefinedTopics;
 
         // retransmission management
-        std::map<MsgType, UnicastMessageInfo> retransmissions;
+        std::map<MsgType, RetransmissionInfo> retransmissions;
 
     protected:
         // initialization

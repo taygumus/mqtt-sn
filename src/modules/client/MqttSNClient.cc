@@ -161,7 +161,7 @@ void MqttSNClient::scheduleActiveStateEvents()
     searchGatewayInterval = uniform(SEARCH_GATEWAY_MIN_DELAY, searchGatewayMaxDelay);
     gatewayInfoInterval = uniform(0, gatewayInfoMaxDelay);
 
-    activeGateways.clear();
+    gateways.clear();
 
     maxIntervalReached = false;
     searchGateway = true;
@@ -566,7 +566,7 @@ void MqttSNClient::processSearchGw()
         searchGateway = false;
     }
 
-    if (!activeGateways.empty() && !gatewayInfoEvent->isScheduled()) {
+    if (!gateways.empty() && !gatewayInfoEvent->isScheduled()) {
         // delay sending of gwInfo message for a random time
         scheduleClockEventAfter(gatewayInfoInterval, gatewayInfoEvent);
     }
@@ -708,13 +708,13 @@ void MqttSNClient::handleCheckGatewaysEvent()
 {
     inet::clocktime_t currentTime = getClockTime();
 
-    for (auto it = activeGateways.begin(); it != activeGateways.end();) {
+    for (auto it = gateways.begin(); it != gateways.end();) {
         const GatewayInfo& gatewayInfo = it->second;
 
         // check if the elapsed time exceeds the threshold
         if ((currentTime - gatewayInfo.lastUpdatedTime) > ((int) par("nadv")*  gatewayInfo.duration)) {
             // gateway is considered unavailable
-            it = activeGateways.erase(it);
+            it = gateways.erase(it);
         }
         else {
             ++it;
@@ -747,7 +747,7 @@ void MqttSNClient::handleSearchGatewayEvent()
 
 void MqttSNClient::handleGatewayInfoEvent()
 {
-    if (activeGateways.empty()) {
+    if (gateways.empty()) {
         return;
     }
 
@@ -767,7 +767,7 @@ void MqttSNClient::handleCheckConnectionEvent()
     }
 
     // if there are active gateways, select one and handle the connection event
-    if (!activeGateways.empty()) {
+    if (!gateways.empty()) {
         std::pair<uint8_t, GatewayInfo> gateway = selectGateway();
 
         GatewayInfo gatewayInfo = gateway.second;
@@ -791,21 +791,21 @@ void MqttSNClient::handlePingEvent()
 
 void MqttSNClient::updateActiveGateways(const inet::L3Address& srcAddress, const int& srcPort, uint8_t gatewayId, uint16_t duration)
 {
-    auto it = activeGateways.find(gatewayId);
+    auto it = gateways.find(gatewayId);
 
     // gwInfo messages use a temporary duration set in the client
     if (duration == 0) {
         duration = temporaryDuration;
     }
 
-    if (it == activeGateways.end()) {
+    if (it == gateways.end()) {
         GatewayInfo gatewayInfo;
         gatewayInfo.address = srcAddress;
         gatewayInfo.port = srcPort;
         gatewayInfo.duration = duration;
         gatewayInfo.lastUpdatedTime = getClockTime();
 
-        activeGateways[gatewayId] = gatewayInfo;
+        gateways[gatewayId] = gatewayInfo;
     }
     else {
         // update the duration field only when we receive an advertise message
@@ -831,14 +831,14 @@ bool MqttSNClient::isConnectedGateway(const inet::L3Address& srcAddress, const i
 
 std::pair<uint8_t, GatewayInfo> MqttSNClient::selectGateway()
 {
-    if (activeGateways.empty()) {
+    if (gateways.empty()) {
         throw omnetpp::cRuntimeError("No active gateway found");
     }
 
     // random selection policy
-    uint16_t index = intuniform(0, activeGateways.size() - 1);
+    uint16_t index = intuniform(0, gateways.size() - 1);
 
-    auto it = activeGateways.begin();
+    auto it = gateways.begin();
     std::advance(it, index);
 
     return std::make_pair(it->first, it->second);
@@ -960,29 +960,29 @@ void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress,
     }
 
     // create a new structure for this message type
-    UnicastMessageInfo newInfo;
-    newInfo.retransmissionEvent = new inet::ClockEvent("retransmissionTimer");
-    newInfo.retransmissionCounter = 0;
-    newInfo.destAddress = destAddress;
-    newInfo.destPort = destPort;
+    RetransmissionInfo retransmissionInfo;
+    retransmissionInfo.retransmissionEvent = new inet::ClockEvent("retransmissionTimer");
+    retransmissionInfo.retransmissionCounter = 0;
+    retransmissionInfo.destAddress = destAddress;
+    retransmissionInfo.destPort = destPort;
 
     // add other dynamic parameters to the timer
     if (parameters != nullptr) {
         for (const auto& param : *parameters) {
-            newInfo.retransmissionEvent->addPar(param.first.c_str()).setStringValue(param.second.c_str());
+            retransmissionInfo.retransmissionEvent->addPar(param.first.c_str()).setStringValue(param.second.c_str());
         }
     }
 
     // flag to identify this event as a retransmission message
-    newInfo.retransmissionEvent->addPar("isRetransmissionEvent");
+    retransmissionInfo.retransmissionEvent->addPar("isRetransmissionEvent");
     // set the message type as a parameter
-    newInfo.retransmissionEvent->addPar("messageType").setLongValue(static_cast<long>(msgType));
+    retransmissionInfo.retransmissionEvent->addPar("messageType").setLongValue(static_cast<long>(msgType));
 
     // add the timer and information to the retransmissions map
-    retransmissions[msgType] = newInfo;
+    retransmissions[msgType] = retransmissionInfo;
 
     // start the timer
-    scheduleClockEventAfter(retransmissionInterval, newInfo.retransmissionEvent);
+    scheduleClockEventAfter(retransmissionInterval, retransmissionInfo.retransmissionEvent);
 }
 
 void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
@@ -992,9 +992,9 @@ void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
 
     // check if the element is found in the map
     if (it != retransmissions.end()) {
-        UnicastMessageInfo& unicastMessageInfo = it->second;
+        RetransmissionInfo& retransmissionInfo = it->second;
         // cancel the event inside the struct
-        cancelAndDelete(unicastMessageInfo.retransmissionEvent);
+        cancelAndDelete(retransmissionInfo.retransmissionEvent);
 
         // remove the element from the map
         retransmissions.erase(it);
@@ -1024,10 +1024,10 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
         return;
     }
 
-    UnicastMessageInfo* unicastMessageInfo = &it->second;
+    RetransmissionInfo* retransmissionInfo = &it->second;
 
     // check if the number of retries equals the threshold
-    if (unicastMessageInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
+    if (retransmissionInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
         // stop further retransmissions and perform state transition
         if (currentState == ClientState::AWAKE) {
             returnToSleep();
@@ -1049,21 +1049,21 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
 
     switch (msgType) {
         case MsgType::DISCONNECT:
-            retransmitDisconnect(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg);
+            retransmitDisconnect(retransmissionInfo->destAddress, retransmissionInfo->destPort, msg);
             break;
 
         case MsgType::PINGREQ:
-            retransmitPingReq(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg);
+            retransmitPingReq(retransmissionInfo->destAddress, retransmissionInfo->destPort, msg);
             break;
 
         default:
             break;
     }
 
-    handleRetransmissionEventCustom(unicastMessageInfo->destAddress, unicastMessageInfo->destPort, msg, msgType);
+    handleRetransmissionEventCustom(retransmissionInfo->destAddress, retransmissionInfo->destPort, msg, msgType);
 
-    unicastMessageInfo->retransmissionCounter++;
-    scheduleClockEventAfter(retransmissionInterval, unicastMessageInfo->retransmissionEvent);
+    retransmissionInfo->retransmissionCounter++;
+    scheduleClockEventAfter(retransmissionInterval, retransmissionInfo->retransmissionEvent);
 }
 
 void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
