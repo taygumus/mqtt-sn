@@ -194,7 +194,7 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     // handle operations when the registration is ACCEPTED; update data structures
     topicIds[topicId] = lastRegistration.info;
-    NumericHelper::incrementCounter(&topicsAndData[lastRegistration.info.topicsAndDataKey].counter);
+    NumericHelper::incrementCounter(&items[lastRegistration.info.itemsKey].counter);
 
     lastRegistration.retry = false;
     scheduleClockEventAfter(registrationInterval, registrationEvent);
@@ -371,13 +371,13 @@ void MqttSNPublisher::handleRegistrationEvent()
     }
     else {
         // check for topics availability
-        if (topicsAndData.empty()) {
+        if (items.empty()) {
             throw omnetpp::cRuntimeError("No topic available");
         }
 
         // randomly select an element from the map
-        auto it = topicsAndData.begin();
-        std::advance(it, intuniform(0, topicsAndData.size() - 1));
+        auto it = items.begin();
+        std::advance(it, intuniform(0, items.size() - 1));
 
         TopicIdType topicIdType = it->second.topicIdType;
         int counter = it->second.counter;
@@ -394,7 +394,7 @@ void MqttSNPublisher::handleRegistrationEvent()
 
         // update information about the last element
         lastRegistration.info.topicName = topicName;
-        lastRegistration.info.topicsAndDataKey = it->first;
+        lastRegistration.info.itemsKey = it->first;
         lastRegistration.retry = true;
     }
 
@@ -435,7 +435,7 @@ void MqttSNPublisher::handlePublishEvent()
         topicId = topicIterator->first;
         registerInfo = topicIterator->second;
 
-        const std::map<int, DataInfo>& data = topicsAndData[registerInfo.topicsAndDataKey].data;
+        const std::map<int, DataInfo>& data = items[registerInfo.itemsKey].data;
 
         // check for data availability
         if (data.empty()) {
@@ -462,7 +462,7 @@ void MqttSNPublisher::handlePublishEvent()
 
     QoS qos = dataInfo.qos;
     bool retain = dataInfo.retain;
-    TopicIdType topicIdType = topicsAndData[registerInfo.topicsAndDataKey].topicIdType;
+    TopicIdType topicIdType = items[registerInfo.itemsKey].topicIdType;
 
     // print publish message to be sent
     printPublishMessage(topicId, registerInfo.topicName, topicIdType, dataInfo);
@@ -490,7 +490,7 @@ void MqttSNPublisher::handlePublishEvent()
 void MqttSNPublisher::populateItems()
 {
     json jsonData = json::parse(par("itemsJson").stringValue());
-    int topicsKey = 0;
+    int itemsKey = 0;
 
     // iterate over json array elements
     for (const auto& item : jsonData) {
@@ -506,9 +506,9 @@ void MqttSNPublisher::populateItems()
                 MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName)) != MqttSNClient::predefinedTopics.end()
         );
 
-        TopicAndData topicAndData;
-        topicAndData.topicName = topicName;
-        topicAndData.topicIdType = topicIdType;
+        ItemInfo itemInfo;
+        itemInfo.topicName = topicName;
+        itemInfo.topicIdType = topicIdType;
 
         int dataKey = 0;
 
@@ -519,10 +519,10 @@ void MqttSNPublisher::populateItems()
             dataInfo.retain = data["retain"];
             dataInfo.data = data["data"];
 
-            topicAndData.data[dataKey++] = dataInfo;
+            itemInfo.data[dataKey++] = dataInfo;
         }
 
-        topicsAndData[topicsKey++] = topicAndData;
+        items[itemsKey++] = itemInfo;
     }
 }
 
@@ -530,21 +530,21 @@ void MqttSNPublisher::resetAndPopulateTopics()
 {
     topicIds.clear();
 
-    for (auto& pair : topicsAndData) {
-        TopicAndData& topicAndData = pair.second;
+    for (auto& pair : items) {
+        ItemInfo& itemInfo = pair.second;
 
         // reset the counter if the topic uses a short ID type
-        if (topicAndData.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
-            topicAndData.counter = 0;
+        if (itemInfo.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
+            itemInfo.counter = 0;
         }
 
         // fetch the predefined topic ID
-        if (topicAndData.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        if (itemInfo.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
             RegisterInfo registerInfo;
-            registerInfo.topicName = topicAndData.topicName;
-            registerInfo.topicsAndDataKey = pair.first;
+            registerInfo.topicName = itemInfo.topicName;
+            registerInfo.itemsKey = pair.first;
 
-            topicIds[MqttSNClient::getPredefinedTopicId(topicAndData.topicName)] = registerInfo;
+            topicIds[MqttSNClient::getPredefinedTopicId(itemInfo.topicName)] = registerInfo;
         }
     }
 }
@@ -630,7 +630,7 @@ void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, con
 
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
-    TopicIdType topicIdType = topicsAndData[lastPublish.registerInfo.topicsAndDataKey].topicIdType;
+    TopicIdType topicIdType = items[lastPublish.registerInfo.itemsKey].topicIdType;
 
     sendPublish(destAddress, destPort,
                 true, lastPublish.dataInfo.qos, lastPublish.dataInfo.retain, topicIdType,

@@ -136,7 +136,7 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
 
     // handle operations when the subscription is ACCEPTED; update data structures
     topicIds[topicId] = lastSubscription.info;
-    NumericHelper::incrementCounter(&topics[lastSubscription.info.topicsKey].subscribeCounter);
+    NumericHelper::incrementCounter(&items[lastSubscription.info.topicsKey].subscribeCounter);
 
     lastSubscription.retry = false;
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
@@ -151,7 +151,7 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
         return;
     }
 
-    NumericHelper::incrementCounter(&topics[lastUnsubscription.info.topicsKey].unsubscribeCounter);
+    NumericHelper::incrementCounter(&items[lastUnsubscription.info.topicsKey].unsubscribeCounter);
 
     lastUnsubscription.retry = false;
     scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
@@ -322,20 +322,20 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     if (lastSubscription.retry) {
 
         topicName = lastSubscription.info.topicName;///
-        topicIdType = topics[lastSubscription.info.topicsKey].topicIdType;///
-        qos = topics[lastSubscription.info.topicsKey].qos;///
+        topicIdType = items[lastSubscription.info.topicsKey].topicIdType;///
+        qos = items[lastSubscription.info.topicsKey].qos;///
 
         topicInfo = lastSubscription.info;
     }
     else {
         // check for topics availability
-        if (topics.empty()) {
+        if (items.empty()) {
             throw omnetpp::cRuntimeError("No topic available");
         }
 
         // randomly select an element from the map
-        auto it = topics.begin();
-        std::advance(it, intuniform(0, topics.size() - 1));
+        auto it = items.begin();
+        std::advance(it, intuniform(0, items.size() - 1));
 
         topicIdType = it->second.topicIdType;
         int subscribeCounter = it->second.subscribeCounter;
@@ -378,13 +378,13 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
     }
     else {
         // check for topics availability
-        if (topics.empty()) {
+        if (items.empty()) {
             throw omnetpp::cRuntimeError("No topic available");
         }
 
         // randomly select an element from the map
-        auto it = topics.begin();
-        std::advance(it, intuniform(0, topics.size() - 1));
+        auto it = items.begin();
+        std::advance(it, intuniform(0, items.size() - 1));
 
         // unsubcription must be after subscription
         if (it->second.unsubscribeCounter == it->second.subscribeCounter) {
@@ -412,7 +412,7 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
 void MqttSNSubscriber::populateItems()
 {
     json jsonData = json::parse(par("itemsJson").stringValue());
-    int topicsKey = 0;
+    int itemsKey = 0;
 
     // iterate over json array elements
     for (const auto& item : jsonData) {
@@ -430,13 +430,13 @@ void MqttSNSubscriber::populateItems()
                 predefinedTopicIt != MqttSNClient::predefinedTopics.end()
         );
 
-        Topic topic;
-        topic.topicName = topicName;
-        topic.topicIdType = topicIdType;
-        topic.predefinedTopicId = predefinedTopicIt->second;
-        topic.qos = ConversionHelper::intToQoS(item["qos"]);
+        ItemInfo itemInfo;
+        itemInfo.topicName = topicName;
+        itemInfo.topicIdType = topicIdType;
+        itemInfo.predefinedTopicId = predefinedTopicIt->second;
+        itemInfo.qos = ConversionHelper::intToQoS(item["qos"]);
 
-        topics[topicsKey++] = topic;
+        items[itemsKey++] = itemInfo;
     }
 }
 
@@ -444,22 +444,22 @@ void MqttSNSubscriber::resetAndPopulateTopics()
 {
     topicIds.clear();
 
-    for (auto& pair : topics) {
-        Topic& topic = pair.second;
+    for (auto& pair : items) {
+        ItemInfo& itemInfo = pair.second;
 
         // reset the counters if the topic uses a short ID type
-        if (topic.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
-            topic.subscribeCounter = 0;
-            topic.unsubscribeCounter = 0;
+        if (itemInfo.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
+            itemInfo.subscribeCounter = 0;
+            itemInfo.unsubscribeCounter = 0;
         }
 
         // fetch the predefined topic ID
-        if (topic.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        if (itemInfo.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
             TopicInfo topicInfo;
-            topicInfo.topicName = topic.topicName;
+            topicInfo.topicName = itemInfo.topicName;
             topicInfo.topicsKey = pair.first;
 
-            topicIds[MqttSNClient::getPredefinedTopicId(topic.topicName)] = topicInfo;
+            topicIds[MqttSNClient::getPredefinedTopicId(itemInfo.topicName)] = topicInfo;
         }
     }
 }
@@ -495,7 +495,7 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
 void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  true, topics[lastSubscription.info.topicsKey].qos, TopicIdType::NORMAL_TOPIC_ID,
+                  true, items[lastSubscription.info.topicsKey].qos, TopicIdType::NORMAL_TOPIC_ID,
                   std::stoi(msg->par("msgId").stringValue()),
                   lastSubscription.info.topicName, 0);
 }

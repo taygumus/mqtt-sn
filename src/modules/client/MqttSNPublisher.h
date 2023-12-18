@@ -5,7 +5,7 @@
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
 #include "types/client/publisher/DataInfo.h"
-#include "types/client/publisher/TopicAndData.h"
+#include "types/client/publisher/ItemInfo.h"
 #include "types/client/publisher/RegisterInfo.h"
 #include "types/client/publisher/LastRegisterInfo.h"
 #include "types/client/publisher/LastPublishInfo.h"
@@ -24,7 +24,7 @@ class MqttSNPublisher : public MqttSNClient
         double publishInterval;
 
         // active publisher state
-        std::map<int, TopicAndData> topicsAndData;
+        std::map<int, ItemInfo> items;
 
         inet::ClockEvent* registrationEvent = nullptr;
         std::map<uint16_t, RegisterInfo> topicIds;

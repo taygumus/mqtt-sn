@@ -5,7 +5,7 @@
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
 #include "types/shared/ReturnCode.h"
-#include "types/client/subscriber/Topic.h"
+#include "types/client/subscriber/ItemInfo.h"
 #include "types/client/subscriber/TopicInfo.h"
 #include "types/client/subscriber/LastSubscribeInfo.h"
 #include "types/client/subscriber/LastUnsubscribeInfo.h"
@@ -22,7 +22,7 @@ class MqttSNSubscriber : public MqttSNClient
         double unsubscriptionInterval;
 
         // active subscriber state
-        std::map<int, Topic> topics;
+        std::map<int, ItemInfo> items;
 
         inet::ClockEvent* subscriptionEvent = nullptr;
         std::map<uint16_t, TopicInfo> topicIds;
