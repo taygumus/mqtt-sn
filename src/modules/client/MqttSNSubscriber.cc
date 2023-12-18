@@ -18,7 +18,7 @@ using json = nlohmann::json;
 
 void MqttSNSubscriber::levelTwoInit()
 {
-    fillTopics();
+    populateItems();
 
     subscriptionInterval = par("subscriptionInterval");
     subscriptionEvent = new inet::ClockEvent("subscriptionTimer");
@@ -409,15 +409,15 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::UNSUBSCRIBE, MqttSNClient::currentMsgId);
 }
 
-void MqttSNSubscriber::fillTopics()
+void MqttSNSubscriber::populateItems()
 {
-    json jsonData = json::parse(par("topicsJson").stringValue());
+    json jsonData = json::parse(par("itemsJson").stringValue());
     int topicsKey = 0;
 
-    // iterate over json object keys (topics)
-    for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
-        std::string topicName = it.key();
-        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
+    // iterate over json array elements
+    for (const auto& item : jsonData) {
+        std::string topicName = item["topic"];
+        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(item["idType"]);
 
         // validate topic name length and type against specified criteria
         MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
@@ -431,10 +431,10 @@ void MqttSNSubscriber::fillTopics()
         );
 
         Topic topic;
-        topic.topicName = it.key();
+        topic.topicName = topicName;
         topic.topicIdType = topicIdType;
         topic.predefinedTopicId = predefinedTopicIt->second;
-        topic.qos = ConversionHelper::intToQoS(it.value()["qos"]);
+        topic.qos = ConversionHelper::intToQoS(item["qos"]);
 
         topics[topicsKey++] = topic;
     }

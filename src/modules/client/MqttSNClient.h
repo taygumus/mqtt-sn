@@ -160,6 +160,7 @@ class MqttSNClient : public MqttSNApp
         virtual void processConnAckCustom() = 0;
 
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
+        virtual void populateItems() = 0;
 
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
                                                      MsgType msgType) = 0;

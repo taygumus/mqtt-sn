@@ -70,8 +70,10 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void handleSubscriptionEvent();
         virtual void handleUnsubscriptionEvent();
 
+        // item methods
+        virtual void populateItems() override;
+
         // topic methods
-        virtual void fillTopics();
         virtual void resetAndPopulateTopics();
 
         // publication methods

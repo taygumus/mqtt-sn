@@ -23,7 +23,7 @@ void MqttSNPublisher::levelTwoInit()
     willTopic = par("willTopic").stringValue();
     willMsg = par("willMsg").stringValue();
 
-    fillTopicsAndData();
+    populateItems();
 
     registrationInterval = par("registrationInterval");
     registrationEvent = new inet::ClockEvent("registrationTimer");
@@ -487,15 +487,15 @@ void MqttSNPublisher::handlePublishEvent()
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNClient::currentMsgId);
 }
 
-void MqttSNPublisher::fillTopicsAndData()
+void MqttSNPublisher::populateItems()
 {
-    json jsonData = json::parse(par("topicsAndDataJson").stringValue());
+    json jsonData = json::parse(par("itemsJson").stringValue());
     int topicsKey = 0;
 
-    // iterate over json object keys (topics)
-    for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
-        std::string topicName = it.key();
-        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(it.value()["idType"]);
+    // iterate over json array elements
+    for (const auto& item : jsonData) {
+        std::string topicName = item["topic"];
+        TopicIdType topicIdType = ConversionHelper::stringToTopicIdType(item["idType"]);
 
         // validate topic name length and type against specified criteria
         MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
@@ -512,8 +512,8 @@ void MqttSNPublisher::fillTopicsAndData()
 
         int dataKey = 0;
 
-        // iterate over json array elements (data)
-        for (const auto& data : it.value()["data"]) {
+        // iterate over data array within the current item
+        for (const auto& data : item["data"]) {
             DataInfo dataInfo;
             dataInfo.qos = ConversionHelper::intToQoS(data["qos"]);
             dataInfo.retain = data["retain"];

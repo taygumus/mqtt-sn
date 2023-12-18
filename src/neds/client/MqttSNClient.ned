@@ -30,5 +30,6 @@ module MqttSNClient extends MqttSNApp
         
         bool cleanSession = default(false);
         
+        string itemsJson; // json string containing topic-related items
         double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
 }
