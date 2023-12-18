@@ -401,7 +401,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    bool willFlag = payload->getWillFlag();
+    bool will = payload->getWillFlag();
 
     // update client information
     clientInfo->isNew = false;
@@ -410,13 +410,14 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe. Per il publisher cancellare elementi will per subscriber cancellare sottoscrizioni
-    // clientInfo->cleanSessionFlag = payload->getCleanSessionFlag();
+    // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe.
+    // per il publisher cancellare elementi will per subscriber cancellare sottoscrizioni
+    // clientInfo->cleanSession = payload->getCleanSessionFlag();
 
-    if (willFlag) {
+    if (will) {
         // update publisher information
         PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
-        publisherInfo->willFlag = willFlag;
+        publisherInfo->will = will;
 
         MqttSNApp::sendBase(srcAddress, srcPort, MsgType::WILLTOPICREQ);
     }
@@ -573,40 +574,40 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    TopicIdType topicIdTypeFlag = (TopicIdType) payload->getTopicIdTypeFlag();
+    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
 
     // check for inconsistency in the received topic ID type
-    if (it->second.topicIdTypeFlag != topicIdTypeFlag) {
+    if (it->second.topicIdType != topicIdType) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);
         return;
     }
 
-    QoS qosFlag = (QoS) payload->getQoSFlag();
-    bool retainFlag = payload->getRetainFlag();
+    QoS qos = (QoS) payload->getQoSFlag();
+    bool retain = payload->getRetainFlag();
 
     // check for congestion; if congested, send a rejection code
-    if (checkPublishCongestion(qosFlag, retainFlag)) {
+    if (checkPublishCongestion(qos, retain)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_CONGESTION, topicId, msgId);
         return;
     }
 
-    bool dupFlag = payload->getDupFlag();
+    bool dup = payload->getDupFlag();
     std::string data = payload->getData();
 
-    if (retainFlag) {
+    if (retain) {
         // adds a new retained message for the specified topic
-        addNewRetainMessage(topicId, dupFlag, qosFlag, topicIdTypeFlag, data);
+        addNewRetainMessage(topicId, dup, qos, topicIdType, data);
     }
 
     MessageInfo messageInfo;
-    messageInfo.dup = dupFlag;
-    messageInfo.qos = qosFlag;
-    messageInfo.retain = retainFlag;
-    messageInfo.topicIdType = topicIdTypeFlag;
     messageInfo.topicId = topicId;
+    messageInfo.topicIdType = topicIdType;
+    messageInfo.dup = dup;
+    messageInfo.qos = qos;
+    messageInfo.retain = retain;
     messageInfo.data = data;
 
-    if (qosFlag == QoS::QOS_ZERO) {
+    if (qos == QoS::QOS_ZERO) {
         // handling QoS 0
         dispatchPublishToSubscribers(messageInfo);
         return;
@@ -618,7 +619,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    if (qosFlag == QoS::QOS_ONE) {
+    if (qos == QoS::QOS_ONE) {
         // handling QoS 1
         dispatchPublishToSubscribers(messageInfo);
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
@@ -629,9 +630,9 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
 
     DataInfo dataInfo;
-    dataInfo.retainFlag = retainFlag;
-    dataInfo.topicIdTypeFlag = topicIdTypeFlag;
     dataInfo.topicId = topicId;
+    dataInfo.topicIdType = topicIdType;
+    dataInfo.retain = retain;
     dataInfo.data = data;
 
     // save message data for reuse
@@ -664,11 +665,11 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
         const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
+        messageInfo.topicId = dataInfo.topicId;
+        messageInfo.topicIdType = dataInfo.topicIdType;
         messageInfo.dup = false;
         messageInfo.qos = QoS::QOS_TWO;
-        messageInfo.retain = dataInfo.retainFlag;
-        messageInfo.topicIdType = dataInfo.topicIdTypeFlag;
-        messageInfo.topicId = dataInfo.topicId;
+        messageInfo.retain = dataInfo.retain;
         messageInfo.data = dataInfo.data;
 
         // handling QoS 2
@@ -687,7 +688,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNSubscribe>();
-    QoS qosFlag = (QoS) payload->getQoSFlag();
+    QoS qos = (QoS) payload->getQoSFlag();
     uint16_t msgId = payload->getMsgId();
 
     // extract and sanitize the topic name from the payload
@@ -696,7 +697,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
 
     // reject registration if the topic name length is less than the minimum required
     if (!MqttSNApp::isMinTopicLength(topicLength)) {
-        sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
+        sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
         return;
     }
 
@@ -710,7 +711,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     if (it == topicsToIds.end()) {
         // check if the maximum number of topics is reached; if not, set a new available topic ID
         if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
-            sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_CONGESTION, 0, msgId);
+            sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_CONGESTION, 0, msgId);
             return;
         }
 
@@ -721,12 +722,12 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
         topicId = it->second;
 
         /* TO DO
-        //TopicIdType topicIdTypeFlag = (TopicIdType) payload->getTopicIdTypeFlag();
+        //TopicIdType topicIdType = (TopicIdType) payload->getTopicIdType();
 
         TopicInfo topicInfo = idsToTopics[topicId];
 
-        if (payload->getTopicIdTypeFlag() != topicInfo.topicIdTypeFlag) {
-            sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
+        if (payload->getTopicIdType() != topicInfo.topicIdType) {
+            sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
             return;
         }
         */
@@ -739,13 +740,13 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     }
 
     // create a new subscription
-    insertSubscription(srcAddress, srcPort, topicId, qosFlag);
+    insertSubscription(srcAddress, srcPort, topicId, qos);
 
     // check for existing retain message and add in the queue if found
-    addNewPendingRetainMessage(srcAddress, srcPort, topicId, qosFlag);
+    addNewPendingRetainMessage(srcAddress, srcPort, topicId, qos);
 
     // send ACK message with ACCEPTED code
-    sendSubAck(srcAddress, srcPort, qosFlag, ReturnCode::ACCEPTED, topicId, msgId);
+    sendSubAck(srcAddress, srcPort, qos, ReturnCode::ACCEPTED, topicId, msgId);
 }
 
 void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -1160,7 +1161,7 @@ void MqttSNServer::fillWithPredefinedTopics()
 void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType)
 {
     TopicInfo topicInfo;
-    topicInfo.topicIdTypeFlag = topicIdType;
+    topicInfo.topicIdType = topicIdType;
 
     // add the new topic in the data structures
     topicsToIds[topicName] = topicId;
@@ -1202,10 +1203,10 @@ void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberA
         const RetainMessageInfo& retainMessageInfo = retainMsgIt->second;
 
         MessageInfo messageInfo;
+        messageInfo.topicId = topicId;
+        messageInfo.topicIdType = retainMessageInfo.topicIdType;
         messageInfo.dup = retainMessageInfo.dup;
         messageInfo.retain = true;
-        messageInfo.topicIdType = retainMessageInfo.topicIdType;
-        messageInfo.topicId = topicId;
         messageInfo.data = retainMessageInfo.data;
 
         // calculate the minimum QoS level between subscription QoS and original publish QoS
@@ -1246,11 +1247,11 @@ MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo)
             messageInfo = new MessageInfo;
 
             // populate the fields of the new object
+            messageInfo->topicId = requestInfo.retainMessagesKey;
+            messageInfo->topicIdType = retainMessageInfo.topicIdType;
             messageInfo->dup = retainMessageInfo.dup;
             messageInfo->qos = retainMessageInfo.qos;
             messageInfo->retain = true;
-            messageInfo->topicIdType = retainMessageInfo.topicIdType;
-            messageInfo->topicId = requestInfo.retainMessagesKey;
             messageInfo->data = retainMessageInfo.data;
         }
     }
@@ -1535,15 +1536,15 @@ bool MqttSNServer::checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, boo
     return (usedIds.size() == maxValue);
 }
 
-bool MqttSNServer::checkPublishCongestion(QoS qosFlag, bool retainFlag)
+bool MqttSNServer::checkPublishCongestion(QoS qos, bool retain)
 {
     // check congestion for retained messages
-    if (retainFlag && checkIDSpaceCongestion(retainMessageIds, false)) {
+    if (retain && checkIDSpaceCongestion(retainMessageIds, false)) {
         return true;
     }
 
     // check congestion for QoS levels 1 and 2
-    if (qosFlag == QoS::QOS_ONE || qosFlag == QoS::QOS_TWO) {
+    if (qos == QoS::QOS_ONE || qos == QoS::QOS_TWO) {
         return (checkIDSpaceCongestion(requestIds) || checkIDSpaceCongestion(messageIds));
     }
 

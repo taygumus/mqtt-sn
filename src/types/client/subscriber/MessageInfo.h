@@ -2,11 +2,11 @@
 #define TYPES_CLIENT_SUBSCRIBER_MESSAGEINFO_H_
 
 struct MessageInfo {
+    std::string topicName;
+    uint16_t topicId = 0;
     bool dup = false;
     QoS qos = QoS::QOS_ZERO;
     bool retain = false;
-    uint16_t topicId = 0;
-    std::string topicName;
     std::string data;
 };
 

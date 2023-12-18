@@ -16,8 +16,8 @@ class MqttSNPublisher : public MqttSNClient
 {
     protected:
         // parameters
-        int willQoSFlag;
-        bool willRetainFlag;
+        int willQoS;
+        bool willRetain;
         std::string willTopic;
         std::string willMsg;
         double registrationInterval;

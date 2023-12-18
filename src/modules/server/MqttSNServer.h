@@ -197,7 +197,7 @@ class MqttSNServer : public MqttSNApp
         // congestion methods
         virtual bool checkClientsCongestion();
         virtual bool checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue = true);
-        virtual bool checkPublishCongestion(QoS qosFlag, bool retainFlag);
+        virtual bool checkPublishCongestion(QoS qos, bool retain);
 
     public:
         MqttSNServer() {};

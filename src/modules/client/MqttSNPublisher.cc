@@ -18,8 +18,8 @@ using json = nlohmann::json;
 
 void MqttSNPublisher::levelTwoInit()
 {
-    willQoSFlag = par("willQoSFlag");
-    willRetainFlag = par("willRetainFlag");
+    willQoS = par("willQoS");
+    willRetain = par("willRetain");
     willTopic = par("willTopic").stringValue();
     willMsg = par("willMsg").stringValue();
 
@@ -138,7 +138,7 @@ void MqttSNPublisher::processConnAckCustom()
 
 void MqttSNPublisher::processWillTopicReq(const inet::L3Address& srcAddress, const int& srcPort)
 {
-    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, ConversionHelper::intToQoS(willQoSFlag), willRetainFlag, willTopic);
+    sendBaseWithWillTopic(srcAddress, srcPort, MsgType::WILLTOPIC, ConversionHelper::intToQoS(willQoS), willRetain, willTopic);
 }
 
 void MqttSNPublisher::processWillMsgReq(const inet::L3Address& srcAddress, const int& srcPort)
@@ -204,8 +204,8 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
 
-    if (lastPublish.dataInfo.qosFlag == QoS::QOS_ONE ||
-        lastPublish.dataInfo.qosFlag == QoS::QOS_TWO) {
+    if (lastPublish.dataInfo.qos == QoS::QOS_ONE ||
+        lastPublish.dataInfo.qos == QoS::QOS_TWO) {
 
         // check if the ACK is correct; exit if not
         if (!MqttSNClient::processAckForMsgType(MsgType::PUBLISH, payload->getMsgId())) {
@@ -358,7 +358,7 @@ void MqttSNPublisher::sendBaseWithMsgId(const inet::L3Address& destAddress, cons
 
 void MqttSNPublisher::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
-    MqttSNClient::sendConnect(destAddress, destPort, par("willFlag"), par("cleanSessionFlag"), MqttSNClient::keepAlive);
+    MqttSNClient::sendConnect(destAddress, destPort, par("will"), par("cleanSession"), MqttSNClient::keepAlive);
 }
 
 void MqttSNPublisher::handleRegistrationEvent()
@@ -379,12 +379,12 @@ void MqttSNPublisher::handleRegistrationEvent()
         auto it = topicsAndData.begin();
         std::advance(it, intuniform(0, topicsAndData.size() - 1));
 
-        TopicIdType topicIdTypeFlag = it->second.topicIdTypeFlag;
+        TopicIdType topicIdType = it->second.topicIdType;
         int counter = it->second.counter;
 
         // short topics are registered only once; predefined topics are ignored for registration
-        if ((topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID && counter == 1) ||
-            (topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID)) {
+        if ((topicIdType == TopicIdType::SHORT_TOPIC_ID && counter == 1) ||
+            (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID)) {
 
             scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, registrationEvent);
             return;
@@ -455,21 +455,21 @@ void MqttSNPublisher::handlePublishEvent()
         lastPublish.dataInfo = dataInfo;
 
         // retry after publisher reconnection to a server
-        if (dataInfo.qosFlag != QoS::QOS_ZERO) {
+        if (dataInfo.qos != QoS::QOS_ZERO) {
             lastPublish.retry = true;
         }
     }
 
-    QoS qosFlag = dataInfo.qosFlag;
-    bool retainFlag = dataInfo.retainFlag;
-    TopicIdType topicIdTypeFlag = topicsAndData[registerInfo.topicsAndDataKey].topicIdTypeFlag;
+    QoS qos = dataInfo.qos;
+    bool retain = dataInfo.retain;
+    TopicIdType topicIdType = topicsAndData[registerInfo.topicsAndDataKey].topicIdType;
 
     // print publish message to be sent
-    printPublishMessage(topicId, registerInfo.topicName, topicIdTypeFlag, dataInfo);
+    printPublishMessage(topicId, registerInfo.topicName, topicIdType, dataInfo);
 
-    if (qosFlag == QoS::QOS_ZERO) {
+    if (qos == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                    false, qosFlag, retainFlag, topicIdTypeFlag,
+                    false, qos, retain, topicIdType,
                     topicId, 0,
                     dataInfo.data);
 
@@ -479,7 +479,7 @@ void MqttSNPublisher::handlePublishEvent()
     }
 
     sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                false, qosFlag, retainFlag, topicIdTypeFlag,
+                false, qos, retain, topicIdType,
                 topicId, MqttSNClient::getNewMsgId(),
                 dataInfo.data);
 
@@ -508,15 +508,15 @@ void MqttSNPublisher::fillTopicsAndData()
 
         TopicAndData topicAndData;
         topicAndData.topicName = topicName;
-        topicAndData.topicIdTypeFlag = topicIdType;
+        topicAndData.topicIdType = topicIdType;
 
         int dataKey = 0;
 
         // iterate over json array elements (data)
         for (const auto& data : it.value()["data"]) {
             DataInfo dataInfo;
-            dataInfo.qosFlag = ConversionHelper::intToQoS(data["qos"]);
-            dataInfo.retainFlag = data["retain"];
+            dataInfo.qos = ConversionHelper::intToQoS(data["qos"]);
+            dataInfo.retain = data["retain"];
             dataInfo.data = data["data"];
 
             topicAndData.data[dataKey++] = dataInfo;
@@ -534,12 +534,12 @@ void MqttSNPublisher::resetAndPopulateTopics()
         TopicAndData& topicAndData = pair.second;
 
         // reset the counter if the topic uses a short ID type
-        if (topicAndData.topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) {
+        if (topicAndData.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
             topicAndData.counter = 0;
         }
 
         // fetch the predefined topic ID
-        if (topicAndData.topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        if (topicAndData.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
             RegisterInfo registerInfo;
             registerInfo.topicName = topicAndData.topicName;
             registerInfo.topicsAndDataKey = pair.first;
@@ -575,12 +575,12 @@ void MqttSNPublisher::retryLastPublish()
 void MqttSNPublisher::printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType, const DataInfo& dataInfo)
 {
     EV << "Publish message to be sent:" << std::endl;
-    EV << "Topic ID: " << topicId << std::endl;
     EV << "Topic name: " << topicName << std::endl;
-    EV << "Topic type: " << ConversionHelper::topicIdTypeToString(topicIdType) << std::endl;
+    EV << "Topic ID: " << topicId << std::endl;
+    EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(topicIdType) << std::endl;
     EV << "Duplicate: " << false << std::endl;
-    EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qosFlag) << std::endl;
-    EV << "Retain: " << dataInfo.retainFlag << std::endl;
+    EV << "QoS: " << ConversionHelper::qosToInt(dataInfo.qos) << std::endl;
+    EV << "Retain: " << dataInfo.retain << std::endl;
     EV << "Data: " << dataInfo.data << std::endl;
 }
 
@@ -615,7 +615,7 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
 
 void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort)
 {
-    sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, ConversionHelper::intToQoS(willQoSFlag), willRetainFlag, willTopic);
+    sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, ConversionHelper::intToQoS(willQoS), willRetain, willTopic);
 }
 
 void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort)
@@ -630,10 +630,10 @@ void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, con
 
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
-    TopicIdType topicIdTypeFlag = topicsAndData[lastPublish.registerInfo.topicsAndDataKey].topicIdTypeFlag;
+    TopicIdType topicIdType = topicsAndData[lastPublish.registerInfo.topicsAndDataKey].topicIdType;
 
     sendPublish(destAddress, destPort,
-                true, lastPublish.dataInfo.qosFlag, lastPublish.dataInfo.retainFlag, topicIdTypeFlag,
+                true, lastPublish.dataInfo.qos, lastPublish.dataInfo.retain, topicIdType,
                 lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()),
                 lastPublish.dataInfo.data);
 }

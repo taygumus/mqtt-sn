@@ -2,7 +2,7 @@
 #define TYPES_SERVER_TOPICINFO_H_
 
 struct TopicInfo {
-    TopicIdType topicIdTypeFlag = TopicIdType::NORMAL_TOPIC_ID;
+    TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
 };
 
 #endif /* TYPES_SERVER_TOPICINFO_H_ */

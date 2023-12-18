@@ -2,7 +2,7 @@
 #define TYPES_SERVER_PUBLISHERINFO_H_
 
 struct PublisherInfo {
-    bool willFlag = false;
+    bool will = false;
     QoS willQoS = QoS::QOS_ZERO;
     bool willRetain = false;
     std::string willTopic = "";

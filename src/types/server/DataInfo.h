@@ -2,9 +2,9 @@
 #define TYPES_SERVER_DATAINFO_H_
 
 struct DataInfo {
-    bool retainFlag = false;
-    TopicIdType topicIdTypeFlag = TopicIdType::NORMAL_TOPIC_ID;
     uint16_t topicId = 0;
+    TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
+    bool retain = false;
     std::string data;
 };
 

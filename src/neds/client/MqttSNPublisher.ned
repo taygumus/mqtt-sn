@@ -6,9 +6,9 @@ module MqttSNPublisher extends MqttSNClient
         @class(MqttSNPublisher);
         @display("i=block/routing;bgb=20,20");
         
-        bool willFlag = default(false);
-        int willQoSFlag = default(0); // valid QoS values: 0, 1, 2 and -1
-        bool willRetainFlag = default(false);
+        bool will = default(false);
+        int willQoS = default(0); // valid QoS values: 0, 1, 2 and -1
+        bool willRetain = default(false);
         string willTopic = default(""); // will topic name
         string willMsg = default(""); // will message
         

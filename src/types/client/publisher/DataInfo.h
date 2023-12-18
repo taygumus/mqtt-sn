@@ -2,8 +2,8 @@
 #define TYPES_CLIENT_PUBLISHER_DATAINFO_H_
 
 struct DataInfo {
-    QoS qosFlag = QoS::QOS_ZERO;
-    bool retainFlag = false;
+    QoS qos = QoS::QOS_ZERO;
+    bool retain = false;
     std::string data;
 };
 

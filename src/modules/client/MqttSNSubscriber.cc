@@ -169,19 +169,19 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
         return;
     }
 
-    QoS qosFlag = (QoS) payload->getQoSFlag();
-    bool retainFlag = payload->getRetainFlag();
+    QoS qos = (QoS) payload->getQoSFlag();
+    bool retain = payload->getRetainFlag();
     std::string data = payload->getData();
 
     MessageInfo messageInfo;
-    messageInfo.dup = payload->getDupFlag();
-    messageInfo.qos = qosFlag;
-    messageInfo.retain = retainFlag;
-    messageInfo.topicId = topicId;
     messageInfo.topicName = topicIds[topicId].topicName;
+    messageInfo.topicId = topicId;
+    messageInfo.dup = payload->getDupFlag();
+    messageInfo.qos = qos;
+    messageInfo.retain = retain;
     messageInfo.data = data;
 
-    if (qosFlag == QoS::QOS_ZERO) {
+    if (qos == QoS::QOS_ZERO) {
         // handling QoS 0
         printPublishMessage(messageInfo);
         return;
@@ -193,7 +193,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
         return;
     }
 
-    if (qosFlag == QoS::QOS_ONE) {
+    if (qos == QoS::QOS_ONE) {
         // handling QoS 1
         printPublishMessage(messageInfo);
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
@@ -202,9 +202,9 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
 
     // handling QoS 2
     DataInfo dataInfo;
-    dataInfo.retainFlag = retainFlag;
-    dataInfo.topicId = topicId;
     dataInfo.topicName = topicIds[topicId].topicName;
+    dataInfo.topicId = topicId;
+    dataInfo.retain = retain;
     dataInfo.data = data;
 
     // save message data for reuse
@@ -226,11 +226,11 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
         const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
+        messageInfo.topicName = dataInfo.topicName;
+        messageInfo.topicId = dataInfo.topicId;
         messageInfo.dup = false;
         messageInfo.qos = QoS::QOS_TWO;
-        messageInfo.retain = dataInfo.retainFlag;
-        messageInfo.topicId = dataInfo.topicId;
-        messageInfo.topicName = dataInfo.topicName;
+        messageInfo.retain = dataInfo.retain;
         messageInfo.data = dataInfo.data;
 
         // handling QoS 2
@@ -307,14 +307,14 @@ void MqttSNSubscriber::sendBaseWithMsgId(const inet::L3Address& destAddress, con
 
 void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)
 {
-    MqttSNClient::sendConnect(destAddress, destPort, 0, par("cleanSessionFlag"), MqttSNClient::keepAlive);
+    MqttSNClient::sendConnect(destAddress, destPort, 0, par("cleanSession"), MqttSNClient::keepAlive);
 }
 
 void MqttSNSubscriber::handleSubscriptionEvent()
 {
-    std::string topicName; ///
-    TopicIdType topicIdTypeFlag;///
-    QoS qosFlag;///
+    std::string topicName;///
+    TopicIdType topicIdType;///
+    QoS qos;///
 
     TopicInfo topicInfo;
 
@@ -322,8 +322,8 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     if (lastSubscription.retry) {
 
         topicName = lastSubscription.info.topicName;///
-        topicIdTypeFlag = topics[lastSubscription.info.topicsKey].topicIdTypeFlag;///
-        qosFlag = topics[lastSubscription.info.topicsKey].qosFlag;///
+        topicIdType = topics[lastSubscription.info.topicsKey].topicIdType;///
+        qos = topics[lastSubscription.info.topicsKey].qos;///
 
         topicInfo = lastSubscription.info;
     }
@@ -337,11 +337,11 @@ void MqttSNSubscriber::handleSubscriptionEvent()
         auto it = topics.begin();
         std::advance(it, intuniform(0, topics.size() - 1));
 
-        topicIdTypeFlag = it->second.topicIdTypeFlag;
+        topicIdType = it->second.topicIdType;
         int subscribeCounter = it->second.subscribeCounter;
 
         // predefined and short topics are subscribed only once
-        if ((topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID || topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) &&
+        if ((topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID || topicIdType == TopicIdType::SHORT_TOPIC_ID) &&
              subscribeCounter == 1) {
 
             scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, subscriptionEvent);
@@ -349,7 +349,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
         }
 
         topicName = StringHelper::appendCounterToString(it->second.topicName, subscribeCounter); ///
-        qosFlag = it->second.qosFlag; ///
+        qos = it->second.qos; ///
 
         topicInfo.topicName = StringHelper::appendCounterToString(it->second.topicName, subscribeCounter);
         topicInfo.topicsKey = it->first;
@@ -360,7 +360,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
     }
 
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  false, qosFlag, TopicIdType::NORMAL_TOPIC_ID,
+                  false, qos, TopicIdType::NORMAL_TOPIC_ID,
                   MqttSNClient::getNewMsgId(),
                   topicName, 0);
 
@@ -432,9 +432,9 @@ void MqttSNSubscriber::fillTopics()
 
         Topic topic;
         topic.topicName = it.key();
-        topic.topicIdTypeFlag = topicIdType;
+        topic.topicIdType = topicIdType;
         topic.predefinedTopicId = predefinedTopicIt->second;
-        topic.qosFlag = ConversionHelper::intToQoS(it.value()["qos"]);
+        topic.qos = ConversionHelper::intToQoS(it.value()["qos"]);
 
         topics[topicsKey++] = topic;
     }
@@ -448,13 +448,13 @@ void MqttSNSubscriber::resetAndPopulateTopics()
         Topic& topic = pair.second;
 
         // reset the counters if the topic uses a short ID type
-        if (topic.topicIdTypeFlag == TopicIdType::SHORT_TOPIC_ID) {
+        if (topic.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
             topic.subscribeCounter = 0;
             topic.unsubscribeCounter = 0;
         }
 
         // fetch the predefined topic ID
-        if (topic.topicIdTypeFlag == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        if (topic.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
             TopicInfo topicInfo;
             topicInfo.topicName = topic.topicName;
             topicInfo.topicsKey = pair.first;
@@ -467,8 +467,8 @@ void MqttSNSubscriber::resetAndPopulateTopics()
 void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
 {
     EV << "Received publish message:" << std::endl;
-    EV << "Topic ID: " << messageInfo.topicId << std::endl;
     EV << "Topic name: " << messageInfo.topicName << std::endl;
+    EV << "Topic ID: " << messageInfo.topicId << std::endl;
     EV << "Duplicate: " << (messageInfo.dup ? "True" : "False") << std::endl;
     EV << "QoS: " << ConversionHelper::qosToInt(messageInfo.qos) << std::endl;
     EV << "Retain: " << messageInfo.retain << std::endl;
@@ -495,7 +495,7 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
 void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port,
-                  true, topics[lastSubscription.info.topicsKey].qosFlag, TopicIdType::NORMAL_TOPIC_ID,
+                  true, topics[lastSubscription.info.topicsKey].qos, TopicIdType::NORMAL_TOPIC_ID,
                   std::stoi(msg->par("msgId").stringValue()),
                   lastSubscription.info.topicName, 0);
 }

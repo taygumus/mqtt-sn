@@ -2,9 +2,9 @@
 #define TYPES_CLIENT_SUBSCRIBER_DATAINFO_H_
 
 struct DataInfo {
-    bool retainFlag = false;
-    uint16_t topicId = 0;
     std::string topicName;
+    uint16_t topicId = 0;
+    bool retain = false;
     std::string data;
 };
 
