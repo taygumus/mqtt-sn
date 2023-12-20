@@ -7,10 +7,9 @@
 #include "types/shared/ReturnCode.h"
 #include "types/client/subscriber/ItemInfo.h"
 #include "types/client/subscriber/TopicInfo.h"
-#include "types/client/subscriber/LastSubscribeInfo.h"
-#include "types/client/subscriber/LastUnsubscribeInfo.h"
-#include "types/client/subscriber/MessageInfo.h"
+#include "types/client/subscriber/LastOperationInfo.h"
 #include "types/client/subscriber/DataInfo.h"
+#include "types/client/subscriber/MessageInfo.h"
 
 namespace mqttsn {
 
@@ -25,11 +24,12 @@ class MqttSNSubscriber : public MqttSNClient
         std::map<int, ItemInfo> items;
 
         inet::ClockEvent* subscriptionEvent = nullptr;
-        std::map<uint16_t, TopicInfo> topicIds;
-        LastSubscribeInfo lastSubscription;
+        LastOperationInfo lastSubscription;
+
+        std::map<uint16_t, TopicInfo> topics;
 
         inet::ClockEvent* unsubscriptionEvent = nullptr;
-        LastUnsubscribeInfo lastUnsubscription;
+        LastOperationInfo lastUnsubscription;
 
         std::map<uint16_t, DataInfo> messages;
 
@@ -75,6 +75,8 @@ class MqttSNSubscriber : public MqttSNClient
 
         // topic methods
         virtual void resetAndPopulateTopics();
+        virtual bool proceedWithSubscription();
+        virtual bool proceedWithUnsubscription();
 
         // publication methods
         virtual void printPublishMessage(const MessageInfo& messageInfo);

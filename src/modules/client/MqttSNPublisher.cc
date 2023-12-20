@@ -193,8 +193,11 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
     }
 
     // handle operations when the registration is ACCEPTED; update data structures
-    topics[topicId] = lastRegistration.topicInfo;
-    NumericHelper::incrementCounter(&(lastRegistration.topicInfo.itemInfo->counter));
+    TopicInfo& topicInfo = topics[topicId];
+    topicInfo.topicName = lastRegistration.topicName;
+    topicInfo.itemInfo = lastRegistration.itemInfo;
+
+    NumericHelper::incrementCounter(&(lastRegistration.itemInfo->counter));
 
     lastRegistration.retry = false;
     scheduleClockEventAfter(registrationInterval, registrationEvent);
@@ -219,8 +222,8 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
 
     if (returnCode == ReturnCode::REJECTED_INVALID_TOPIC_ID) {
         // update registration information
-        lastRegistration.topicInfo.topicName = lastPublish.topicName;
-        lastRegistration.topicInfo.itemInfo = lastPublish.itemInfo;
+        lastRegistration.topicName = lastPublish.topicName;
+        lastRegistration.itemInfo = lastPublish.itemInfo;
         lastRegistration.retry = true;
 
         MqttSNClient::unscheduleMsgRetransmission(MsgType::REGISTER);
@@ -371,7 +374,7 @@ void MqttSNPublisher::handleRegistrationEvent()
     }
 
     sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::getNewMsgId(),
-                 lastRegistration.topicInfo.topicName);
+                 lastRegistration.topicName);
 
     // schedule register retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNClient::currentMsgId);
@@ -509,8 +512,8 @@ bool MqttSNPublisher::proceedWithRegistration()
     }
 
     // update information about the last element
-    lastRegistration.topicInfo.topicName = StringHelper::appendCounterToString(it->second.topicName, counter);
-    lastRegistration.topicInfo.itemInfo = &it->second;
+    lastRegistration.topicName = StringHelper::appendCounterToString(it->second.topicName, counter);
+    lastRegistration.itemInfo = &it->second;
     lastRegistration.retry = true;
 
     return true;
@@ -628,7 +631,7 @@ void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, c
 
 void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
-    sendRegister(destAddress, destPort, std::stoi(msg->par("msgId").stringValue()), lastRegistration.topicInfo.topicName);
+    sendRegister(destAddress, destPort, std::stoi(msg->par("msgId").stringValue()), lastRegistration.topicName);
 }
 
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)

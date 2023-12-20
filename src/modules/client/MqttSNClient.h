@@ -5,6 +5,7 @@
 #include "types/shared/ClientState.h"
 #include "types/shared/MsgType.h"
 #include "types/client/GatewayInfo.h"
+#include "types/client/TopicInfo.h"
 #include "types/client/RetransmissionInfo.h"
 
 namespace mqttsn {
@@ -52,6 +53,7 @@ class MqttSNClient : public MqttSNApp
         uint16_t currentMsgId = 0;
 
         std::map<std::string, uint16_t> predefinedTopics;
+        std::map<uint16_t, TopicInfo> topics;
 
         // retransmission management
         std::map<MsgType, RetransmissionInfo> retransmissions;
