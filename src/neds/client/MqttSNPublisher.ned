@@ -13,5 +13,5 @@ module MqttSNPublisher extends MqttSNClient
         string willMsg = default(""); // will message
         
         double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
-        double publishInterval @unit(s) = default(5s); // publish interval for new messages
+        double publishInterval @unit(s) = default(10s); // publish interval for new messages
 }
