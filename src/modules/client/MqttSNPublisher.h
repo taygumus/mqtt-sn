@@ -6,7 +6,7 @@
 #include "types/shared/TopicIdType.h"
 #include "types/client/publisher/DataInfo.h"
 #include "types/client/publisher/ItemInfo.h"
-#include "types/client/publisher/RegisterInfo.h"
+#include "types/client/publisher/TopicInfo.h"
 #include "types/client/publisher/LastRegisterInfo.h"
 #include "types/client/publisher/LastPublishInfo.h"
 
@@ -27,8 +27,9 @@ class MqttSNPublisher : public MqttSNClient
         std::map<int, ItemInfo> items;
 
         inet::ClockEvent* registrationEvent = nullptr;
-        std::map<uint16_t, RegisterInfo> topicIds;
         LastRegisterInfo lastRegistration;
+
+        std::map<uint16_t, TopicInfo> topics;
 
         inet::ClockEvent* publishEvent = nullptr;
         LastPublishInfo lastPublish;
@@ -79,10 +80,12 @@ class MqttSNPublisher : public MqttSNClient
         // topic methods
         virtual void resetAndPopulateTopics();
         virtual bool findTopicByName(const std::string& topicName, uint16_t& topicId);
+        virtual bool proceedWithRegistration();
 
         // publication methods
+        virtual void printPublishMessage();
         virtual void retryLastPublish();
-        virtual void printPublishMessage(uint16_t topicId, const std::string& topicName, TopicIdType topicIdType, const DataInfo& dataInfo);
+        virtual bool proceedWithPublish();
 
         // retransmission management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,

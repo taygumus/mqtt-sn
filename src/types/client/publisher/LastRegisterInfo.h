@@ -2,7 +2,7 @@
 #define TYPES_CLIENT_PUBLISHER_LASTREGISTERINFO_H_
 
 struct LastRegisterInfo {
-    RegisterInfo info;
+    TopicInfo topicInfo;
     bool retry = false;
 };
 

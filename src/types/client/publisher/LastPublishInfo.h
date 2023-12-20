@@ -2,9 +2,10 @@
 #define TYPES_CLIENT_PUBLISHER_LASTPUBLISHINFO_H_
 
 struct LastPublishInfo {
+    std::string topicName;
     uint16_t topicId = 0;
-    RegisterInfo registerInfo;
-    DataInfo dataInfo;
+    ItemInfo* itemInfo = nullptr;
+    DataInfo* dataInfo = nullptr;
     bool retry = false;
 };
 
