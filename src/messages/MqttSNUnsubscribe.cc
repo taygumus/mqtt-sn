@@ -58,7 +58,7 @@ void MqttSNUnsubscribe::setTopicId(uint16_t id)
         topicId = field;
     }
     else {
-        throw omnetpp::cRuntimeError("The topic ID type flag is not correctly set to pre-defined topic ID");
+        throw omnetpp::cRuntimeError("The topic ID type flag is not correctly set to predefined topic ID");
     }
 }
 

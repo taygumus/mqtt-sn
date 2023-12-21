@@ -248,8 +248,14 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
 }
 
 void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag,
-                                     TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId)
+                                     TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId,
+                                     bool useTopicId)
 {
+    // check for a valid topic ID or a valid topic name
+    if ((useTopicId && topicId == 0) || (!useTopicId && topicName.empty())) {
+        throw omnetpp::cRuntimeError(useTopicId ? "Topic ID must be specified" : "Topic name must not be empty");
+    }
+
     const auto& payload = inet::makeShared<MqttSNSubscribe>();
     payload->setMsgType(MsgType::SUBSCRIBE);
     payload->setDupFlag(dupFlag);
@@ -257,11 +263,11 @@ void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const i
     payload->setTopicIdTypeFlag(topicIdTypeFlag);
     payload->setMsgId(msgId);
 
-    if (!topicName.empty()) {
-        payload->setTopicName(topicName);
-    }
-    if (topicId > 0) {
+    if (useTopicId) {
         payload->setTopicId(topicId);
+    }
+    else {
+        payload->setTopicName(topicName);
     }
 
     payload->setChunkLength(inet::B(payload->getLength()));
@@ -319,8 +325,11 @@ void MqttSNSubscriber::handleSubscriptionEvent()
         return;
     }
 
+    TopicIdType topicIdType = lastSubscription.itemInfo->topicIdType;
+
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, false, lastSubscription.itemInfo->qos,
-                  TopicIdType::NORMAL_TOPIC_ID, MqttSNClient::getNewMsgId(), lastSubscription.topicName, 0);
+                  topicIdType, MqttSNClient::getNewMsgId(), lastSubscription.topicName, lastSubscription.itemInfo->topicId,
+                  (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
 
     // schedule subscribe retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::SUBSCRIBE, MqttSNClient::currentMsgId);
@@ -331,6 +340,8 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
     if (!proceedWithUnsubscription()) {
         return;
     }
+
+    TopicIdType topicIdType = lastSubscription.itemInfo->topicIdType;
 
     sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, TopicIdType::NORMAL_TOPIC_ID,
                     MqttSNClient::getNewMsgId(), lastUnsubscription.topicName, 0);
@@ -363,7 +374,7 @@ void MqttSNSubscriber::populateItems()
         ItemInfo itemInfo;
         itemInfo.topicName = topicName;
         itemInfo.topicIdType = topicIdType;
-        itemInfo.predefinedTopicId = predefinedTopicIt->second;
+        itemInfo.topicId = predefinedTopicIt->second;
         itemInfo.qos = ConversionHelper::intToQoS(item["qos"]);
 
         items[itemsKey++] = itemInfo;
@@ -491,8 +502,11 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
 
 void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
+    TopicIdType topicIdType = lastSubscription.itemInfo->topicIdType;
+
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, true, lastSubscription.itemInfo->qos,
-                  TopicIdType::NORMAL_TOPIC_ID, std::stoi(msg->par("msgId").stringValue()), lastSubscription.topicName, 0);
+                  topicIdType, std::stoi(msg->par("msgId").stringValue()), lastSubscription.topicName, lastSubscription.itemInfo->topicId,
+                  (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
 }
 
 void MqttSNSubscriber::retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)

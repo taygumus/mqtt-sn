@@ -55,7 +55,8 @@ class MqttSNSubscriber : public MqttSNClient
 
         // outgoing packet handling
         virtual void sendSubscribe(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag,
-                                   TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId);
+                                   TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId,
+                                   bool useTopicId = false);
 
         virtual void sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort, TopicIdType topicIdTypeFlag, uint16_t msgId,
                                      const std::string& topicName, uint16_t topicId);

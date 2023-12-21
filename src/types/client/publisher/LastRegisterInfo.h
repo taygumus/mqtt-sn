@@ -2,7 +2,7 @@
 #define TYPES_CLIENT_PUBLISHER_LASTREGISTERINFO_H_
 
 struct LastRegisterInfo {
-    std::string topicName;
+    std::string topicName = "";
     ItemInfo* itemInfo = nullptr;
     bool retry = false;
 };

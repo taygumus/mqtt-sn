@@ -688,49 +688,49 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNSubscribe>();
+    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
+    uint16_t topicId = payload->getTopicId();
+
     QoS qos = (QoS) payload->getQoSFlag();
     uint16_t msgId = payload->getMsgId();
 
-    // extract and sanitize the topic name from the payload
-    std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
-    uint16_t topicLength = topicName.length();
-
-    // reject registration if the topic name length is less than the minimum required
-    if (!MqttSNApp::isMinTopicLength(topicLength)) {
-        sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
-        return;
-    }
-
-    // encode the sanitized topic name to Base64 for consistent key handling
-    std::string encodedTopicName = StringHelper::base64Encode(topicName);
-
-    // check if the topic is already registered; if not, register it
-    auto it = topicsToIds.find(encodedTopicName);
-    uint16_t topicId;
-
-    if (it == topicsToIds.end()) {
-        // check if the maximum number of topics is reached; if not, set a new available topic ID
-        if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
-            sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_CONGESTION, 0, msgId);
+    if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        // check for the predefined topic ID
+        auto it = idsToTopics.find(topicId);
+        if (it == idsToTopics.end() || it->second.topicIdType != topicIdType) {
+            sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_INVALID_TOPIC_ID, 0, msgId);
             return;
         }
-
-        addNewTopic(encodedTopicName, currentTopicId, getTopicIdType(topicLength));
-        topicId = currentTopicId;
     }
     else {
-        topicId = it->second;
+        // extract and sanitize the topic name from the payload
+        std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
+        uint16_t topicLength = topicName.length();
 
-        /* TO DO
-        //TopicIdType topicIdType = (TopicIdType) payload->getTopicIdType();
-
-        TopicInfo topicInfo = idsToTopics[topicId];
-
-        if (payload->getTopicIdType() != topicInfo.topicIdType) {
+        // reject registration if the topic name length is less than the minimum required
+        if (!MqttSNApp::isMinTopicLength(topicLength)) {
             sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_NOT_SUPPORTED, 0, msgId);
             return;
         }
-        */
+
+        // encode the sanitized topic name to Base64 for consistent key handling
+        std::string encodedTopicName = StringHelper::base64Encode(topicName);
+
+        // check if the topic is already registered; if not, register it
+        auto it = topicsToIds.find(encodedTopicName);
+        if (it == topicsToIds.end()) {
+            // check if the maximum number of topics is reached; if not, set a new available topic ID
+            if (!MqttSNApp::setNextAvailableId(topicIds, currentTopicId, false)) {
+                sendSubAck(srcAddress, srcPort, qos, ReturnCode::REJECTED_CONGESTION, 0, msgId);
+                return;
+            }
+
+            addNewTopic(encodedTopicName, currentTopicId, getTopicIdType(topicLength));
+            topicId = currentTopicId;
+        }
+        else {
+            topicId = it->second;
+        }
     }
 
     // check for an existing subscription and delete it if found

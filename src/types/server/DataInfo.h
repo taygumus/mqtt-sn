@@ -5,7 +5,7 @@ struct DataInfo {
     uint16_t topicId = 0;
     TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
     bool retain = false;
-    std::string data;
+    std::string data = "";
 };
 
 #endif /* TYPES_SERVER_DATAINFO_H_ */

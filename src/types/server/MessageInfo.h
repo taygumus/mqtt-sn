@@ -7,7 +7,7 @@ struct MessageInfo {
     bool dup = false;
     QoS qos = QoS::QOS_ZERO;
     bool retain = false;
-    std::string data;
+    std::string data = "";
 };
 
 #endif /* TYPES_SERVER_MESSAGEINFO_H_ */

@@ -5,7 +5,7 @@ struct RequestInfo {
     inet::clocktime_t requestTime = 0;
     int retransmissionCounter = 0;
     inet::L3Address subscriberAddress;
-    int subscriberPort;
+    int subscriberPort = 0;
     MsgType messageType;
     uint16_t messagesKey = 0;
     uint16_t retainMessagesKey = 0;

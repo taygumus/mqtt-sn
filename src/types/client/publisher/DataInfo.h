@@ -4,7 +4,7 @@
 struct DataInfo {
     QoS qos = QoS::QOS_ZERO;
     bool retain = false;
-    std::string data;
+    std::string data = "";
 };
 
 #endif /* TYPES_CLIENT_PUBLISHER_DATAINFO_H_ */

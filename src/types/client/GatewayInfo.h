@@ -3,9 +3,9 @@
 
 struct GatewayInfo {
     inet::L3Address address;
-    int port;
-    uint16_t duration;
-    inet::clocktime_t lastUpdatedTime;
+    int port = 0;
+    uint16_t duration = 0;
+    inet::clocktime_t lastUpdatedTime = 0;
 };
 
 #endif /* TYPES_CLIENT_GATEWAYINFO_H_ */

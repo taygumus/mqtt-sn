@@ -2,7 +2,7 @@
 #define TYPES_CLIENT_PUBLISHER_ITEMINFO_H_
 
 struct ItemInfo {
-    std::string topicName;
+    std::string topicName = "";
     TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
     int counter = 0;
     std::map<int, DataInfo> data;
