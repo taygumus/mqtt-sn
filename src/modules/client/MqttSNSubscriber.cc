@@ -251,10 +251,7 @@ void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const i
                                      TopicIdType topicIdTypeFlag, uint16_t msgId, const std::string& topicName, uint16_t topicId,
                                      bool useTopicId)
 {
-    // check for a valid topic ID or a valid topic name
-    if ((useTopicId && topicId == 0) || (!useTopicId && topicName.empty())) {
-        throw omnetpp::cRuntimeError(useTopicId ? "Topic ID must be specified" : "Topic name must not be empty");
-    }
+    validateTopic(topicName, topicId, useTopicId);
 
     const auto& payload = inet::makeShared<MqttSNSubscribe>();
     payload->setMsgType(MsgType::SUBSCRIBE);
@@ -279,18 +276,20 @@ void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const i
 }
 
 void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort, TopicIdType topicIdTypeFlag, uint16_t msgId,
-                                       const std::string& topicName, uint16_t topicId)
+                                       const std::string& topicName, uint16_t topicId, bool useTopicId)
 {
+    validateTopic(topicName, topicId, useTopicId);
+
     const auto& payload = inet::makeShared<MqttSNUnsubscribe>();
     payload->setMsgType(MsgType::UNSUBSCRIBE);
     payload->setTopicIdTypeFlag(topicIdTypeFlag);
     payload->setMsgId(msgId);
 
-    if (!topicName.empty()) {
-        payload->setTopicName(topicName);
-    }
-    if (topicId > 0) {
+    if (useTopicId) {
         payload->setTopicId(topicId);
+    }
+    else {
+        payload->setTopicName(topicName);
     }
 
     payload->setChunkLength(inet::B(payload->getLength()));
@@ -341,10 +340,10 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
         return;
     }
 
-    TopicIdType topicIdType = lastSubscription.itemInfo->topicIdType;
+    TopicIdType topicIdType = lastUnsubscription.itemInfo->topicIdType;
 
-    sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, TopicIdType::NORMAL_TOPIC_ID,
-                    MqttSNClient::getNewMsgId(), lastUnsubscription.topicName, 0);
+    sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, topicIdType, MqttSNClient::getNewMsgId(),
+                    lastUnsubscription.topicName, lastUnsubscription.itemInfo->topicId, (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
 
     // schedule unsubscribe retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::UNSUBSCRIBE, MqttSNClient::currentMsgId);
@@ -402,6 +401,14 @@ void MqttSNSubscriber::resetAndPopulateTopics()
 
             topics[MqttSNClient::getPredefinedTopicId(itemInfo.topicName)] = topicInfo;
         }
+    }
+}
+
+void MqttSNSubscriber::validateTopic(const std::string& topicName, uint16_t topicId, bool useTopicId)
+{
+    // check for a valid topic ID or a valid topic name
+    if ((useTopicId && topicId == 0) || (!useTopicId && topicName.empty())) {
+        throw omnetpp::cRuntimeError(useTopicId ? "Topic ID must be specified" : "Topic name must not be empty");
     }
 }
 
@@ -511,8 +518,11 @@ void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, c
 
 void MqttSNSubscriber::retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
-    sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, TopicIdType::NORMAL_TOPIC_ID,
-                    std::stoi(msg->par("msgId").stringValue()), lastUnsubscription.topicName, 0);
+    TopicIdType topicIdType = lastUnsubscription.itemInfo->topicIdType;
+
+    sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, topicIdType,
+                    std::stoi(msg->par("msgId").stringValue()), lastUnsubscription.topicName, lastUnsubscription.itemInfo->topicId,
+                    (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
 }
 
 MqttSNSubscriber::~MqttSNSubscriber()

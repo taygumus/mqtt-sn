@@ -59,7 +59,7 @@ class MqttSNSubscriber : public MqttSNClient
                                    bool useTopicId = false);
 
         virtual void sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort, TopicIdType topicIdTypeFlag, uint16_t msgId,
-                                     const std::string& topicName, uint16_t topicId);
+                                     const std::string& topicName, uint16_t topicId, bool useTopicId = false);
 
         virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
                                               uint16_t topicId, uint16_t msgId);
@@ -76,6 +76,7 @@ class MqttSNSubscriber : public MqttSNClient
 
         // topic methods
         virtual void resetAndPopulateTopics();
+        virtual void validateTopic(const std::string& topicName, uint16_t topicId, bool useTopicId);
         virtual bool proceedWithSubscription();
         virtual bool proceedWithUnsubscription();
 
