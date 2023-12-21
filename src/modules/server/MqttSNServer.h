@@ -184,6 +184,8 @@ class MqttSNServer : public MqttSNApp
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
         // subscription methods
+        virtual void deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
+
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
 

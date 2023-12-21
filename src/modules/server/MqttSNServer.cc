@@ -733,11 +733,8 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
         }
     }
 
-    // check for an existing subscription and delete it if found
-    std::pair<uint16_t, QoS> subscriptionKey;
-    if (findSubscription(srcAddress, srcPort, topicId, subscriptionKey)) {
-        deleteSubscription(srcAddress, srcPort, subscriptionKey);
-    }
+    // remove subscription if exists
+    deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
 
     // create a new subscription
     insertSubscription(srcAddress, srcPort, topicId, qos);
@@ -754,18 +751,23 @@ void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& s
     setClientLastMsgTime(srcAddress, srcPort);
 
     const auto& payload = pk->peekData<MqttSNUnsubscribe>();
+    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
+    uint16_t topicId = payload->getTopicId();
 
-    // extract and sanitize the topic name from the payload
-    std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
-
-    if (!topicName.empty()) {
-        // check if the topic is present
-        auto it = topicsToIds.find(StringHelper::base64Encode(topicName));
-        if (it != topicsToIds.end()) {
-            // check for an existing subscription and delete it if found
-            std::pair<uint16_t, QoS> subscriptionKey;
-            if (findSubscription(srcAddress, srcPort, it->second, subscriptionKey)) {
-                deleteSubscription(srcAddress, srcPort, subscriptionKey);
+    if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        // remove subscription if the predefined topic ID exists
+        auto it = idsToTopics.find(topicId);
+        if (it != idsToTopics.end() && it->second.topicIdType == topicIdType) {
+            deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
+        }
+    }
+    else {
+        std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
+        // check and remove subscription if a valid topic name exists
+        if (MqttSNApp::isMinTopicLength(topicName.length())) {
+            auto it = topicsToIds.find(StringHelper::base64Encode(topicName));
+            if (it != topicsToIds.end()) {
+                deleteSubscriptionIfExists(srcAddress, srcPort, it->second);
             }
         }
     }
@@ -792,12 +794,8 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
     ReturnCode returnCode = payload->getReturnCode();
 
     if (returnCode == ReturnCode::REJECTED_INVALID_TOPIC_ID) {
-        // search and delete the subscriber subscription
-        std::pair<uint16_t, QoS> subscriptionKey;
-        if (findSubscription(srcAddress, srcPort, payload->getTopicId(), subscriptionKey)) {
-            deleteSubscription(srcAddress, srcPort, subscriptionKey);
-        }
-
+        // remove subscription if exists
+        deleteSubscriptionIfExists(srcAddress, srcPort, payload->getTopicId());
         return;
     }
 
@@ -1388,6 +1386,15 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     deleteRequest(requestIt, requestIdIt);
 
     return true;
+}
+
+void MqttSNServer::deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
+{
+    // check for an existing subscription and delete it if found
+    std::pair<uint16_t, QoS> subscriptionKey;
+    if (findSubscription(subscriberAddress, subscriberPort, topicId, subscriptionKey)) {
+        deleteSubscription(subscriberAddress, subscriberPort, subscriptionKey);
+    }
 }
 
 bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
