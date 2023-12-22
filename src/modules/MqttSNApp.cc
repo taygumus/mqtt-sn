@@ -200,17 +200,33 @@ void MqttSNApp::checkTopicLength(uint16_t topicLength, TopicIdType topicIdType)
 std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
 {
     json jsonData = json::parse(par("predefinedTopicsJson").stringValue());
+
+    std::set<std::string> topicNames;
+    std::set<uint16_t> topicIds;
+
     std::map<std::string, uint16_t> result;
 
-    // iterate over json object keys (topics)
-    for (auto it = jsonData.begin(); it != jsonData.end(); ++it) {
-        std::string topicName = it.key();
+    // iterate over json array elements
+    for (const auto& topic : jsonData) {
+        // extract topic name
+        std::string topicName = topic["name"];
+        std::string encodedTopicName = StringHelper::base64Encode(topicName);
+
+        // check for duplicate topic names
+        if (topicNames.find(encodedTopicName) != topicNames.end()) {
+            throw omnetpp::cRuntimeError("Duplicate topic name found: %s", topicName.c_str());
+        }
+
+        // extract predefined topic ID
+        int topicId = topic["id"];
+
+        // check for duplicate topic IDs
+        if (topicIds.find(topicId) != topicIds.end()) {
+            throw omnetpp::cRuntimeError("Duplicate topic ID found: %d", topicId);
+        }
 
         // validate topic name length and type against specified criteria
         checkTopicLength(topicName.length(), TopicIdType::PRE_DEFINED_TOPIC_ID);
-
-        // extract the predefined topic ID from JSON
-        int topicId = it.value();
 
         // check if the topic ID is within the range
         if (topicId <= std::numeric_limits<uint16_t>::min() ||
@@ -219,7 +235,12 @@ std::map<std::string, uint16_t> MqttSNApp::getPredefinedTopics()
             throw omnetpp::cRuntimeError("Invalid predefined topic ID value");
         }
 
-        result[StringHelper::base64Encode(topicName)] = topicId;
+        // insert unique topic name and ID into respective sets
+        topicNames.insert(encodedTopicName);
+        topicIds.insert(topicId);
+
+        // populate the result map with the encoded topic name and ID
+        result[encodedTopicName] = topicId;
     }
 
     return result;

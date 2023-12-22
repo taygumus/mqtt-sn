@@ -168,8 +168,8 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     uint16_t msgId = payload->getMsgId();
 
     // verify topic ID existence and type consistency
-    auto topicIt = topics.find(topicId);
-    if (topicIt == topics.end() || topicIt->second.itemInfo->topicIdType != topicIdType) {
+    auto it = topics.find(topicId);
+    if (it == topics.end() || it->second.itemInfo->topicIdType != topicIdType) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
         return;
     }
