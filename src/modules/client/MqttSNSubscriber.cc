@@ -154,7 +154,18 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
         return;
     }
 
-    NumericHelper::incrementCounter(&(lastUnsubscription.itemInfo->unsubscribeCounter));
+    auto& itemInfo = lastUnsubscription.itemInfo;
+    TopicIdType topicIdType = itemInfo->topicIdType;
+
+    // enable re-subscription for predefined/short topics
+    if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID ||
+        topicIdType == TopicIdType::SHORT_TOPIC_ID) {
+
+        itemInfo->subscribeCounter = 0;
+    }
+    else {
+        NumericHelper::incrementCounter(&(itemInfo->unsubscribeCounter));
+    }
 
     lastUnsubscription.retry = false;
     scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
@@ -436,7 +447,7 @@ bool MqttSNSubscriber::proceedWithSubscription()
     TopicIdType topicIdType = it->second.topicIdType;
     int subscribeCounter = it->second.subscribeCounter;
 
-    // predefined and short topics are subscribed only once
+    // subscribe predefined/short topics once: initially or post-unsubscribe
     if ((topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID || topicIdType == TopicIdType::SHORT_TOPIC_ID) &&
          subscribeCounter == 1) {
 
@@ -472,7 +483,7 @@ bool MqttSNSubscriber::proceedWithUnsubscription()
 
     // unsubcription must be after subscription
     if (unsubscribeCounter == it->second.subscribeCounter) {
-        scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, unsubscriptionEvent);
         return false;
     }
 
