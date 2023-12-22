@@ -164,19 +164,12 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
 {
     const auto& payload = pk->peekData<MqttSNPublish>();
     uint16_t topicId = payload->getTopicId();
+    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
     uint16_t msgId = payload->getMsgId();
 
-    // check if the topic ID is present; if not, send a return code
+    // verify topic ID existence and type consistency
     auto topicIt = topics.find(topicId);
-    if (topicIt == topics.end()) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
-        return;
-    }
-
-    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
-
-    // check for inconsistency in the received topic ID type
-    if (topicIt->second.itemInfo->topicIdType != topicIdType) {
+    if (topicIt == topics.end() || topicIt->second.itemInfo->topicIdType != topicIdType) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
         return;
     }
