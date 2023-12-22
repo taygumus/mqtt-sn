@@ -3,8 +3,8 @@
 
 struct ItemInfo {
     std::string topicName = "";
+    uint16_t topicId = 0; // used only as predefined topic ID
     TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
-    uint16_t topicId = 0; // predefined topic ID
     QoS qos = QoS::QOS_ZERO;
     int subscribeCounter = 0;
     int unsubscribeCounter = 0;

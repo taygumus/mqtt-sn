@@ -167,7 +167,16 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     uint16_t msgId = payload->getMsgId();
 
     // check if the topic ID is present; if not, send a return code
-    if (topics.find(topicId) == topics.end()) {
+    auto topicIt = topics.find(topicId);
+    if (topicIt == topics.end()) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
+        return;
+    }
+
+    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
+
+    // check for inconsistency in the received topic ID type
+    if (topicIt->second.itemInfo->topicIdType != topicIdType) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
         return;
     }
@@ -179,6 +188,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     MessageInfo messageInfo;
     messageInfo.topicName = topics[topicId].topicName;
     messageInfo.topicId = topicId;
+    messageInfo.topicIdType = topicIdType;
     messageInfo.dup = payload->getDupFlag();
     messageInfo.qos = qos;
     messageInfo.retain = retain;
@@ -207,6 +217,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     DataInfo dataInfo;
     dataInfo.topicName = topics[topicId].topicName;
     dataInfo.topicId = topicId;
+    dataInfo.topicIdType = topicIdType;
     dataInfo.retain = retain;
     dataInfo.data = data;
 
@@ -231,6 +242,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
         MessageInfo messageInfo;
         messageInfo.topicName = dataInfo.topicName;
         messageInfo.topicId = dataInfo.topicId;
+        messageInfo.topicIdType = dataInfo.topicIdType;
         messageInfo.dup = false;
         messageInfo.qos = QoS::QOS_TWO;
         messageInfo.retain = dataInfo.retain;
@@ -484,6 +496,7 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "Received publish message:" << std::endl;
     EV << "Topic name: " << messageInfo.topicName << std::endl;
     EV << "Topic ID: " << messageInfo.topicId << std::endl;
+    EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(messageInfo.topicIdType) << std::endl;
     EV << "Duplicate: " << (messageInfo.dup ? "True" : "False") << std::endl;
     EV << "QoS: " << ConversionHelper::qosToInt(messageInfo.qos) << std::endl;
     EV << "Retain: " << messageInfo.retain << std::endl;
