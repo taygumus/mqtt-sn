@@ -947,9 +947,9 @@ void MqttSNServer::handleActiveClientsCheckEvent()
             (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.keepAliveDuration) {
 
             if (clientInfo.sentPingReq) {
-                // change the expired client state and activate the Will feature
+                // change the expired client state and activate the will feature
                 clientInfo.currentState = ClientState::LOST;
-                // TO DO -> Will feature activation
+                // will feature activation; to be implemented
             }
             else {
                 // send a solicitation ping request to the expired client
@@ -975,9 +975,10 @@ void MqttSNServer::handleAsleepClientsCheckEvent()
         if (clientInfo.currentState == ClientState::ASLEEP &&
             (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.sleepDuration) {
 
-            // change the expired client state and activate the Will feature
+            // change the expired client state and activate the will feature
             clientInfo.currentState = ClientState::LOST;
-            // TO DO -> Will feature activation
+            // will feature activation; to be implemented
+
             // TO DO -> Buffering of messages to send
         }
     }

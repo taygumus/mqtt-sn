@@ -28,7 +28,7 @@ module MqttSNClient extends MqttSNApp
         
         int keepAlive @unit(s) = default(60s); // up to a maximum of 65535 seconds, approximately 18 hours
         
-        bool cleanSession = default(false);
+        bool cleanSession = default(false); // controls session cleanup: deletes will data for publishers, subscriptions for subscribers
         
         string itemsJson; // json string containing topic-related items
         double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
