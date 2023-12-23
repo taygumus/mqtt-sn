@@ -158,9 +158,7 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
     TopicIdType topicIdType = itemInfo->topicIdType;
 
     // enable re-subscription for predefined/short topics
-    if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID ||
-        topicIdType == TopicIdType::SHORT_TOPIC_ID) {
-
+    if (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID || topicIdType == TopicIdType::SHORT_TOPIC_ID) {
         itemInfo->subscribeCounter = 0;
     }
     else {
