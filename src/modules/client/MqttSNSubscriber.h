@@ -25,11 +25,13 @@ class MqttSNSubscriber : public MqttSNClient
 
         inet::ClockEvent* subscriptionEvent = nullptr;
         LastOperationInfo lastSubscription;
+        int subscriptionCounter = 0;
 
         std::map<uint16_t, TopicInfo> topics;
 
         inet::ClockEvent* unsubscriptionEvent = nullptr;
         LastOperationInfo lastUnsubscription;
+        int unsubscriptionCounter = 0;
 
         std::map<uint16_t, DataInfo> messages;
 

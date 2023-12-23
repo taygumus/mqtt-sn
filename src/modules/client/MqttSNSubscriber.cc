@@ -143,6 +143,8 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
 
     lastSubscription.retry = false;
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
+
+    subscriptionCounter++;
 }
 
 void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -167,6 +169,8 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
 
     lastUnsubscription.retry = false;
     scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
+
+    unsubscriptionCounter++;
 }
 
 void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -433,6 +437,12 @@ bool MqttSNSubscriber::proceedWithSubscription()
         return true;
     }
 
+    int subscriptionLimit = par("subscriptionLimit");
+    // check if the subscription limit is set and reached
+    if (subscriptionLimit != -1 && subscriptionLimit == subscriptionCounter) {
+        return false;
+    }
+
     // check for items availability
     if (items.empty()) {
         throw omnetpp::cRuntimeError("No item available");
@@ -466,6 +476,12 @@ bool MqttSNSubscriber::proceedWithUnsubscription()
     // if it's a retry, use the last sent element
     if (lastUnsubscription.retry) {
         return true;
+    }
+
+    int unsubscriptionLimit = par("unsubscriptionLimit");
+    // check if the unsubscription limit is set and reached
+    if (unsubscriptionLimit != -1 && unsubscriptionLimit == unsubscriptionCounter) {
+        return false;
     }
 
     // check for items availability

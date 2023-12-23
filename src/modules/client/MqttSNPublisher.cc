@@ -201,6 +201,8 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     lastRegistration.retry = false;
     scheduleClockEventAfter(registrationInterval, registrationEvent);
+
+    registrationCounter++;
 }
 
 void MqttSNPublisher::processPubAck(inet::Packet* pk)
@@ -248,6 +250,8 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     // handle operations when publish is ACCEPTED
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
+
+    publishCounter++;
 }
 
 void MqttSNPublisher::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -279,6 +283,8 @@ void MqttSNPublisher::processPubComp(inet::Packet* pk)
     // proceed with the next publish
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
+
+    publishCounter++;
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag,
@@ -491,6 +497,12 @@ bool MqttSNPublisher::proceedWithRegistration()
         return true;
     }
 
+    int registrationLimit = par("registrationLimit");
+    // check if the registration limit is set and reached
+    if (registrationLimit != -1 && registrationLimit == registrationCounter) {
+        return false;
+    }
+
     // check for items availability
     if (items.empty()) {
         throw omnetpp::cRuntimeError("No item available");
@@ -547,8 +559,13 @@ bool MqttSNPublisher::proceedWithPublish()
         if (lastPublish.topicId == 0) {
             findTopicByName(lastPublish.topicName, lastPublish.topicId);
         }
-
         return true;
+    }
+
+    int publishLimit = par("publishLimit");
+    // check if the publish limit is set and reached
+    if (publishLimit != -1 && publishLimit == publishCounter) {
+        return false;
     }
 
     // check for topics availability

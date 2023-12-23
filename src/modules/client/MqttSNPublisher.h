@@ -28,11 +28,13 @@ class MqttSNPublisher : public MqttSNClient
 
         inet::ClockEvent* registrationEvent = nullptr;
         LastRegisterInfo lastRegistration;
+        int registrationCounter = 0;
 
         std::map<uint16_t, TopicInfo> topics;
 
         inet::ClockEvent* publishEvent = nullptr;
         LastPublishInfo lastPublish;
+        int publishCounter = 0;
 
     protected:
         // initialization
