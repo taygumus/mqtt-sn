@@ -2,7 +2,6 @@
 #define TYPES_SERVER_CLIENTINFO_H_
 
 struct ClientInfo {
-    bool isNew = true;
     std::string clientId = "";
     uint16_t keepAliveDuration = 0;
     uint16_t sleepDuration = 0;

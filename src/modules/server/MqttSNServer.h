@@ -108,9 +108,9 @@ class MqttSNServer : public MqttSNApp
         virtual void processConnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate = false);
         virtual void processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate = false);
-        virtual void processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
-        virtual void processPingResp(const inet::L3Address& srcAddress, const int& srcPort);
-        virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo);
+        virtual void processPingResp(const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo);
+        virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo);
         virtual void processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
@@ -147,9 +147,8 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // client methods
-        virtual void setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort);
-        virtual bool isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState);
-        virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
+        virtual ClientInfo* addNewClient(const inet::L3Address& srcAddress, const int& srcPort);
+        virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort);
 
         // publisher methods
         virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);

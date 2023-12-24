@@ -266,6 +266,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
     MsgType msgType = header->getMsgType();
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
+    ClientInfo* clientInfo = nullptr;
 
     switch(msgType) {
         // packet types that require an ACTIVE client state
@@ -282,20 +283,29 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::PUBACK:
         case MsgType::PUBREC:
         case MsgType::PUBCOMP:
-            if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE)) {
+            clientInfo = getClientInfo(srcAddress, srcPort);
+            // discard packet if client is not found or not in ACTIVE state
+            if (clientInfo == nullptr || (clientInfo->currentState != ClientState::ACTIVE)) {
                 delete pk;
                 return;
             }
+
+            clientInfo->lastReceivedMsgTime = getClockTime();
             break;
 
         // packet types that require an ACTIVE or ASLEEP client state
         case MsgType::PINGREQ:
         case MsgType::DISCONNECT:
-            if (!isClientInState(srcAddress, srcPort, ClientState::ACTIVE) &&
-                !isClientInState(srcAddress, srcPort, ClientState::ASLEEP)) {
+            clientInfo = getClientInfo(srcAddress, srcPort);
+            // discard packet if client is not found or not in ACTIVE or ASLEEP state
+            if (clientInfo == nullptr ||
+               (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::ASLEEP)) {
+
                 delete pk;
                 return;
             }
+
+            clientInfo->lastReceivedMsgTime = getClockTime();
             break;
 
         default:
@@ -328,15 +338,15 @@ void MqttSNServer::processPacket(inet::Packet* pk)
             break;
 
         case MsgType::PINGREQ:
-            processPingReq(pk, srcAddress, srcPort);
+            processPingReq(pk, srcAddress, srcPort, clientInfo);
             break;
 
         case MsgType::PINGRESP:
-            processPingResp(srcAddress, srcPort);
+            processPingResp(srcAddress, srcPort, clientInfo);
             break;
 
         case MsgType::DISCONNECT:
-            processDisconnect(pk, srcAddress, srcPort);
+            processDisconnect(pk, srcAddress, srcPort, clientInfo);
             break;
 
         case MsgType::REGISTER:
@@ -393,19 +403,29 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort, true);
+    std::string clientId = payload->getClientId();
+    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
 
-    // prevent new client connections when the gateway is congested
-    if (checkClientsCongestion() && clientInfo->isNew) {
-        sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
-        return;
+    if (clientInfo == nullptr) {
+        // if client is not found, check for congestion before adding
+        if (checkClientsCongestion()) {
+            sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
+            return;
+        }
+
+        // add the new client
+        clientInfo = addNewClient(srcAddress, srcPort);
+        clientInfo->clientId = clientId;
+    }
+    else {
+        // if client is found, verify the client ID
+        if (clientId != clientInfo->clientId) {
+            sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED);
+            return;
+        }
     }
 
-    bool will = payload->getWillFlag();
-
     // update client information
-    clientInfo->isNew = false;
-    clientInfo->clientId = payload->getClientId();
     clientInfo->keepAliveDuration = payload->getDuration();
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
@@ -413,6 +433,8 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe.
     // per il publisher cancellare elementi will per subscriber cancellare sottoscrizioni
     // clientInfo->cleanSession = payload->getCleanSessionFlag();
+
+    bool will = payload->getWillFlag();
 
     if (will) {
         // update publisher information
@@ -428,8 +450,6 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNBaseWithWillTopic>();
 
     // update publisher information
@@ -448,8 +468,6 @@ void MqttSNServer::processWillTopic(inet::Packet* pk, const inet::L3Address& src
 
 void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNBaseWithWillMsg>();
 
     // update publisher information
@@ -464,12 +482,8 @@ void MqttSNServer::processWillMsg(inet::Packet* pk, const inet::L3Address& srcAd
     }
 }
 
-void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo)
 {
-    // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
-    clientInfo->lastReceivedMsgTime = getClockTime();
-
     const auto& payload = pk->peekData<MqttSNPingReq>();
     std::string clientId = payload->getClientId();
 
@@ -490,25 +504,20 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
 }
 
-void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int& srcPort)
+void MqttSNServer::processPingResp(const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo)
 {
     // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
-    clientInfo->lastReceivedMsgTime = getClockTime();
     clientInfo->sentPingReq = false;
 
     EV << "Received ping response from client: " << srcAddress << ":" << srcPort << std::endl;
 }
 
-void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
+void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo)
 {
-    // update client information
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
-    clientInfo->lastReceivedMsgTime = getClockTime();
-
     const auto& payload = pk->peekData<MqttSNDisconnect>();
     uint16_t sleepDuration = payload->getDuration();
 
+    // update client information
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
 
@@ -521,8 +530,6 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
 
 void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNRegister>();
     uint16_t topicId = payload->getTopicId();
     uint16_t msgId = payload->getMsgId();
@@ -561,8 +568,6 @@ void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcA
 
 void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNPublish>();
     uint16_t topicId = payload->getTopicId();
     uint16_t msgId = payload->getMsgId();
@@ -644,8 +649,6 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
 void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     // check if the publisher exists for the given key
     auto publisherIt = publishers.find(std::make_pair(srcAddress, srcPort));
     if (publisherIt == publishers.end()) {
@@ -685,8 +688,6 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
 
 void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNSubscribe>();
     TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
     uint16_t topicId = payload->getTopicId();
@@ -748,8 +749,6 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
 
 void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNUnsubscribe>();
     TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
     uint16_t topicId = payload->getTopicId();
@@ -778,8 +777,6 @@ void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& s
 
 void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
     uint16_t msgId = payload->getMsgId();
 
@@ -806,8 +803,6 @@ void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAdd
 
 void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
     uint16_t msgId = payload->getMsgId();
 
@@ -829,8 +824,6 @@ void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAdd
 
 void MqttSNServer::processPubComp(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    setClientLastMsgTime(srcAddress, srcPort);
-
     const auto& payload = pk->peekData<MqttSNBaseWithMsgId>();
 
     // check if the ACK is correct; exit if not
@@ -1092,36 +1085,22 @@ void MqttSNServer::handleClientsClearEvent()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
-void MqttSNServer::setClientLastMsgTime(const inet::L3Address& srcAddress, const int& srcPort)
+ClientInfo* MqttSNServer::addNewClient(const inet::L3Address& srcAddress, const int& srcPort)
 {
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
-    clientInfo->lastReceivedMsgTime = getClockTime();
+    // insert a new default client
+    ClientInfo clientInfo;
+    clients[std::make_pair(srcAddress, srcPort)] = clientInfo;
+
+    return &clients[std::make_pair(srcAddress, srcPort)];
 }
 
-bool MqttSNServer::isClientInState(const inet::L3Address& srcAddress, const int& srcPort, ClientState clientState)
-{
-    // get client information with the specified IP address and port
-    ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
-
-    // return true if the client is found and its state matches the requested state, otherwise return false
-    return (clientInfo != nullptr && clientInfo->currentState == clientState);
-}
-
-ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
+ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort)
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
 
     if (clientIterator != clients.end()) {
         return &clientIterator->second;
-    }
-
-    if (insertIfNotFound) {
-        // insert a new empty client
-        ClientInfo newClientInfo;
-        clients[std::make_pair(srcAddress, srcPort)] = newClientInfo;
-
-        return &clients[std::make_pair(srcAddress, srcPort)];
     }
 
     return nullptr;
