@@ -8,6 +8,7 @@
 #include "types/shared/TopicIdType.h"
 #include "types/shared/ClientState.h"
 #include "types/server/GatewayState.h"
+#include "types/server/ClientType.h"
 #include "types/server/ClientInfo.h"
 #include "types/server/TopicInfo.h"
 #include "types/server/DataInfo.h"
@@ -147,6 +148,8 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // client methods
+        void cleanClientSession(const inet::L3Address& srcAddress, const int& srcPort, ClientType clientType);
+        void updateClientType(ClientInfo* clientInfo, ClientType clientType);
         virtual ClientInfo* addNewClient(const inet::L3Address& srcAddress, const int& srcPort);
         virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort);
 

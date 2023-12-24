@@ -3,6 +3,7 @@
 
 struct ClientInfo {
     std::string clientId = "";
+    ClientType clientType = ClientType::CLIENT;
     uint16_t keepAliveDuration = 0;
     uint16_t sleepDuration = 0;
     ClientState currentState = ClientState::DISCONNECTED;

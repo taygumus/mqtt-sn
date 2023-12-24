@@ -350,10 +350,12 @@ void MqttSNServer::processPacket(inet::Packet* pk)
             break;
 
         case MsgType::REGISTER:
+            updateClientType(clientInfo, ClientType::PUBLISHER);
             processRegister(pk, srcAddress, srcPort);
             break;
 
         case MsgType::PUBLISH:
+            updateClientType(clientInfo, ClientType::PUBLISHER);
             processPublish(pk, srcAddress, srcPort);
             break;
 
@@ -362,10 +364,12 @@ void MqttSNServer::processPacket(inet::Packet* pk)
             break;
 
         case MsgType::SUBSCRIBE:
+            updateClientType(clientInfo, ClientType::SUBSCRIBER);
             processSubscribe(pk, srcAddress, srcPort);
             break;
 
         case MsgType::UNSUBSCRIBE:
+            updateClientType(clientInfo, ClientType::SUBSCRIBER);
             processUnsubscribe(pk, srcAddress, srcPort);
             break;
 
@@ -403,10 +407,30 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    std::string clientId = payload->getClientId();
     ClientInfo* clientInfo = getClientInfo(srcAddress, srcPort);
+    std::string clientId = payload->getClientId();
 
-    if (clientInfo == nullptr) {
+    if (clientInfo != nullptr) {
+        // if client is found, verify the client ID
+        if (clientId != clientInfo->clientId) {
+            sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED);
+            return;
+        }
+
+        // check the clean session flag
+        if (payload->getCleanSessionFlag()) {
+            ClientType clientType = clientInfo->clientType;
+            // if clean session flag is set and client type is unspecified, reject the connection
+            if (clientType == ClientType::CLIENT) {
+                sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED);
+                return;
+            }
+
+            // perform clean session operation for the identified client type
+            cleanClientSession(srcAddress, srcPort, clientType);
+        }
+    }
+    else {
         // if client is not found, check for congestion before adding
         if (checkClientsCongestion()) {
             sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_CONGESTION);
@@ -417,20 +441,13 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
         clientInfo = addNewClient(srcAddress, srcPort);
         clientInfo->clientId = clientId;
     }
-    else {
-        // if client is found, verify the client ID
-        if (clientId != clientInfo->clientId) {
-            sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED);
-            return;
-        }
-    }
 
     // update client information
     clientInfo->keepAliveDuration = payload->getDuration();
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe.
+    // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe. ///
     // per il publisher cancellare elementi will per subscriber cancellare sottoscrizioni
     // clientInfo->cleanSession = payload->getCleanSessionFlag();
 
@@ -1083,6 +1100,36 @@ void MqttSNServer::handleClientsClearEvent()
     }
 
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
+}
+
+void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const int& srcPort, ClientType clientType)
+{
+    if (clientType == ClientType::PUBLISHER) {
+        PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort);
+        // if publisher is not found, throw an error
+        if (publisherInfo == nullptr) {
+            throw omnetpp::cRuntimeError("Publisher not found during the clean session operation");
+        }
+
+        // reset will-related data for the publisher
+        publisherInfo->will = false;
+        publisherInfo->willQoS = QoS::QOS_ZERO;
+        publisherInfo->willRetain = false;
+        publisherInfo->willTopic = "";
+        publisherInfo->willMsg = "";
+
+        return;
+    }
+
+    // TO DO -> subscriber subscription reset
+}
+
+void MqttSNServer::updateClientType(ClientInfo* clientInfo, ClientType clientType)
+{
+    // update the client type if the current client type is CLIENT
+    if (clientInfo->clientType == ClientType::CLIENT) {
+        clientInfo->clientType = clientType;
+    }
 }
 
 ClientInfo* MqttSNServer::addNewClient(const inet::L3Address& srcAddress, const int& srcPort)
