@@ -10,5 +10,5 @@ module MqttSNSubscriber extends MqttSNClient
         int subscriptionLimit = default(-1); // maximum subscriptions, -1 for unlimited
         
         double unsubscriptionInterval @unit(s) = default(60s); // unsubscription interval from topics
-        int unsubscriptionLimit = default(0); // maximum unsubscriptions, -1 for unlimited
+        int unsubscriptionLimit = default(-1); // maximum unsubscriptions, -1 for unlimited
 }

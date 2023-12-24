@@ -16,6 +16,7 @@
 #include "types/server/MessageInfo.h"
 #include "types/server/RequestInfo.h"
 #include "types/server/RetainMessageInfo.h"
+#include "types/server/SubscriberInfo.h"
 
 namespace mqttsn {
 
@@ -68,6 +69,7 @@ class MqttSNServer : public MqttSNApp
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
 
+        std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
         std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;
 
@@ -184,6 +186,9 @@ class MqttSNServer : public MqttSNApp
                                     std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
+
+        // subscriber methods
+        virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // subscription methods
         virtual void deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);

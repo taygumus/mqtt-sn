@@ -447,10 +447,6 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
     clientInfo->currentState = ClientState::ACTIVE;
     clientInfo->lastReceivedMsgTime = getClockTime();
 
-    // TO DO -> Quando cleanSession=true vedere se il client è publisher o subscriber nelle mappe. ///
-    // per il publisher cancellare elementi will per subscriber cancellare sottoscrizioni
-    // clientInfo->cleanSession = payload->getCleanSessionFlag();
-
     bool will = payload->getWillFlag();
 
     if (will) {
@@ -1121,7 +1117,17 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
         return;
     }
 
-    // TO DO -> subscriber subscription reset
+    // handle the case when the client is identified as a subscriber
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+    // if subscriber is not found, throw an error
+    if (subscriberInfo == nullptr) {
+        throw omnetpp::cRuntimeError("Subscriber not found during the clean session operation");
+    }
+
+    // reset subscriptions for the subscriber
+    for (auto& topicId : subscriberInfo->topicIds) {
+        deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
+    }
 }
 
 void MqttSNServer::updateClientType(ClientInfo* clientInfo, ClientType clientType)
@@ -1163,9 +1169,9 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress,
     }
 
     if (insertIfNotFound) {
-        // insert a new empty publisher
-        PublisherInfo newPublisherInfo;
-        publishers[std::make_pair(srcAddress, srcPort)] = newPublisherInfo;
+        // insert a new default publisher
+        PublisherInfo publisherInfo;
+        publishers[std::make_pair(srcAddress, srcPort)] = publisherInfo;
 
         return &publishers[std::make_pair(srcAddress, srcPort)];
     }
@@ -1415,6 +1421,26 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     return true;
 }
 
+SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
+{
+    // check if the subscriber with the specified address and port is present in the data structure
+    auto subscriberIterator = subscribers.find(std::make_pair(srcAddress, srcPort));
+
+    if (subscriberIterator != subscribers.end()) {
+        return &subscriberIterator->second;
+    }
+
+    if (insertIfNotFound) {
+        // insert a new default subscriber
+        SubscriberInfo subscriberInfo;
+        subscribers[std::make_pair(srcAddress, srcPort)] = subscriberInfo;
+
+        return &subscribers[std::make_pair(srcAddress, srcPort)];
+    }
+
+    return nullptr;
+}
+
 void MqttSNServer::deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
 {
     // check for an existing subscription and delete it if found
@@ -1453,6 +1479,10 @@ bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, co
 
 bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos)
 {
+    // retrieve the subscriber and insert the subscription topic
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
+    subscriberInfo->topicIds.insert(topicId);
+
     // create key pairs
     std::pair<uint16_t, QoS> subscriptionKey = std::make_pair(topicId, qos);
     std::pair<inet::L3Address, int> subscriberKey = std::make_pair(subscriberAddress, subscriberPort);
@@ -1487,6 +1517,10 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
 bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                       const std::pair<uint16_t, QoS>& subscriptionKey)
 {
+    // retrieve the subscriber and delete the subscription topic
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
+    subscriberInfo->topicIds.erase(subscriptionKey.first);
+
     // search for the subscription key in the map
     auto subscriptionIt = subscriptions.find(subscriptionKey);
     if (subscriptionIt != subscriptions.end()) {
