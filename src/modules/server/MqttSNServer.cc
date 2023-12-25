@@ -1107,7 +1107,7 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
             throw omnetpp::cRuntimeError("Publisher not found during the clean session operation");
         }
 
-        // reset will-related data for the publisher
+        // delete will-related data for the publisher
         publisherInfo->will = false;
         publisherInfo->willQoS = QoS::QOS_ZERO;
         publisherInfo->willRetain = false;
@@ -1124,7 +1124,7 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
         throw omnetpp::cRuntimeError("Subscriber not found during the clean session operation");
     }
 
-    // reset subscriptions for the subscriber
+    // delete all subscriptions for the subscriber
     for (auto& topicId : subscriberInfo->topicIds) {
         deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
     }
@@ -1479,10 +1479,6 @@ bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, co
 
 bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos)
 {
-    // retrieve the subscriber and insert the subscription topic
-    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
-    subscriberInfo->topicIds.insert(topicId);
-
     // create key pairs
     std::pair<uint16_t, QoS> subscriptionKey = std::make_pair(topicId, qos);
     std::pair<inet::L3Address, int> subscriberKey = std::make_pair(subscriberAddress, subscriberPort);
@@ -1510,6 +1506,10 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
         topicIdToQoS[topicId].insert(qos);
     }
 
+    // retrieve the subscriber and insert the subscription topic
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
+    subscriberInfo->topicIds.insert(topicId);
+
     // return true if the insertion is successful
     return true;
 }
@@ -1517,10 +1517,6 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
 bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                       const std::pair<uint16_t, QoS>& subscriptionKey)
 {
-    // retrieve the subscriber and delete the subscription topic
-    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
-    subscriberInfo->topicIds.erase(subscriptionKey.first);
-
     // search for the subscription key in the map
     auto subscriptionIt = subscriptions.find(subscriptionKey);
     if (subscriptionIt != subscriptions.end()) {
@@ -1550,6 +1546,10 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
                     }
                 }
             }
+
+            // retrieve the subscriber and delete the subscription topic
+            SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
+            subscriberInfo->topicIds.erase(subscriptionKey.first);
 
             // delete operation is successful
             return true;
