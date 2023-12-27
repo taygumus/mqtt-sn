@@ -433,7 +433,7 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
         else {
             // check if the client is a subscriber
             if (clientType == ClientType::SUBSCRIBER) {
-                // re-register all subscribed topics
+                // reset flags; re-register all subscribed topics
                 setAllSubscriberTopics(srcAddress, srcPort, false);
             }
         }
