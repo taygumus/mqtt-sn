@@ -2,7 +2,7 @@
 #define TYPES_SERVER_SUBSCRIBERINFO_H_
 
 struct SubscriberInfo {
-    std::set<uint16_t> topicIds;
+    std::map<uint16_t, bool> topics;
 };
 
 #endif /* TYPES_SERVER_SUBSCRIBERINFO_H_ */

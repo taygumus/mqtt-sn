@@ -188,6 +188,7 @@ class MqttSNServer : public MqttSNApp
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
         // subscriber methods
+        void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered);
         virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // subscription methods

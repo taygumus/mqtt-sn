@@ -417,9 +417,10 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
             return;
         }
 
+        ClientType clientType = clientInfo->clientType;
+
         // check the clean session flag
         if (payload->getCleanSessionFlag()) {
-            ClientType clientType = clientInfo->clientType;
             // if clean session flag is set and client type is unspecified, reject the connection
             if (clientType == ClientType::CLIENT) {
                 sendBaseWithReturnCode(srcAddress, srcPort, MsgType::CONNACK, ReturnCode::REJECTED_NOT_SUPPORTED);
@@ -428,6 +429,13 @@ void MqttSNServer::processConnect(inet::Packet* pk, const inet::L3Address& srcAd
 
             // perform clean session operation for the identified client type
             cleanClientSession(srcAddress, srcPort, clientType);
+        }
+        else {
+            // check if the client is a subscriber
+            if (clientType == ClientType::SUBSCRIBER) {
+                // re-register all subscribed topics
+                setAllSubscriberTopics(srcAddress, srcPort, false);
+            }
         }
     }
     else {
@@ -1125,10 +1133,12 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
     }
 
     // delete all subscriptions for the subscriber
-    for (auto& topicId : subscriberInfo->topicIds) {
-        deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
+    for (auto& topic : subscriberInfo->topics) {
+        deleteSubscriptionIfExists(srcAddress, srcPort, topic.first);
     }
 }
+
+
 
 void MqttSNServer::updateClientType(ClientInfo* clientInfo, ClientType clientType)
 {
@@ -1421,6 +1431,21 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     return true;
 }
 
+void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered)
+{
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+
+    // exit if the subscriber is not found
+    if (subscriberInfo == nullptr) {
+        return;
+    }
+
+    // set the registration status for all the subscribed topics
+    for (auto& topic : subscriberInfo->topics) {
+       topic.second = isRegistered;
+    }
+}
+
 SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
 {
     // check if the subscriber with the specified address and port is present in the data structure
@@ -1506,9 +1531,11 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
         topicIdToQoS[topicId].insert(qos);
     }
 
-    // retrieve the subscriber and insert the subscription topic
+    // retrieve the subscriber
     SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
-    subscriberInfo->topicIds.insert(topicId);
+
+    // insert subscription topic; flag denotes the topic registration
+    subscriberInfo->topics[topicId] = true;
 
     // return true if the insertion is successful
     return true;
@@ -1549,7 +1576,7 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
 
             // retrieve the subscriber and delete the subscription topic
             SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
-            subscriberInfo->topicIds.erase(subscriptionKey.first);
+            subscriberInfo->topics.erase(subscriptionKey.first);
 
             // delete operation is successful
             return true;
