@@ -1138,8 +1138,6 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
     }
 }
 
-
-
 void MqttSNServer::updateClientType(ClientInfo* clientInfo, ClientType clientType)
 {
     // update the client type if the current client type is CLIENT
