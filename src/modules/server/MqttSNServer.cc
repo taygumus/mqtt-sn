@@ -1008,7 +1008,7 @@ void MqttSNServer::handlePendingRetainCheckEvent()
         const MessageInfo& messageInfo = it->second;
 
         // send the retained message to the subscriber with appropriate QoS
-        saveAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, messageInfo.qos, 0, messageInfo.topicId);
+        addAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, messageInfo.qos, 0, messageInfo.topicId);
 
         // remove the subscriber after sending the message
         pendingRetainMessages.erase(it);
@@ -1329,14 +1329,14 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
 
             // process and send the publish message to each subscriber
             for (const auto& subscriber : subscribers) {
-                saveAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, resultQoS, currentMessageId);
+                addAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, resultQoS, currentMessageId);
             }
         }
     }
 }
 
-void MqttSNServer::saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                             QoS requestQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
+void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                            QoS requestQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
     if (requestQoS == QoS::QOS_ZERO) {
         // send a publish message with QoS 0 to the subscriber

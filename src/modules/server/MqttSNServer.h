@@ -174,8 +174,8 @@ class MqttSNServer : public MqttSNApp
         // request handling methods
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
-        virtual void saveAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                               QoS requestQoS, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
+        virtual void addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                              QoS requestQoS, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
         virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
                                    uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
