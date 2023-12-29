@@ -19,7 +19,7 @@ class PacketHelper : public BaseHelper
                                               uint16_t msgId, const std::string& data);
 
         static inet::Packet* getBaseWithMsgIdPacket(MsgType msgType, uint16_t msgId);
-        static inet::Packet* getMsgIdWithTopicIdPlusPacket(MsgType msgType, ReturnCode returnCode, uint16_t topicId, uint16_t msgId);
+        static inet::Packet* getMsgIdWithTopicIdPlusPacket(MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode);
 };
 
 } /* namespace mqttsn */

@@ -183,7 +183,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     // verify topic ID existence and type consistency
     auto it = topics.find(topicId);
     if (it == topics.end() || it->second.itemInfo->topicIdType != topicIdType) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_INVALID_TOPIC_ID, topicId, msgId);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_INVALID_TOPIC_ID);
         return;
     }
 
@@ -208,14 +208,14 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
 
     // message ID check needed for QoS 1 and QoS 2
     if (msgId == 0) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::REJECTED_NOT_SUPPORTED, topicId, msgId);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
         return;
     }
 
     if (qos == QoS::QOS_ONE) {
         // handling QoS 1
         printPublishMessage(messageInfo);
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, ReturnCode::ACCEPTED, topicId, msgId);
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::ACCEPTED);
         return;
     }
 
@@ -318,10 +318,10 @@ void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
-                                                uint16_t topicId, uint16_t msgId)
+void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId,
+                                                uint16_t msgId, ReturnCode returnCode)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, returnCode, topicId, msgId),
+    MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, topicId, msgId, returnCode),
                              destAddress,
                              destPort);
 }

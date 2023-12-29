@@ -553,10 +553,7 @@ void MqttSNClient::processAdvertise(inet::Packet* pk, const inet::L3Address& src
 {
     const auto& payload = pk->peekData<MqttSNAdvertise>();
 
-    uint8_t gatewayId = payload->getGwId();
-    uint16_t duration = payload->getDuration();
-
-    updateActiveGateways(srcAddress, srcPort, gatewayId, duration);
+    updateActiveGateways(srcAddress, srcPort, payload->getGwId(), payload->getDuration());
 }
 
 void MqttSNClient::processSearchGw()

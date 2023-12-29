@@ -63,8 +63,8 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void sendUnsubscribe(const inet::L3Address& destAddress, const int& destPort, TopicIdType topicIdTypeFlag, uint16_t msgId,
                                      const std::string& topicName, uint16_t topicId, bool useTopicId = false);
 
-        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
-                                              uint16_t topicId, uint16_t msgId);
+        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId,
+                                              uint16_t msgId, ReturnCode returnCode);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 

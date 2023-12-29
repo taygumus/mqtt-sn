@@ -128,16 +128,16 @@ class MqttSNServer : public MqttSNApp
 
         virtual void sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode);
 
-        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode,
-                                              uint16_t topicId, uint16_t msgId);
+        virtual void sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId,
+                                              uint16_t msgId, ReturnCode returnCode);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 
-        virtual void sendSubAck(const inet::L3Address& destAddress, const int& destPort, QoS qosFlag, ReturnCode returnCode, uint16_t topicId,
-                                uint16_t msgId);
+        virtual void sendSubAck(const inet::L3Address& destAddress, const int& destPort, QoS qosFlag, uint16_t topicId, uint16_t msgId,
+                                ReturnCode returnCode);
 
-        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, const std::string& topicName, uint16_t topicId,
-                                  uint16_t msgId);
+        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t topicId, uint16_t msgId,
+                                  const std::string& topicName);
 
         virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
                                  TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);

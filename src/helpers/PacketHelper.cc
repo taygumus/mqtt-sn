@@ -77,7 +77,7 @@ inet::Packet* PacketHelper::getBaseWithMsgIdPacket(MsgType msgType, uint16_t msg
     return packet;
 }
 
-inet::Packet* PacketHelper::getMsgIdWithTopicIdPlusPacket(MsgType msgType, ReturnCode returnCode, uint16_t topicId, uint16_t msgId)
+inet::Packet* PacketHelper::getMsgIdWithTopicIdPlusPacket(MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode)
 {
     const auto& payload = inet::makeShared<MqttSNMsgIdWithTopicIdPlus>();
     payload->setMsgType(msgType);
