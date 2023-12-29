@@ -6,10 +6,11 @@
 
 namespace mqttsn {
 
-inet::Packet* PacketHelper::getRegisterPacket(uint16_t msgId, const std::string& topicName)
+inet::Packet* PacketHelper::getRegisterPacket(uint16_t topicId, uint16_t msgId, const std::string& topicName)
 {
     const auto& payload = inet::makeShared<MqttSNRegister>();
     payload->setMsgType(MsgType::REGISTER);
+    payload->setTopicId(topicId);
     payload->setMsgId(msgId);
     payload->setTopicName(topicName);
     payload->setChunkLength(inet::B(payload->getLength()));

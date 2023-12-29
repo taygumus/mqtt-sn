@@ -346,11 +346,9 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort,
-                                   uint16_t msgId,
-                                   const std::string& topicName)
+void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(msgId, topicName), destAddress, destPort);
+    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(0, msgId, topicName), destAddress, destPort);
 }
 
 void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,

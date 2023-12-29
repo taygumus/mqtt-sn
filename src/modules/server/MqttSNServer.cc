@@ -932,6 +932,12 @@ void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& des
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
+void MqttSNServer::sendRegister(const inet::L3Address& destAddress, const int& destPort, const std::string& topicName, uint16_t topicId,
+                                uint16_t msgId)
+{
+    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(topicId, msgId, topicName), destAddress, destPort);
+}
+
 void MqttSNServer::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
                                TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
 {
@@ -1200,6 +1206,7 @@ void MqttSNServer::fillWithPredefinedTopics()
 void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType)
 {
     TopicInfo topicInfo;
+    topicInfo.topicName = topicName;
     topicInfo.topicIdType = topicIdType;
 
     // add the new topic in the data structures
@@ -1327,9 +1334,22 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                 messageIds.insert(currentMessageId);
             }
 
-            // process and send the publish message to each subscriber
             for (const auto& subscriber : subscribers) {
-                addAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, resultQoS, currentMessageId);
+                // retrieve subscriber address and port
+                const inet::L3Address& subscriberAddress = subscriber.first;
+                const int& subscriberPort = subscriber.second;
+
+                if (isTopicRegisteredForSubscriber(subscriberAddress, subscriberPort, messageInfo.topicId)) {
+                    // topic is registered; add and send the publish message
+                    addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
+                }
+                else {
+                    // topic is not registered; send register message and add the publish request
+
+                    /// TO DO
+                    //sendRegister(const inet::L3Address& destAddress, const int& destPort, const std::string& topicName, uint16_t topicId, uint16_t msgId)
+                    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
+                }
             }
         }
     }
@@ -1442,6 +1462,25 @@ void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, con
     for (auto& topic : subscriberInfo->topics) {
        topic.second = isRegistered;
     }
+}
+
+bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& srcAddress, const int& srcPort, uint16_t topicId)
+{
+    auto subscriberIterator = subscribers.find(std::make_pair(srcAddress, srcPort));
+    if (subscriberIterator == subscribers.end()) {
+        throw omnetpp::cRuntimeError("Subscriber not found");
+    }
+
+    // obtain the subscribed topics for the subscriber
+    const std::map<uint16_t, bool>& topics = subscriberIterator->second.topics;
+
+    auto topicIterator = topics.find(topicId);
+    if (topicIterator == topics.end()) {
+        throw omnetpp::cRuntimeError("Topic not found for the subscriber");
+    }
+
+    // return the registration status of the topic for the subscriber
+    return topicIterator->second;
 }
 
 SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)

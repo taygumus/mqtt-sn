@@ -136,6 +136,9 @@ class MqttSNServer : public MqttSNApp
         virtual void sendSubAck(const inet::L3Address& destAddress, const int& destPort, QoS qosFlag, ReturnCode returnCode, uint16_t topicId,
                                 uint16_t msgId);
 
+        virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, const std::string& topicName, uint16_t topicId,
+                                  uint16_t msgId);
+
         virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
                                  TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
 
@@ -188,7 +191,8 @@ class MqttSNServer : public MqttSNApp
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
         // subscriber methods
-        void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered);
+        virtual void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered);
+        virtual bool isTopicRegisteredForSubscriber(const inet::L3Address& srcAddress, const int& srcPort, uint16_t topicId);
         virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
         // subscription methods
