@@ -10,12 +10,13 @@
 #include "types/server/GatewayState.h"
 #include "types/server/ClientType.h"
 #include "types/server/ClientInfo.h"
-#include "types/server/TopicInfo.h"
 #include "types/server/DataInfo.h"
 #include "types/server/PublisherInfo.h"
+#include "types/server/TopicInfo.h"
+#include "types/server/RetainMessageInfo.h"
 #include "types/server/MessageInfo.h"
 #include "types/server/RequestInfo.h"
-#include "types/server/RetainMessageInfo.h"
+#include "types/server/RegisterInfo.h"
 #include "types/server/SubscriberInfo.h"
 
 namespace mqttsn {
@@ -30,6 +31,7 @@ class MqttSNServer : public MqttSNApp
         double clientsClearInterval;
         double pendingRetainCheckInterval;
         double requestsCheckInterval;
+        double registrationsCheckInterval;
 
         // gateway state management
         inet::ClockEvent* stateChangeEvent = nullptr;
@@ -68,6 +70,11 @@ class MqttSNServer : public MqttSNApp
         std::map<uint16_t, RequestInfo> requests;
         std::set<uint16_t> requestIds;
         uint16_t currentRequestId = 0;
+
+        inet::ClockEvent* registrationsCheckEvent = nullptr;
+        std::map<uint16_t, RegisterInfo> registrations;
+        std::set<uint16_t> registrationIds;
+        uint16_t currentRegistrationId = 0;
 
         std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
@@ -149,6 +156,7 @@ class MqttSNServer : public MqttSNApp
         virtual void handleAsleepClientsCheckEvent();
         virtual void handlePendingRetainCheckEvent();
         virtual void handleRequestsCheckEvent();
+        virtual void handleRegistrationsCheckEvent();
 
         virtual void handleClientsClearEvent();
 
@@ -164,6 +172,7 @@ class MqttSNServer : public MqttSNApp
         // topic methods
         virtual void fillWithPredefinedTopics();
         virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
+        virtual TopicInfo getTopicById(uint16_t topicId);
         virtual TopicIdType getTopicIdType(uint16_t topicLength);
 
         // retain message methods
@@ -189,6 +198,12 @@ class MqttSNServer : public MqttSNApp
                                     std::set<uint16_t>::iterator& requestIdIt);
 
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
+
+        // registration methods
+        virtual void addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort);
+
+        virtual void deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt,
+                                        std::set<uint16_t>::iterator& registrationIdIt);
 
         // subscriber methods
         virtual void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered);

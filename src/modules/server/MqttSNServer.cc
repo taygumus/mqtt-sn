@@ -59,6 +59,9 @@ void MqttSNServer::levelOneInit()
 
     requestsCheckInterval = par("requestsCheckInterval");
     requestsCheckEvent = new inet::ClockEvent("requestsCheckTimer");
+
+    registrationsCheckInterval = par("registrationsCheckInterval");
+    registrationsCheckEvent = new inet::ClockEvent("registrationsCheckTimer");
 }
 
 void MqttSNServer::finish()
@@ -126,6 +129,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     else if (msg == requestsCheckEvent) {
         handleRequestsCheckEvent();
     }
+    else if (msg == registrationsCheckEvent) {
+        handleRegistrationsCheckEvent();
+    }
     else {
         MqttSNApp::socket.processMessage(msg);
     }
@@ -162,6 +168,7 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
     scheduleClockEventAfter(pendingRetainCheckInterval, pendingRetainCheckEvent);
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
+    scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
 }
 
 void MqttSNServer::cancelOnlineStateEvents()
@@ -172,6 +179,7 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(clientsClearEvent);
     cancelEvent(pendingRetainCheckEvent);
     cancelEvent(requestsCheckEvent);
+    cancelEvent(registrationsCheckEvent);
 }
 
 void MqttSNServer::cancelOnlineStateClockEvents()
@@ -183,6 +191,7 @@ void MqttSNServer::cancelOnlineStateClockEvents()
     cancelClockEvent(clientsClearEvent);
     cancelClockEvent(pendingRetainCheckEvent);
     cancelClockEvent(requestsCheckEvent);
+    cancelClockEvent(registrationsCheckEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()
@@ -1091,6 +1100,13 @@ void MqttSNServer::handleRequestsCheckEvent()
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
 }
 
+void MqttSNServer::handleRegistrationsCheckEvent()
+{
+    // TO DO
+
+    scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
+}
+
 void MqttSNServer::handleClientsClearEvent()
 {
     inet::clocktime_t currentTime = getClockTime();
@@ -1213,6 +1229,16 @@ void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, T
     topicsToIds[topicName] = topicId;
     idsToTopics[topicId] = topicInfo;
     topicIds.insert(topicId);
+}
+
+TopicInfo MqttSNServer::getTopicById(uint16_t topicId)
+{
+    auto it = idsToTopics.find(topicId);
+    if (it == idsToTopics.end()) {
+        throw omnetpp::cRuntimeError("Topic ID not found in the topics map");
+    }
+
+    return it->second;
 }
 
 TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
@@ -1340,15 +1366,17 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                 const int& subscriberPort = subscriber.second;
 
                 if (isTopicRegisteredForSubscriber(subscriberAddress, subscriberPort, messageInfo.topicId)) {
-                    // topic is registered; add and send the publish message
+                    // topic is registered; process the publish request
                     addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
                 }
                 else {
-                    // topic is not registered; send register message and add the publish request
+                    // topic is not registered
 
-                    /// TO DO
-                    //sendRegister(const inet::L3Address& destAddress, const int& destPort, const std::string& topicName, uint16_t topicId, uint16_t msgId)
-                    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
+                    std::string topicName = StringHelper::base64Decode(getTopicById(messageInfo.topicId).topicName);
+
+                    // TO DO
+                    ///sendRegister(subscriberAddress, subscriberPort, topicName, messageInfo.topicId, uint16_t msgId);
+                    // addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0); ///
                 }
             }
         }
@@ -1447,6 +1475,30 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     deleteRequest(requestIt, requestIdIt);
 
     return true;
+}
+
+void MqttSNServer::addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort)
+{
+    // set new available registration ID if possible; otherwise, throw an exception
+    MqttSNApp::getNewIdentifier(registrationIds, currentRegistrationId,
+                                "Failed to assign a new registration ID. All available registration IDs are in use");
+
+    RegisterInfo registerInfo;
+    registerInfo.requestTime = getClockTime();
+    registerInfo.subscriberAddress = subscriberAddress;
+    registerInfo.subscriberPort = subscriberPort;
+
+    // add the new registration in the data structures
+    registrations[currentRegistrationId] = registerInfo;
+    registrationIds.insert(currentRegistrationId);
+}
+
+void MqttSNServer::deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt,
+                                      std::set<uint16_t>::iterator& registrationIdIt)
+{
+    // remove the registration from both structures
+    registrations.erase(registrationIt);
+    registrationIds.erase(registrationIdIt);
 }
 
 void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered)
@@ -1693,6 +1745,7 @@ MqttSNServer::~MqttSNServer()
     cancelAndDelete(clientsClearEvent);
     cancelAndDelete(pendingRetainCheckEvent);
     cancelAndDelete(requestsCheckEvent);
+    cancelAndDelete(registrationsCheckEvent);
 }
 
 } /* namespace mqttsn */
