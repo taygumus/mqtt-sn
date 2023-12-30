@@ -648,12 +648,6 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    // message ID check needed for QoS 1 and QoS 2
-    if (msgId == 0) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
-        return;
-    }
-
     if (qos == QoS::QOS_ONE) {
         // handling QoS 1
         dispatchPublishToSubscribers(messageInfo);
@@ -661,7 +655,13 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         return;
     }
 
-    // handling QoS 2; update publisher information and respond with PUBREC
+    // handling QoS 2; message ID check needed
+    if (msgId == 0) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
+        return;
+    }
+
+    // update publisher information and send a PUBREC response
     PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort, true);
 
     DataInfo dataInfo;
