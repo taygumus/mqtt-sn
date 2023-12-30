@@ -76,9 +76,11 @@ class MqttSNSubscriber : public MqttSNClient
 
         // item methods
         virtual void populateItems() override;
+        virtual ItemInfo* findItemByTopicName(const std::string& topicName);
 
         // topic methods
         virtual void resetAndPopulateTopics();
+        virtual void addNewTopic(uint16_t topicId, const std::string& topicName, ItemInfo* itemInfo);
         virtual void validateTopic(const std::string& topicName, uint16_t topicId, bool useTopicId);
         virtual bool proceedWithSubscription();
         virtual bool proceedWithUnsubscription();

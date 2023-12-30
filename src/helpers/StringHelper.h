@@ -13,8 +13,9 @@ class StringHelper : public BaseHelper
     public:
         static std::string base64Encode(const std::string& inputString);
         static std::string base64Decode(const std::string& inputString);
-        static std::string appendCounterToString(const std::string& inputString, int counter);
         static std::string sanitizeSpaces(const std::string& inputString);
+        static std::string appendCounterToString(const std::string& inputString, const std::string& delimiter, int counter);
+        static std::string getStringBeforeDelimiter(const std::string& inputString, const std::string& delimiter);
 };
 
 } /* namespace mqttsn */

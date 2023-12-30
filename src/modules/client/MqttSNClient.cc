@@ -13,6 +13,8 @@
 
 namespace mqttsn {
 
+const std::string MqttSNClient::TOPIC_DELIMITER = "-";
+
 void MqttSNClient::levelOneInit()
 {
     stateChangeEvent = new inet::ClockEvent("stateChangeTimer");

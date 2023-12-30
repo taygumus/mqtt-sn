@@ -522,7 +522,7 @@ bool MqttSNPublisher::proceedWithRegistration()
     }
 
     // update information about the last element
-    lastRegistration.topicName = StringHelper::appendCounterToString(it->second.topicName, counter);
+    lastRegistration.topicName = StringHelper::appendCounterToString(it->second.topicName, MqttSNClient::TOPIC_DELIMITER, counter);
     lastRegistration.itemInfo = &it->second;
     lastRegistration.retry = true;
 

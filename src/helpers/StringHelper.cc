@@ -54,21 +54,35 @@ std::string StringHelper::base64Decode(const std::string& inputString) {
     return decodedString;
 }
 
-std::string StringHelper::appendCounterToString(const std::string& inputString, int counter)
-{
-    if (counter == 0) {
-        return inputString;
-    }
-
-    return inputString + std::to_string(counter);
-}
-
 std::string StringHelper::sanitizeSpaces(const std::string& inputString)
 {
     std::string sanitizedString = inputString;
     sanitizedString.erase(std::remove_if(sanitizedString.begin(), sanitizedString.end(), ::isspace), sanitizedString.end());
 
     return sanitizedString;
+}
+
+std::string StringHelper::appendCounterToString(const std::string& inputString, const std::string& delimiter, int counter)
+{
+    if (counter == 0) {
+        return inputString;
+    }
+
+    return inputString + delimiter + std::to_string(counter);
+}
+
+std::string StringHelper::getStringBeforeDelimiter(const std::string& inputString, const std::string& delimiter)
+{
+    size_t delimiterPos = inputString.find(delimiter);
+
+    if (delimiterPos != std::string::npos) {
+        // if the delimiter is found, return the substring before the delimiter
+        return inputString.substr(0, delimiterPos);
+    }
+    else {
+        // if the delimiter is not found, return the original string
+        return inputString;
+    }
 }
 
 } /* namespace mqttsn */

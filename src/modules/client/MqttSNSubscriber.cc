@@ -200,15 +200,25 @@ void MqttSNSubscriber::processRegister(inet::Packet* pk, const inet::L3Address& 
 
     // extract and sanitize the topic name from the payload
     std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
-    uint16_t topicLength = topicName.length();
 
     // reject registration if the topic name length is less than the minimum required
-    if (!MqttSNApp::isMinTopicLength(topicLength)) {
+    if (!MqttSNApp::isMinTopicLength(topicName.length())) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
         return;
     }
 
-    // TO DO -> add the new topic ///
+    // find the item by the base topic name
+    ItemInfo* itemInfo = findItemByTopicName(
+            StringHelper::getStringBeforeDelimiter(topicName, MqttSNClient::TOPIC_DELIMITER)
+    );
+
+    // reject registration if the associated item is not found
+    if (itemInfo == nullptr) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
+        return;
+    }
+
+    addNewTopic(topicId, topicName, itemInfo);
 
     // send REGACK response with the new topic ID and ACCEPTED status
     sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::ACCEPTED);
@@ -439,6 +449,19 @@ void MqttSNSubscriber::populateItems()
     }
 }
 
+ItemInfo* MqttSNSubscriber::findItemByTopicName(const std::string& topicName)
+{
+    // search for an item with the provided topic name
+    for (auto& item : items) {
+        // check for a matching topic name
+        if (item.second.topicName == topicName) {
+            return &item.second;
+        }
+    }
+
+    return nullptr;
+}
+
 void MqttSNSubscriber::resetAndPopulateTopics()
 {
     topics.clear();
@@ -454,13 +477,18 @@ void MqttSNSubscriber::resetAndPopulateTopics()
 
         // insert the predefined topics
         if (itemInfo.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
-            TopicInfo topicInfo;
-            topicInfo.topicName = itemInfo.topicName;
-            topicInfo.itemInfo = &itemInfo;
-
-            topics[MqttSNClient::getPredefinedTopicId(itemInfo.topicName)] = topicInfo;
+            addNewTopic(MqttSNClient::getPredefinedTopicId(itemInfo.topicName), itemInfo.topicName, &itemInfo);
         }
     }
+}
+
+void MqttSNSubscriber::addNewTopic(uint16_t topicId, const std::string& topicName, ItemInfo* itemInfo)
+{
+    TopicInfo topicInfo;
+    topicInfo.topicName = topicName;
+    topicInfo.itemInfo = itemInfo;
+
+    topics[topicId] = topicInfo;
 }
 
 void MqttSNSubscriber::validateTopic(const std::string& topicName, uint16_t topicId, bool useTopicId)
@@ -505,7 +533,7 @@ bool MqttSNSubscriber::proceedWithSubscription()
     }
 
     // update information about the last element
-    lastSubscription.topicName = StringHelper::appendCounterToString(it->second.topicName, subscribeCounter);
+    lastSubscription.topicName = StringHelper::appendCounterToString(it->second.topicName, MqttSNClient::TOPIC_DELIMITER, subscribeCounter);
     lastSubscription.itemInfo = &it->second;
     lastSubscription.retry = true;
 
@@ -543,7 +571,7 @@ bool MqttSNSubscriber::proceedWithUnsubscription()
     }
 
     // update information about the last element
-    lastUnsubscription.topicName = StringHelper::appendCounterToString(it->second.topicName, unsubscribeCounter);
+    lastUnsubscription.topicName = StringHelper::appendCounterToString(it->second.topicName, MqttSNClient::TOPIC_DELIMITER, unsubscribeCounter);
     lastUnsubscription.itemInfo = &it->second;
     lastUnsubscription.retry = true;
 

@@ -15,6 +15,7 @@ class MqttSNClient : public MqttSNApp
         // constants
         static constexpr double SEARCH_GATEWAY_MIN_DELAY = 1.1;
         static constexpr double MIN_WAITING_TIME = 0.5;
+        static const std::string TOPIC_DELIMITER;
 
         // parameters
         double checkGatewaysInterval;
