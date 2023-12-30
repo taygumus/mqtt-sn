@@ -17,6 +17,7 @@
 #include "types/server/MessageInfo.h"
 #include "types/server/RequestInfo.h"
 #include "types/server/RegisterInfo.h"
+#include "types/server/SubscriberTopicInfo.h"
 #include "types/server/SubscriberInfo.h"
 
 namespace mqttsn {
@@ -209,7 +210,9 @@ class MqttSNServer : public MqttSNApp
                                         std::set<uint16_t>::iterator& registrationIdIt);
 
         // subscriber methods
-        virtual void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered);
+        virtual void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered,
+                                            bool skipPredefinedTopics = true);
+
         virtual bool isTopicRegisteredForSubscriber(const inet::L3Address& srcAddress, const int& srcPort, uint16_t topicId);
         virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
 
@@ -219,7 +222,8 @@ class MqttSNServer : public MqttSNApp
         virtual bool findSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
                                       std::pair<uint16_t, QoS>& subscriptionKey);
 
-        virtual bool insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos);
+        virtual bool insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
+                                        TopicIdType topicIdType, QoS qos);
 
         virtual bool deleteSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                         const std::pair<uint16_t, QoS>& subscriptionKey);

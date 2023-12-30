@@ -768,7 +768,7 @@ void MqttSNServer::processSubscribe(inet::Packet* pk, const inet::L3Address& src
     deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
 
     // create a new subscription
-    insertSubscription(srcAddress, srcPort, topicId, qos);
+    insertSubscription(srcAddress, srcPort, topicId, topicIdType, qos);
 
     // check for existing retain message and add in the queue if found
     addNewPendingRetainMessage(srcAddress, srcPort, topicId, qos);
@@ -1155,7 +1155,7 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
     }
 
     // delete all subscriptions for the subscriber
-    for (auto& topic : subscriberInfo->topics) {
+    for (auto& topic : subscriberInfo->subscriberTopics) {
         deleteSubscriptionIfExists(srcAddress, srcPort, topic.first);
     }
 }
@@ -1387,7 +1387,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                     addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
                 }
                 else {
-                    // topic is not registered; manage it for the subscriber
+                    // topic is not registered; manage the registration for the subscriber
                     manageRegistration(subscriberAddress, subscriberPort, messageInfo.topicId);
 
                     // add a new publish request for the unregistered subscriber
@@ -1529,7 +1529,8 @@ void MqttSNServer::deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator
     registrationIds.erase(registrationIdIt);
 }
 
-void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered)
+void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered,
+                                          bool skipPredefinedTopics)
 {
     SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
 
@@ -1539,8 +1540,14 @@ void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, con
     }
 
     // set the registration status for all the subscribed topics
-    for (auto& topic : subscriberInfo->topics) {
-       topic.second = isRegistered;
+    for (auto& topic : subscriberInfo->subscriberTopics) {
+        // skip predefined topics if required
+        if (skipPredefinedTopics && topic.second.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
+            continue;
+        }
+
+        // update the registration status
+        topic.second.isRegistered = isRegistered;
     }
 }
 
@@ -1552,7 +1559,7 @@ bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& srcAddr
     }
 
     // obtain the subscribed topics for the subscriber
-    const std::map<uint16_t, bool>& topics = subscriberIterator->second.topics;
+    const std::map<uint16_t, SubscriberTopicInfo>& topics = subscriberIterator->second.subscriberTopics;
 
     auto topicIterator = topics.find(topicId);
     if (topicIterator == topics.end()) {
@@ -1560,7 +1567,7 @@ bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& srcAddr
     }
 
     // return the registration status of the topic for the subscriber
-    return topicIterator->second;
+    return topicIterator->second.isRegistered;
 }
 
 SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
@@ -1619,7 +1626,8 @@ bool MqttSNServer::findSubscription(const inet::L3Address& subscriberAddress, co
     return false;
 }
 
-bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos)
+bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId,
+                                      TopicIdType topicIdType, QoS qos)
 {
     // create key pairs
     std::pair<uint16_t, QoS> subscriptionKey = std::make_pair(topicId, qos);
@@ -1651,8 +1659,12 @@ bool MqttSNServer::insertSubscription(const inet::L3Address& subscriberAddress, 
     // retrieve the subscriber
     SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
 
-    // insert subscription topic; flag denotes the topic registration
-    subscriberInfo->topics[topicId] = true;
+    // add a new subscription topic
+    SubscriberTopicInfo subscriberTopicInfo;
+    subscriberTopicInfo.topicIdType = topicIdType;
+    subscriberTopicInfo.isRegistered = true;
+
+    subscriberInfo->subscriberTopics[topicId] = subscriberTopicInfo;
 
     // return true if the insertion is successful
     return true;
@@ -1693,7 +1705,7 @@ bool MqttSNServer::deleteSubscription(const inet::L3Address& subscriberAddress, 
 
             // retrieve the subscriber and delete the subscription topic
             SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort, true);
-            subscriberInfo->topics.erase(subscriptionKey.first);
+            subscriberInfo->subscriberTopics.erase(subscriptionKey.first);
 
             // delete operation is successful
             return true;
