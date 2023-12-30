@@ -1128,10 +1128,10 @@ void MqttSNServer::handleClientsClearEvent()
     scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
 }
 
-void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const int& srcPort, ClientType clientType)
+void MqttSNServer::cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType)
 {
     if (clientType == ClientType::PUBLISHER) {
-        PublisherInfo* publisherInfo = getPublisherInfo(srcAddress, srcPort);
+        PublisherInfo* publisherInfo = getPublisherInfo(clientAddress, clientPort);
         // if publisher is not found, throw an error
         if (publisherInfo == nullptr) {
             throw omnetpp::cRuntimeError("Publisher not found during the clean session operation");
@@ -1148,7 +1148,7 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
     }
 
     // handle the case when the client is identified as a subscriber
-    SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(clientAddress, clientPort);
     // if subscriber is not found, throw an error
     if (subscriberInfo == nullptr) {
         throw omnetpp::cRuntimeError("Subscriber not found during the clean session operation");
@@ -1156,7 +1156,7 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& srcAddress, const i
 
     // delete all subscriptions for the subscriber
     for (auto& topic : subscriberInfo->subscriberTopics) {
-        deleteSubscriptionIfExists(srcAddress, srcPort, topic.first);
+        deleteSubscriptionIfExists(clientAddress, clientPort, topic.first);
     }
 }
 
@@ -1168,19 +1168,22 @@ void MqttSNServer::updateClientType(ClientInfo* clientInfo, ClientType clientTyp
     }
 }
 
-ClientInfo* MqttSNServer::addNewClient(const inet::L3Address& srcAddress, const int& srcPort)
+ClientInfo* MqttSNServer::addNewClient(const inet::L3Address& clientAddress, const int& clientPort)
 {
+    // create a pair for client address and port
+    std::pair<inet::L3Address, int> clientKey = std::make_pair(clientAddress, clientPort);
+
     // insert a new default client
     ClientInfo clientInfo;
-    clients[std::make_pair(srcAddress, srcPort)] = clientInfo;
+    clients[clientKey] = clientInfo;
 
-    return &clients[std::make_pair(srcAddress, srcPort)];
+    return &clients[clientKey];
 }
 
-ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const int& srcPort)
+ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& clientAddress, const int& clientPort)
 {
     // check if the client with the specified address and port is present in the data structure
-    auto clientIterator = clients.find(std::make_pair(srcAddress, srcPort));
+    auto clientIterator = clients.find(std::make_pair(clientAddress, clientPort));
 
     if (clientIterator != clients.end()) {
         return &clientIterator->second;
@@ -1189,10 +1192,13 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& srcAddress, const
     return nullptr;
 }
 
-PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
+PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& publisherAddress, const int& publisherPort, bool insertIfNotFound)
 {
+    // create a pair for publisher address and port
+    std::pair<inet::L3Address, int> publisherKey = std::make_pair(publisherAddress, publisherPort);
+
     // check if the publisher with the specified address and port is present in the data structure
-    auto publisherIterator = publishers.find(std::make_pair(srcAddress, srcPort));
+    auto publisherIterator = publishers.find(publisherKey);
 
     if (publisherIterator != publishers.end()) {
         return &publisherIterator->second;
@@ -1201,9 +1207,9 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& srcAddress,
     if (insertIfNotFound) {
         // insert a new default publisher
         PublisherInfo publisherInfo;
-        publishers[std::make_pair(srcAddress, srcPort)] = publisherInfo;
+        publishers[publisherKey] = publisherInfo;
 
-        return &publishers[std::make_pair(srcAddress, srcPort)];
+        return &publishers[publisherKey];
     }
 
     return nullptr;
@@ -1529,10 +1535,10 @@ void MqttSNServer::deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator
     registrationIds.erase(registrationIdIt);
 }
 
-void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered,
+void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& subscriberAddress, const int& subscriberPort, bool isRegistered,
                                           bool skipPredefinedTopics)
 {
-    SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort);
 
     // exit if the subscriber is not found
     if (subscriberInfo == nullptr) {
@@ -1551,9 +1557,9 @@ void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& srcAddress, con
     }
 }
 
-bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& srcAddress, const int& srcPort, uint16_t topicId)
+bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
 {
-    auto subscriberIterator = subscribers.find(std::make_pair(srcAddress, srcPort));
+    auto subscriberIterator = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
     if (subscriberIterator == subscribers.end()) {
         throw omnetpp::cRuntimeError("Subscriber not found");
     }
@@ -1570,10 +1576,14 @@ bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& srcAddr
     return topicIterator->second.isRegistered;
 }
 
-SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound)
+SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                                bool insertIfNotFound)
 {
+    // create a pair for subscriber address and port
+    std::pair<inet::L3Address, int> subscriberKey = std::make_pair(subscriberAddress, subscriberPort);
+
     // check if the subscriber with the specified address and port is present in the data structure
-    auto subscriberIterator = subscribers.find(std::make_pair(srcAddress, srcPort));
+    auto subscriberIterator = subscribers.find(subscriberKey);
 
     if (subscriberIterator != subscribers.end()) {
         return &subscriberIterator->second;
@@ -1582,9 +1592,9 @@ SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& srcAddres
     if (insertIfNotFound) {
         // insert a new default subscriber
         SubscriberInfo subscriberInfo;
-        subscribers[std::make_pair(srcAddress, srcPort)] = subscriberInfo;
+        subscribers[subscriberKey] = subscriberInfo;
 
-        return &subscribers[std::make_pair(srcAddress, srcPort)];
+        return &subscribers[subscriberKey];
     }
 
     return nullptr;

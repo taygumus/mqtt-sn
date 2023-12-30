@@ -162,13 +162,13 @@ class MqttSNServer : public MqttSNApp
         virtual void handleClientsClearEvent();
 
         // client methods
-        void cleanClientSession(const inet::L3Address& srcAddress, const int& srcPort, ClientType clientType);
+        void cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType);
         void updateClientType(ClientInfo* clientInfo, ClientType clientType);
-        virtual ClientInfo* addNewClient(const inet::L3Address& srcAddress, const int& srcPort);
-        virtual ClientInfo* getClientInfo(const inet::L3Address& srcAddress, const int& srcPort);
+        virtual ClientInfo* addNewClient(const inet::L3Address& clientAddress, const int& clientPort);
+        virtual ClientInfo* getClientInfo(const inet::L3Address& clientAddress, const int& clientPort);
 
         // publisher methods
-        virtual PublisherInfo* getPublisherInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
+        virtual PublisherInfo* getPublisherInfo(const inet::L3Address& publisherAddress, const int& publisherPort, bool insertIfNotFound = false);
 
         // topic methods
         virtual void fillWithPredefinedTopics();
@@ -210,11 +210,13 @@ class MqttSNServer : public MqttSNApp
                                         std::set<uint16_t>::iterator& registrationIdIt);
 
         // subscriber methods
-        virtual void setAllSubscriberTopics(const inet::L3Address& srcAddress, const int& srcPort, bool isRegistered,
+        virtual void setAllSubscriberTopics(const inet::L3Address& subscriberAddress, const int& subscriberPort, bool isRegistered,
                                             bool skipPredefinedTopics = true);
 
-        virtual bool isTopicRegisteredForSubscriber(const inet::L3Address& srcAddress, const int& srcPort, uint16_t topicId);
-        virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& srcAddress, const int& srcPort, bool insertIfNotFound = false);
+        virtual bool isTopicRegisteredForSubscriber(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
+
+        virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                                  bool insertIfNotFound = false);
 
         // subscription methods
         virtual void deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
