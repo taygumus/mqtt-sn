@@ -1244,18 +1244,6 @@ void MqttSNServer::checkTopicsToIds(const std::string& topicName, uint16_t topic
     }
 }
 
-TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
-{
-    if (topicLength == Length::TWO_OCTETS) {
-        return TopicIdType::SHORT_TOPIC_ID;
-    }
-    else if (topicLength > Length::TWO_OCTETS) {
-        return TopicIdType::NORMAL_TOPIC_ID;
-    }
-
-    throw omnetpp::cRuntimeError("Invalid topic length");
-}
-
 TopicInfo MqttSNServer::getTopicById(uint16_t topicId)
 {
     auto it = idsToTopics.find(topicId);
@@ -1274,6 +1262,18 @@ uint16_t MqttSNServer::getTopicByName(const std::string& topicName)
     }
 
     return it->second;
+}
+
+TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
+{
+    if (topicLength == Length::TWO_OCTETS) {
+        return TopicIdType::SHORT_TOPIC_ID;
+    }
+    else if (topicLength > Length::TWO_OCTETS) {
+        return TopicIdType::NORMAL_TOPIC_ID;
+    }
+
+    throw omnetpp::cRuntimeError("Invalid topic length");
 }
 
 void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data)

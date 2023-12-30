@@ -182,7 +182,36 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
 void MqttSNSubscriber::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
     const auto& payload = pk->peekData<MqttSNRegister>();
-    // TO DO
+    uint16_t topicId = payload->getTopicId();
+    uint16_t msgId = payload->getMsgId();
+
+    // reject registration if the topic ID is zero
+    if (topicId == 0) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_INVALID_TOPIC_ID);
+        return;
+    }
+
+    // check if the topic is already registered; if yes, send ACCEPTED response, otherwise register the topic
+    auto topicIt = topics.find(topicId);
+    if (topicIt != topics.end()) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::ACCEPTED);
+        return;
+    }
+
+    // extract and sanitize the topic name from the payload
+    std::string topicName = StringHelper::sanitizeSpaces(payload->getTopicName());
+    uint16_t topicLength = topicName.length();
+
+    // reject registration if the topic name length is less than the minimum required
+    if (!MqttSNApp::isMinTopicLength(topicLength)) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
+        return;
+    }
+
+    // TO DO -> add the new topic ///
+
+    // send REGACK response with the new topic ID and ACCEPTED status
+    sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::REGACK, topicId, msgId, ReturnCode::ACCEPTED);
 }
 
 void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)

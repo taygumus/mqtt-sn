@@ -174,9 +174,9 @@ class MqttSNServer : public MqttSNApp
         virtual void fillWithPredefinedTopics();
         virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
         virtual void checkTopicsToIds(const std::string& topicName, uint16_t topicId);
-        virtual TopicIdType getTopicIdType(uint16_t topicLength);
         virtual TopicInfo getTopicById(uint16_t topicId);
         virtual uint16_t getTopicByName(const std::string& topicName);
+        virtual TopicIdType getTopicIdType(uint16_t topicLength);
 
         // retain message methods
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
