@@ -1231,14 +1231,11 @@ void MqttSNServer::addNewTopic(const std::string& topicName, uint16_t topicId, T
     topicIds.insert(topicId);
 }
 
-TopicInfo MqttSNServer::getTopicById(uint16_t topicId)
+void MqttSNServer::checkTopicsToIds(const std::string& topicName, uint16_t topicId)
 {
-    auto it = idsToTopics.find(topicId);
-    if (it == idsToTopics.end()) {
-        throw omnetpp::cRuntimeError("Topic ID not found in the topics map");
+    if (topicId != getTopicByName(topicName)) {
+        throw omnetpp::cRuntimeError("Mismatch in topic IDs");
     }
-
-    return it->second;
 }
 
 TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
@@ -1251,6 +1248,26 @@ TopicIdType MqttSNServer::getTopicIdType(uint16_t topicLength)
     }
 
     throw omnetpp::cRuntimeError("Invalid topic length");
+}
+
+TopicInfo MqttSNServer::getTopicById(uint16_t topicId)
+{
+    auto it = idsToTopics.find(topicId);
+    if (it == idsToTopics.end()) {
+        throw omnetpp::cRuntimeError("Topic ID not found in the structure");
+    }
+
+    return it->second;
+}
+
+uint16_t MqttSNServer::getTopicByName(const std::string& topicName)
+{
+    auto it = topicsToIds.find(topicName);
+    if (it == topicsToIds.end()) {
+        throw omnetpp::cRuntimeError("Topic name not found in the structure");
+    }
+
+    return it->second;
 }
 
 void MqttSNServer::addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data)
@@ -1366,17 +1383,15 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                 const int& subscriberPort = subscriber.second;
 
                 if (isTopicRegisteredForSubscriber(subscriberAddress, subscriberPort, messageInfo.topicId)) {
-                    // topic is registered; process the publish request
+                    // topic is registered; process the publish request to the subscriber
                     addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
                 }
                 else {
-                    // topic is not registered
+                    // topic is not registered; manage it for the subscriber
+                    manageRegistration(subscriberAddress, subscriberPort, messageInfo.topicId);
 
-                    std::string topicName = StringHelper::base64Decode(getTopicById(messageInfo.topicId).topicName);
-
-                    // TO DO
-                    ///sendRegister(subscriberAddress, subscriberPort, topicName, messageInfo.topicId, uint16_t msgId);
-                    // addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0); ///
+                    // add a new publish request for the unregistered subscriber
+                    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
                 }
             }
         }
@@ -1475,6 +1490,19 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     deleteRequest(requestIt, requestIdIt);
 
     return true;
+}
+
+void MqttSNServer::manageRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
+{
+    std::string topicName = StringHelper::base64Decode(getTopicById(topicId).topicName);
+
+    // check for topics structure alignment by verifying the encoded topic name and its corresponding topic ID
+    checkTopicsToIds(StringHelper::base64Encode(topicName), topicId);
+
+    // add a new registration entry
+    addNewRegistration(subscriberAddress, subscriberPort);
+
+    sendRegister(subscriberAddress, subscriberPort, topicId, currentRegistrationId, topicName);
 }
 
 void MqttSNServer::addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort)

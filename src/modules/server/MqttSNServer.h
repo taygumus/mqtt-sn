@@ -172,8 +172,10 @@ class MqttSNServer : public MqttSNApp
         // topic methods
         virtual void fillWithPredefinedTopics();
         virtual void addNewTopic(const std::string& topicName, uint16_t topicId, TopicIdType topicIdType);
-        virtual TopicInfo getTopicById(uint16_t topicId);
+        virtual void checkTopicsToIds(const std::string& topicName, uint16_t topicId);
         virtual TopicIdType getTopicIdType(uint16_t topicLength);
+        virtual TopicInfo getTopicById(uint16_t topicId);
+        virtual uint16_t getTopicByName(const std::string& topicName);
 
         // retain message methods
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
@@ -200,6 +202,7 @@ class MqttSNServer : public MqttSNApp
         virtual bool processRequestAck(uint16_t requestId, MsgType messageType);
 
         // registration methods
+        virtual void manageRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
         virtual void addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort);
 
         virtual void deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt,
