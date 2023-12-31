@@ -832,22 +832,15 @@ void MqttSNServer::processRegAck(inet::Packet* pk, const inet::L3Address& srcAdd
     }
 
     // handle ACCEPTED return code
-    SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+    SubscriberTopicInfo* subscriberTopicInfo = getSubscriberTopic(srcAddress, srcPort, topicId);
 
-    if (subscriberInfo == nullptr) {
-        throw omnetpp::cRuntimeError("Unexpected error: Subscriber not found");
-    }
-
-    std::map<uint16_t, SubscriberTopicInfo>& topics = subscriberInfo->subscriberTopics;
-
-    auto it = topics.find(topicId);
-    if (it == topics.end()) {
+    if (subscriberTopicInfo == nullptr) {
         // delayed topic registration; simply return
         return;
     }
 
     // update topic registration status
-    it->second.isRegistered = true;
+    subscriberTopicInfo->isRegistered = true;
 }
 
 void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -1657,21 +1650,14 @@ void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& subscriberAddre
 
 bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
 {
-    auto subscriberIterator = subscribers.find(std::make_pair(subscriberAddress, subscriberPort));
-    if (subscriberIterator == subscribers.end()) {
-        throw omnetpp::cRuntimeError("Subscriber not found");
-    }
+    SubscriberTopicInfo* subscriberTopicInfo = getSubscriberTopic(subscriberAddress, subscriberPort, topicId);
 
-    // obtain the subscribed topics for the subscriber
-    const std::map<uint16_t, SubscriberTopicInfo>& topics = subscriberIterator->second.subscriberTopics;
-
-    auto topicIterator = topics.find(topicId);
-    if (topicIterator == topics.end()) {
+    if (subscriberTopicInfo == nullptr) {
         throw omnetpp::cRuntimeError("Topic not found for the subscriber");
     }
 
     // return the registration status of the topic for the subscriber
-    return topicIterator->second.isRegistered;
+    return subscriberTopicInfo->isRegistered;
 }
 
 SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort,
@@ -1693,6 +1679,26 @@ SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& subscribe
         subscribers[subscriberKey] = subscriberInfo;
 
         return &subscribers[subscriberKey];
+    }
+
+    return nullptr;
+}
+
+SubscriberTopicInfo* MqttSNServer::getSubscriberTopic(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
+{
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort);
+
+    if (subscriberInfo == nullptr) {
+        throw omnetpp::cRuntimeError("Unexpected error: Subscriber not found");
+    }
+
+    // obtain the subscribed topics for the subscriber
+    std::map<uint16_t, SubscriberTopicInfo>& topics = subscriberInfo->subscriberTopics;
+
+    // find the topic ID in the subscriber's topics
+    auto it = topics.find(topicId);
+    if (it != topics.end()) {
+        return &it->second;
     }
 
     return nullptr;

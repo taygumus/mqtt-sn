@@ -31,23 +31,23 @@ std::string StringHelper::base64Encode(const std::string& inputString)
     return encodedString;
 }
 
-std::string StringHelper::base64Decode(const std::string& inputString) {
-    std::string decodedString;
+std::string StringHelper::base64Decode(const std::string& inputString)
+{
     int val = 0, valb = -8;
+    std::string decodedString;
 
     for (unsigned char c : inputString) {
-        // ignore whitespace characters
-        if (std::isspace(c)) continue;
+        if (isalnum(c) || c == '+' || c == '/') {
+            val = (val << 6) + base64_chars.find(c);
+            valb += 6;
 
-        // invalid character in Base64 string
-        if (!(std::isalnum(c) || (c == '+') || (c == '/'))) return "";
-
-        val = (val << 6) + base64_chars.find(c);
-        valb += 6;
-
-        if (valb >= 0) {
-            decodedString.push_back(char((val >> valb) & 0xFF));
-            valb -= 8;
+            if (valb >= 0) {
+                decodedString.push_back(char((val >> valb) & 0xFF));
+                valb -= 8;
+            }
+        }
+        else if (c != '=') {
+            throw std::runtime_error("Invalid character in Base64 string");
         }
     }
 
