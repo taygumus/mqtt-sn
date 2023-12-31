@@ -14,6 +14,11 @@ namespace mqttsn {
 class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, public inet::UdpSocket::ICallback
 {
     protected:
+        // parameters
+        double retransmissionInterval;
+        int retransmissionCounter;
+
+        // app state
         inet::UdpSocket socket;
 
     protected:

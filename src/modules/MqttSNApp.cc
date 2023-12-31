@@ -15,6 +15,9 @@ void MqttSNApp::initialize(int stage)
     ClockUserModuleMixin::initialize(stage);
 
     if (stage == inet::INITSTAGE_LOCAL) {
+        retransmissionInterval = par("retransmissionInterval");
+        retransmissionCounter = par("retransmissionCounter");
+
         levelOneInit();
     }
 }

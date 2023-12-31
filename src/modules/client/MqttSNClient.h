@@ -26,7 +26,6 @@ class MqttSNClient : public MqttSNApp
         double gatewayInfoInterval;
         double checkConnectionInterval;
         uint16_t keepAlive;
-        double retransmissionInterval;
         double waitingInterval;
 
         // client state management

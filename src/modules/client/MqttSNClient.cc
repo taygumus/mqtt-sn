@@ -41,8 +41,6 @@ void MqttSNClient::levelOneInit()
     keepAlive = par("keepAlive");
     pingEvent = new inet::ClockEvent("pingTimer");
 
-    retransmissionInterval = par("retransmissionInterval");
-
     waitingInterval = par("waitingInterval");
 
     predefinedTopics = MqttSNApp::getPredefinedTopics();
@@ -981,7 +979,7 @@ void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress,
     retransmissions[msgType] = retransmissionInfo;
 
     // start the timer
-    scheduleClockEventAfter(retransmissionInterval, retransmissionInfo.retransmissionEvent);
+    scheduleClockEventAfter(MqttSNApp::retransmissionInterval, retransmissionInfo.retransmissionEvent);
 }
 
 void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
@@ -1026,7 +1024,7 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
     RetransmissionInfo* retransmissionInfo = &it->second;
 
     // check if the number of retries equals the threshold
-    if (retransmissionInfo->retransmissionCounter >= par("retransmissionCounter").intValue()) {
+    if (retransmissionInfo->retransmissionCounter >= MqttSNApp::retransmissionCounter) {
         // stop further retransmissions and perform state transition
         if (currentState == ClientState::AWAKE) {
             returnToSleep();
@@ -1062,7 +1060,7 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
     handleRetransmissionEventCustom(retransmissionInfo->destAddress, retransmissionInfo->destPort, msg, msgType);
 
     retransmissionInfo->retransmissionCounter++;
-    scheduleClockEventAfter(retransmissionInterval, retransmissionInfo->retransmissionEvent);
+    scheduleClockEventAfter(MqttSNApp::retransmissionInterval, retransmissionInfo->retransmissionEvent);
 }
 
 void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)

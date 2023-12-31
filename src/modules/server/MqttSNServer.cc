@@ -1093,9 +1093,9 @@ void MqttSNServer::handleRequestsCheckEvent()
         RequestInfo& requestInfo = requestIt->second;
 
         // check if the elapsed time from last received message is beyond the retransmission duration
-        if ((currentTime - requestInfo.requestTime) > par("retransmissionInterval")) {
+        if ((currentTime - requestInfo.requestTime) > MqttSNApp::retransmissionInterval) {
             // check if the number of retries equals the threshold
-            if (requestInfo.retransmissionCounter >= par("retransmissionCounter").intValue()) {
+            if (requestInfo.retransmissionCounter >= MqttSNApp::retransmissionCounter) {
                 deleteRequest(requestIt, requestIdIt);
                 continue;
             }
@@ -1161,9 +1161,9 @@ void MqttSNServer::handleRegistrationsCheckEvent()
         RegisterInfo& registerInfo = registrationIt->second;
 
         // check if the elapsed time from last received message is beyond the retransmission duration
-        if ((currentTime - registerInfo.requestTime) > par("retransmissionInterval")) {
+        if ((currentTime - registerInfo.requestTime) > MqttSNApp::retransmissionInterval) {
             // check if the number of retries equals the threshold
-            if (registerInfo.retransmissionCounter >= par("retransmissionCounter").intValue()) {
+            if (registerInfo.retransmissionCounter >= MqttSNApp::retransmissionCounter) {
                 deleteRegistration(registrationIt, registrationIdIt);
                 continue;
             }
