@@ -384,7 +384,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
             break;
 
         case MsgType::REGACK:
-            processRegAck(pk);
+            processRegAck(pk, srcAddress, srcPort);
             break;
 
         case MsgType::PUBACK:
@@ -810,9 +810,44 @@ void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& s
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::UNSUBACK, payload->getMsgId());
 }
 
-void MqttSNServer::processRegAck(inet::Packet* pk)
+void MqttSNServer::processRegAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
 {
-    // TO DO
+    const auto& payload = pk->peekData<MqttSNMsgIdWithTopicIdPlus>();
+
+    // check if the ACK is correct; exit if not
+    if (!processRegistrationAck(payload->getMsgId())) {
+        return;
+    }
+
+    uint16_t topicId = payload->getTopicId();
+
+    if (topicId == 0) {
+        throw omnetpp::cRuntimeError("Unexpected error: Invalid topic ID");
+    }
+
+    if (payload->getReturnCode() != ReturnCode::ACCEPTED) {
+        // remove subscription if exists
+        deleteSubscriptionIfExists(srcAddress, srcPort, topicId);
+        return;
+    }
+
+    // handle ACCEPTED return code
+    SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+
+    if (subscriberInfo == nullptr) {
+        throw omnetpp::cRuntimeError("Unexpected error: Subscriber not found");
+    }
+
+    std::map<uint16_t, SubscriberTopicInfo>& topics = subscriberInfo->subscriberTopics;
+
+    auto it = topics.find(topicId);
+    if (it == topics.end()) {
+        // delayed topic registration; simply return
+        return;
+    }
+
+    // update topic registration status
+    it->second.isRegistered = true;
 }
 
 void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -1543,6 +1578,28 @@ void MqttSNServer::deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator
     // remove the registration from both structures
     registrations.erase(registrationIt);
     registrationIds.erase(registrationIdIt);
+}
+
+bool MqttSNServer::processRegistrationAck(uint16_t registrationId)
+{
+    std::map<uint16_t, RegisterInfo>::iterator registrationIt;
+    std::set<uint16_t>::iterator registrationIdIt;
+
+    // search for the registration ID in the map
+    registrationIt = registrations.find(registrationId);
+    if (registrationIt == registrations.end()) {
+        return false;
+    }
+
+    // search for the registration ID in the set
+    registrationIdIt = registrationIds.find(registrationId);
+    if (registrationIdIt == registrationIds.end()) {
+        return false;
+    }
+
+    deleteRegistration(registrationIt, registrationIdIt);
+
+    return true;
 }
 
 void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& subscriberAddress, const int& subscriberPort, bool isRegistered,

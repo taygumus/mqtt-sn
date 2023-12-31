@@ -127,7 +127,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
-        virtual void processRegAck(inet::Packet* pk);
+        virtual void processRegAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPubComp(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
@@ -209,6 +209,8 @@ class MqttSNServer : public MqttSNApp
 
         virtual void deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt,
                                         std::set<uint16_t>::iterator& registrationIdIt);
+
+        virtual bool processRegistrationAck(uint16_t registrationId);
 
         // subscriber methods
         virtual void setAllSubscriberTopics(const inet::L3Address& subscriberAddress, const int& subscriberPort, bool isRegistered,
