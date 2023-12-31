@@ -6,6 +6,8 @@ struct RegisterInfo {
     int retransmissionCounter = 0;
     inet::L3Address subscriberAddress;
     int subscriberPort = 0;
+    std::string topicName = "";
+    uint16_t topicId = 0;
 };
 
 #endif /* TYPES_SERVER_REGISTERINFO_H_ */

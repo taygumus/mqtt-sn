@@ -1168,10 +1168,8 @@ void MqttSNServer::handleRegistrationsCheckEvent()
                 continue;
             }
 
-            inet::L3Address subscriberAddress = registerInfo.subscriberAddress;
-            int subscriberPort = registerInfo.subscriberPort;
-
-            /// To DO -> registration sending
+            sendRegister(registerInfo.subscriberAddress, registerInfo.subscriberPort, registerInfo.topicId,
+                         registrationIt->first, registerInfo.topicName);
 
             // update the registration
             registerInfo.retransmissionCounter++;
@@ -1581,12 +1579,13 @@ void MqttSNServer::manageRegistration(const inet::L3Address& subscriberAddress, 
     checkTopicsToIds(StringHelper::base64Encode(topicName), topicId);
 
     // add a new registration entry
-    addNewRegistration(subscriberAddress, subscriberPort);
+    addNewRegistration(subscriberAddress, subscriberPort, topicName, topicId);
 
     sendRegister(subscriberAddress, subscriberPort, topicId, currentRegistrationId, topicName);
 }
 
-void MqttSNServer::addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort)
+void MqttSNServer::addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort, const std::string& topicName,
+                                      uint16_t topicId)
 {
     // set new available registration ID if possible; otherwise, throw an exception
     MqttSNApp::getNewIdentifier(registrationIds, currentRegistrationId,
@@ -1596,6 +1595,8 @@ void MqttSNServer::addNewRegistration(const inet::L3Address& subscriberAddress, 
     registerInfo.requestTime = getClockTime();
     registerInfo.subscriberAddress = subscriberAddress;
     registerInfo.subscriberPort = subscriberPort;
+    registerInfo.topicName = topicName;
+    registerInfo.topicId = topicId;
 
     // add the new registration in the data structures
     registrations[currentRegistrationId] = registerInfo;

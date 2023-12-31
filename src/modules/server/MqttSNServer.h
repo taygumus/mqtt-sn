@@ -205,7 +205,9 @@ class MqttSNServer : public MqttSNApp
 
         // registration methods
         virtual void manageRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
-        virtual void addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort);
+
+        virtual void addNewRegistration(const inet::L3Address& subscriberAddress, const int& subscriberPort, const std::string& topicName,
+                                        uint16_t topicId);
 
         virtual void deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt,
                                         std::set<uint16_t>::iterator& registrationIdIt);
