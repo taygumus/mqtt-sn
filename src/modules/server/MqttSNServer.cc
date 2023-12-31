@@ -1147,7 +1147,37 @@ void MqttSNServer::handleRequestsCheckEvent()
 
 void MqttSNServer::handleRegistrationsCheckEvent()
 {
-    // TO DO
+    inet::clocktime_t currentTime = getClockTime();
+
+    // iterate through the registrations
+    for (auto registrationIt = registrations.begin(); registrationIt != registrations.end(); ++registrationIt) {
+        // find the same registration ID in the set
+        auto registrationIdIt = registrationIds.find(registrationIt->first);
+        if (registrationIdIt == registrationIds.end()) {
+            deleteRegistration(registrationIt, registrationIdIt);
+            continue;
+        }
+
+        RegisterInfo& registerInfo = registrationIt->second;
+
+        // check if the elapsed time from last received message is beyond the retransmission duration
+        if ((currentTime - registerInfo.requestTime) > par("retransmissionInterval")) {
+            // check if the number of retries equals the threshold
+            if (registerInfo.retransmissionCounter >= par("retransmissionCounter").intValue()) {
+                deleteRegistration(registrationIt, registrationIdIt);
+                continue;
+            }
+
+            inet::L3Address subscriberAddress = registerInfo.subscriberAddress;
+            int subscriberPort = registerInfo.subscriberPort;
+
+            /// To DO -> registration sending
+
+            // update the registration
+            registerInfo.retransmissionCounter++;
+            registerInfo.requestTime = getClockTime();
+        }
+    }
 
     scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
 }
