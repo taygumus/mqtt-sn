@@ -289,6 +289,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::PUBREL:
         case MsgType::SUBSCRIBE:
         case MsgType::UNSUBSCRIBE:
+        case MsgType::REGACK:
         case MsgType::PUBACK:
         case MsgType::PUBREC:
         case MsgType::PUBCOMP:
@@ -380,6 +381,10 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::UNSUBSCRIBE:
             updateClientType(clientInfo, ClientType::SUBSCRIBER);
             processUnsubscribe(pk, srcAddress, srcPort);
+            break;
+
+        case MsgType::REGACK:
+            processRegAck(pk);
             break;
 
         case MsgType::PUBACK:
@@ -803,6 +808,11 @@ void MqttSNServer::processUnsubscribe(inet::Packet* pk, const inet::L3Address& s
 
     // send ACK message
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::UNSUBACK, payload->getMsgId());
+}
+
+void MqttSNServer::processRegAck(inet::Packet* pk)
+{
+    // TO DO
 }
 
 void MqttSNServer::processPubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)

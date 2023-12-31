@@ -257,12 +257,6 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
         return;
     }
 
-    // message ID check needed for QoS 1 and QoS 2
-    if (msgId == 0) {
-        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
-        return;
-    }
-
     if (qos == QoS::QOS_ONE) {
         // handling QoS 1
         printPublishMessage(messageInfo);
@@ -270,7 +264,12 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
         return;
     }
 
-    // handling QoS 2
+    // handling QoS 2; message ID check needed
+    if (msgId == 0) {
+        sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_NOT_SUPPORTED);
+        return;
+    }
+
     DataInfo dataInfo;
     dataInfo.topicName = topics[topicId].topicName;
     dataInfo.topicId = topicId;
