@@ -1498,6 +1498,11 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
 void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
                                  uint16_t messagesKey, uint16_t retainMessagesKey)
 {
+    // check for valid message types; throw an exception if invalid
+    if (messageType != MsgType::PUBLISH && messageType != MsgType::PUBREL) {
+        throw omnetpp::cRuntimeError("Invalid message type provided while adding the new request");
+    }
+
     // set new available request ID if possible; otherwise, throw an exception
     MqttSNApp::getNewIdentifier(requestIds, currentRequestId,
                                 "Failed to assign a new request ID. All available request IDs are in use");
@@ -1506,12 +1511,6 @@ void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const
     requestInfo.requestTime = getClockTime();
     requestInfo.subscriberAddress = subscriberAddress;
     requestInfo.subscriberPort = subscriberPort;
-
-    // check for valid message types; throw an exception if invalid
-    if (messageType != MsgType::PUBLISH && messageType != MsgType::PUBREL) {
-        throw omnetpp::cRuntimeError("Invalid message type provided while adding the new request");
-    }
-
     requestInfo.messageType = messageType;
 
     if (messagesKey > 0) {
