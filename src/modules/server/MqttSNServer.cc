@@ -1462,8 +1462,10 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                     // topic is not registered; manage the registration for the subscriber
                     manageRegistration(subscriberAddress, subscriberPort, messageInfo.topicId);
 
-                    // add a new publish request for the unregistered subscriber
-                    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
+                    if (resultQoS == QoS::QOS_ONE || resultQoS == QoS::QOS_TWO) {
+                        // add a new publish request for the unregistered subscriber
+                        addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
+                    }
                 }
             }
         }
