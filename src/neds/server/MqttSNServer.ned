@@ -9,8 +9,8 @@ module MqttSNServer extends MqttSNApp
         @display("i=block/routing;bgb=20,20");
         
         // time intervals for each state, -1s means forever
-        double offlineStateInterval @unit(s) = default(30s);
-        double onlineStateInterval @unit(s) = default(30s);
+        double offlineStateInterval @unit(s) = default(2s);
+        double onlineStateInterval @unit(s) = default(20s);
         
         int advertiseInterval @unit(s) = default(900s); // range between 0..65535 seconds (TADV)
         

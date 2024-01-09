@@ -15,6 +15,6 @@ module MqttSNPublisher extends MqttSNClient
         double registrationInterval @unit(s) = default(5s); // registration interval for new topic names
         int registrationLimit = default(-1); // maximum registrations, -1 for unlimited
         
-        double publishInterval @unit(s) = default(10s); // publish interval for new messages
+        double publishInterval @unit(s) = default(20s); // publish interval for new messages
         int publishLimit = default(-1); // maximum publications, -1 for unlimited
 }
