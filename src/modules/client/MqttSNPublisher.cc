@@ -532,7 +532,7 @@ bool MqttSNPublisher::proceedWithRegistration()
 
 void MqttSNPublisher::printPublishMessage()
 {
-    EV << "Publish message to be sent:" << std::endl;
+    EV << "Publish message:" << std::endl;
     EV << "Topic name: " << lastPublish.topicName << std::endl;
     EV << "Topic ID: " << lastPublish.topicId << std::endl;
     EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(lastPublish.itemInfo->topicIdType) << std::endl;
