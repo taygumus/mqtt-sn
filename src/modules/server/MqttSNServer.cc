@@ -49,9 +49,6 @@ void MqttSNServer::levelOneInit()
     asleepClientsCheckInterval = par("asleepClientsCheckInterval");
     asleepClientsCheckEvent = new inet::ClockEvent("asleepClientsCheckTimer");
 
-    clientsClearInterval = par("clientsClearInterval");
-    clientsClearEvent = new inet::ClockEvent("clientsClearTimer");
-
     fillWithPredefinedTopics();
 
     pendingRetainCheckInterval = par("pendingRetainCheckInterval");
@@ -120,9 +117,6 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     else if (msg == asleepClientsCheckEvent) {
         handleAsleepClientsCheckEvent();
     }
-    else if (msg == clientsClearEvent) {
-        handleClientsClearEvent();
-    }
     else if (msg == pendingRetainCheckEvent) {
         handlePendingRetainCheckEvent();
     }
@@ -165,7 +159,6 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(advertiseInterval, advertiseEvent);
     scheduleClockEventAfter(activeClientsCheckInterval, activeClientsCheckEvent);
     scheduleClockEventAfter(asleepClientsCheckInterval, asleepClientsCheckEvent);
-    scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
     scheduleClockEventAfter(pendingRetainCheckInterval, pendingRetainCheckEvent);
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
     scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
@@ -176,7 +169,6 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(advertiseEvent);
     cancelEvent(activeClientsCheckEvent);
     cancelEvent(asleepClientsCheckEvent);
-    cancelEvent(clientsClearEvent);
     cancelEvent(pendingRetainCheckEvent);
     cancelEvent(requestsCheckEvent);
     cancelEvent(registrationsCheckEvent);
@@ -188,7 +180,6 @@ void MqttSNServer::cancelOnlineStateClockEvents()
     cancelClockEvent(advertiseEvent);
     cancelClockEvent(activeClientsCheckEvent);
     cancelClockEvent(asleepClientsCheckEvent);
-    cancelClockEvent(clientsClearEvent);
     cancelClockEvent(pendingRetainCheckEvent);
     cancelClockEvent(requestsCheckEvent);
     cancelClockEvent(registrationsCheckEvent);
@@ -1173,27 +1164,6 @@ void MqttSNServer::handleRegistrationsCheckEvent()
     scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
 }
 
-void MqttSNServer::handleClientsClearEvent()
-{
-    inet::clocktime_t currentTime = getClockTime();
-
-    for (auto it = clients.begin(); it != clients.end();) {
-        ClientInfo& clientInfo = it->second;
-
-        // check if the client is LOST or DISCONNECTED and if the elapsed time exceeds the threshold
-        if ((clientInfo.currentState == ClientState::LOST || clientInfo.currentState == ClientState::DISCONNECTED) &&
-            (currentTime - clientInfo.lastReceivedMsgTime) > par("maximumInactivityTime")) {
-
-            it = clients.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-
-    scheduleClockEventAfter(clientsClearInterval, clientsClearEvent);
-}
-
 void MqttSNServer::cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType)
 {
     if (clientType == ClientType::PUBLISHER) {
@@ -1903,7 +1873,6 @@ MqttSNServer::~MqttSNServer()
     cancelAndDelete(advertiseEvent);
     cancelAndDelete(activeClientsCheckEvent);
     cancelAndDelete(asleepClientsCheckEvent);
-    cancelAndDelete(clientsClearEvent);
     cancelAndDelete(pendingRetainCheckEvent);
     cancelAndDelete(requestsCheckEvent);
     cancelAndDelete(registrationsCheckEvent);

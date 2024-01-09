@@ -29,7 +29,6 @@ class MqttSNServer : public MqttSNApp
         uint16_t advertiseInterval;
         double activeClientsCheckInterval;
         double asleepClientsCheckInterval;
-        double clientsClearInterval;
         double pendingRetainCheckInterval;
         double requestsCheckInterval;
         double registrationsCheckInterval;
@@ -45,10 +44,8 @@ class MqttSNServer : public MqttSNApp
         uint8_t gatewayId;
 
         std::map<std::pair<inet::L3Address, int>, ClientInfo> clients;
-
         inet::ClockEvent* activeClientsCheckEvent = nullptr;
         inet::ClockEvent* asleepClientsCheckEvent = nullptr;
-        inet::ClockEvent* clientsClearEvent = nullptr;
 
         std::map<std::pair<inet::L3Address, int>, PublisherInfo> publishers;
 
@@ -153,14 +150,11 @@ class MqttSNServer : public MqttSNApp
 
         // event handlers
         virtual void handleAdvertiseEvent();
-
         virtual void handleActiveClientsCheckEvent();
         virtual void handleAsleepClientsCheckEvent();
         virtual void handlePendingRetainCheckEvent();
         virtual void handleRequestsCheckEvent();
         virtual void handleRegistrationsCheckEvent();
-
-        virtual void handleClientsClearEvent();
 
         // client methods
         void cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType);
