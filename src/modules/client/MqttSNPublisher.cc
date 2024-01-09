@@ -251,10 +251,8 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     // handle operations when publish is ACCEPTED
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
-    publishCounter++;
 
-    // print the completed publication
-    printPublishMessage();
+    publishCounter++;
 }
 
 void MqttSNPublisher::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -286,10 +284,8 @@ void MqttSNPublisher::processPubComp(inet::Packet* pk)
     // proceed with the next publish
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
-    publishCounter++;
 
-    // print the completed publication
-    printPublishMessage();
+    publishCounter++;
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag,
@@ -394,6 +390,9 @@ void MqttSNPublisher::handlePublishEvent()
     if (!proceedWithPublish()) {
         return;
     }
+
+    // print information about the publication message
+    printPublishMessage();
 
     QoS qos = lastPublish.dataInfo->qos;
 
@@ -533,7 +532,7 @@ bool MqttSNPublisher::proceedWithRegistration()
 
 void MqttSNPublisher::printPublishMessage()
 {
-    EV << "Publish message:" << std::endl;
+    EV << "Publish message to be sent:" << std::endl;
     EV << "Topic name: " << lastPublish.topicName << std::endl;
     EV << "Topic ID: " << lastPublish.topicId << std::endl;
     EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(lastPublish.itemInfo->topicIdType) << std::endl;
