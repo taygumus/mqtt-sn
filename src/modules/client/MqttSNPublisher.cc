@@ -615,7 +615,7 @@ bool MqttSNPublisher::proceedWithPublish()
 
     // check for topics availability
     if (topics.empty()) {
-        scheduleClockEventAfter(publishInterval, publishEvent);
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, publishEvent);
         return false;
     }
 
@@ -630,7 +630,7 @@ bool MqttSNPublisher::proceedWithPublish()
 
     // check for data availability
     if (data.empty()) {
-        scheduleClockEventAfter(publishInterval, publishEvent);
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, publishEvent);
         return false;
     }
 
