@@ -1,4 +1,5 @@
 #include "MqttSNPublisher.h"
+#include "inet/networklayer/common/L3AddressResolver.h"
 #include "externals/nlohmann/json.hpp"
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
@@ -55,11 +56,12 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
 {
-    /* publisher in ACTIVE state; yet to establish connection with a gateway */
-
+    // reset and initialize topics
     resetAndPopulateTopics();
     lastPublish.topicId = 0;
 
+    // validate destination gateway and schedule QoS -1 publications
+    validatePublishMinusOneGateway();
     scheduleClockEventAfter(publishMinusOneInterval, publishMinusOneEvent);
 }
 
@@ -428,6 +430,24 @@ void MqttSNPublisher::handlePublishMinusOneEvent()
 {
     // TO DO ///
     scheduleClockEventAfter(publishMinusOneInterval, publishMinusOneEvent);
+}
+
+void MqttSNPublisher::validatePublishMinusOneGateway()
+{
+    // check gateway address and port for QoS -1 publications
+    if (publishMinusOneDestAddress.isUnspecified()) {
+        // resolve destination address
+        publishMinusOneDestAddress = inet::L3AddressResolver().resolve(par("publishMinusOneDestAddress").stringValue());
+        if (publishMinusOneDestAddress.isUnspecified()) {
+            throw omnetpp::cRuntimeError("Unspecified gateway address for QoS -1 publications");
+        }
+
+        // validate destination port
+        publishMinusOneDestPort = par("publishMinusOneDestPort").intValue();
+        if (publishMinusOneDestPort <= 0) {
+            throw omnetpp::cRuntimeError("Invalid gateway port for QoS -1 publications");
+        }
+    }
 }
 
 void MqttSNPublisher::populateItems()

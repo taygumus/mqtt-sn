@@ -23,6 +23,8 @@ class MqttSNPublisher : public MqttSNClient
         double registrationInterval;
         double publishInterval;
         double publishMinusOneInterval;
+        inet::L3Address publishMinusOneDestAddress;
+        int publishMinusOneDestPort;
 
         // active publisher state
         std::map<int, ItemInfo> items;
@@ -80,6 +82,9 @@ class MqttSNPublisher : public MqttSNClient
         virtual void handleRegistrationEvent();
         virtual void handlePublishEvent();
         virtual void handlePublishMinusOneEvent();
+
+        // gateway methods
+        virtual void validatePublishMinusOneGateway();
 
         // item methods
         virtual void populateItems() override;
