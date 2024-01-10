@@ -30,6 +30,9 @@ void MqttSNPublisher::levelTwoInit()
 
     publishInterval = par("publishInterval");
     publishEvent = new inet::ClockEvent("publishTimer");
+
+    publishMinusOneInterval = par("publishMinusOneInterval");
+    publishMinusOneEvent = new inet::ClockEvent("publishMinusOneTimer");
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
@@ -40,6 +43,9 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
     else if (msg == publishEvent) {
         handlePublishEvent();
     }
+    else if (msg == publishMinusOneEvent) {
+        handlePublishMinusOneEvent();
+    }
     else {
         return false;
     }
@@ -49,20 +55,26 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
 {
+    /* publisher in ACTIVE state; yet to establish connection with a gateway */
+
     resetAndPopulateTopics();
     lastPublish.topicId = 0;
+
+    scheduleClockEventAfter(publishMinusOneInterval, publishMinusOneEvent);
 }
 
 void MqttSNPublisher::cancelActiveStateEventsCustom()
 {
     cancelEvent(registrationEvent);
     cancelEvent(publishEvent);
+    cancelEvent(publishMinusOneEvent);
 }
 
 void MqttSNPublisher::cancelActiveStateClockEventsCustom()
 {
     cancelClockEvent(registrationEvent);
     cancelClockEvent(publishEvent);
+    cancelClockEvent(publishMinusOneEvent);
 }
 
 void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
@@ -412,6 +424,12 @@ void MqttSNPublisher::handlePublishEvent()
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNClient::currentMsgId);
 }
 
+void MqttSNPublisher::handlePublishMinusOneEvent()
+{
+    // TO DO ///
+    scheduleClockEventAfter(publishMinusOneInterval, publishMinusOneEvent);
+}
+
 void MqttSNPublisher::populateItems()
 {
     json jsonData = json::parse(par("itemsJson").stringValue());
@@ -439,8 +457,16 @@ void MqttSNPublisher::populateItems()
 
         // iterate over data array within the current item
         for (const auto& data : item["data"]) {
+            // extract quality of service (QoS)
+            QoS qos = ConversionHelper::intToQoS(data["qos"]);
+
+            // exclusive use of QoS -1 for predefined topics
+            if (qos == QoS::QOS_MINUS_ONE && topicIdType != TopicIdType::PRE_DEFINED_TOPIC_ID) {
+                throw omnetpp::cRuntimeError("QoS -1 is allowed only for predefined topics");
+            }
+
             DataInfo dataInfo;
-            dataInfo.qos = ConversionHelper::intToQoS(data["qos"]);
+            dataInfo.qos = qos;
             dataInfo.retain = data["retain"];
             dataInfo.data = data["data"];
 
@@ -592,6 +618,12 @@ bool MqttSNPublisher::proceedWithPublish()
     auto dataIterator = data.begin();
     std::advance(dataIterator, intuniform(0, data.size() - 1));
 
+    // exclude QoS -1 data from the publishing process
+    if (dataIterator->second.qos == QoS::QOS_MINUS_ONE) {
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, publishEvent);
+        return false;
+    }
+
     // update information about the last element
     lastPublish.topicName = topicInfo.topicName;
     lastPublish.topicId = topicIterator->first;
@@ -665,6 +697,7 @@ MqttSNPublisher::~MqttSNPublisher()
 {
     cancelAndDelete(registrationEvent);
     cancelAndDelete(publishEvent);
+    cancelAndDelete(publishMinusOneEvent);
 }
 
 } /* namespace mqttsn */

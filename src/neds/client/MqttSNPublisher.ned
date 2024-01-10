@@ -17,4 +17,7 @@ module MqttSNPublisher extends MqttSNClient
         
         double publishInterval @unit(s) = default(10s); // publish interval for new messages
         int publishLimit = default(-1); // maximum publications, -1 for unlimited
+        
+        double publishMinusOneInterval @unit(s) = default(20s); // publish interval for new messages with QoS -1
+        int publishMinusOneLimit = default(-1); // maximum publications with QoS -1, -1 for unlimited
 }

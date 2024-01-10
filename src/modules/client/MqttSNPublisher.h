@@ -22,6 +22,7 @@ class MqttSNPublisher : public MqttSNClient
         std::string willMsg;
         double registrationInterval;
         double publishInterval;
+        double publishMinusOneInterval;
 
         // active publisher state
         std::map<int, ItemInfo> items;
@@ -35,6 +36,9 @@ class MqttSNPublisher : public MqttSNClient
         inet::ClockEvent* publishEvent = nullptr;
         LastPublishInfo lastPublish;
         int publishCounter = 0;
+
+        inet::ClockEvent* publishMinusOneEvent = nullptr;
+        int publishMinusOneCounter = 0;
 
     protected:
         // initialization
@@ -75,6 +79,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) override;
         virtual void handleRegistrationEvent();
         virtual void handlePublishEvent();
+        virtual void handlePublishMinusOneEvent();
 
         // item methods
         virtual void populateItems() override;
