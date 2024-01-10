@@ -20,7 +20,6 @@ module MqttSNPublisher extends MqttSNClient
         
         double publishMinusOneInterval @unit(s) = default(20s); // publish interval for new messages with QoS -1
         int publishMinusOneLimit = default(-1); // maximum publications with QoS -1, -1 for unlimited
-        
         string publishMinusOneDestAddress = default(""); // address of the gateway for QoS -1 publications
         int publishMinusOneDestPort = default(-1); // port number of the gateway for QoS -1 publications
 }

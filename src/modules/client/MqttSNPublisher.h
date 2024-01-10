@@ -40,6 +40,7 @@ class MqttSNPublisher : public MqttSNClient
         int publishCounter = 0;
 
         inet::ClockEvent* publishMinusOneEvent = nullptr;
+        LastPublishInfo lastPublishMinusOne;
         int publishMinusOneCounter = 0;
 
     protected:
@@ -95,9 +96,10 @@ class MqttSNPublisher : public MqttSNClient
         virtual bool proceedWithRegistration();
 
         // publication methods
-        virtual void printPublishMessage();
+        virtual void printPublishMessage(const LastPublishInfo& lastPublish);
         virtual void retryLastPublish();
         virtual bool proceedWithPublish();
+        virtual bool proceedWithPublishMinusOne();
 
         // retransmission management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,

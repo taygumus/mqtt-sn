@@ -406,7 +406,7 @@ void MqttSNPublisher::handlePublishEvent()
     }
 
     // print information about the publication message
-    printPublishMessage();
+    printPublishMessage(lastPublish);
 
     QoS qos = lastPublish.dataInfo->qos;
 
@@ -428,7 +428,17 @@ void MqttSNPublisher::handlePublishEvent()
 
 void MqttSNPublisher::handlePublishMinusOneEvent()
 {
-    // TO DO ///
+    if (!proceedWithPublishMinusOne()) {
+        return;
+    }
+
+    // print information about the publication message
+    printPublishMessage(lastPublishMinusOne);
+
+    // send QoS -1 publication
+    sendPublish(publishMinusOneDestAddress, publishMinusOneDestPort, false, QoS::QOS_MINUS_ONE, false,
+                TopicIdType::PRE_DEFINED_TOPIC_ID, lastPublishMinusOne.topicId, 0, lastPublishMinusOne.dataInfo->data);
+
     scheduleClockEventAfter(publishMinusOneInterval, publishMinusOneEvent);
 }
 
@@ -463,31 +473,40 @@ void MqttSNPublisher::populateItems()
         // validate topic name length and type against specified criteria
         MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
 
+        auto predefinedTopicIt = MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName));
+
         // validate topic consistency
         MqttSNClient::checkTopicConsistency(
                 topicName, topicIdType,
-                MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName)) != MqttSNClient::predefinedTopics.end()
+                predefinedTopicIt != MqttSNClient::predefinedTopics.end()
         );
 
         ItemInfo itemInfo;
         itemInfo.topicName = topicName;
         itemInfo.topicIdType = topicIdType;
+        itemInfo.topicId = predefinedTopicIt->second;
 
         int dataKey = 0;
 
         // iterate over data array within the current item
         for (const auto& data : item["data"]) {
-            // extract quality of service (QoS)
+            // extract quality of service (QoS) and retain flags
             QoS qos = ConversionHelper::intToQoS(data["qos"]);
+            bool retain = data["retain"];
 
-            // exclusive use of QoS -1 for predefined topics
-            if (qos == QoS::QOS_MINUS_ONE && topicIdType != TopicIdType::PRE_DEFINED_TOPIC_ID) {
-                throw omnetpp::cRuntimeError("QoS -1 is allowed only for predefined topics");
+            if (qos == QoS::QOS_MINUS_ONE) {
+                // exclusive use of QoS -1 for predefined topics
+                if (topicIdType != TopicIdType::PRE_DEFINED_TOPIC_ID) {
+                    throw omnetpp::cRuntimeError("QoS -1 is allowed only for predefined topics");
+                }
+
+                // force retain flag to false
+                retain = false;
             }
 
             DataInfo dataInfo;
             dataInfo.qos = qos;
-            dataInfo.retain = data["retain"];
+            dataInfo.retain = retain;
             dataInfo.data = data["data"];
 
             itemInfo.data[dataKey++] = dataInfo;
@@ -576,16 +595,16 @@ bool MqttSNPublisher::proceedWithRegistration()
     return true;
 }
 
-void MqttSNPublisher::printPublishMessage()
+void MqttSNPublisher::printPublishMessage(const LastPublishInfo& lastPublishInfo)
 {
     EV << "Publish message:" << std::endl;
-    EV << "Topic name: " << lastPublish.topicName << std::endl;
-    EV << "Topic ID: " << lastPublish.topicId << std::endl;
-    EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(lastPublish.itemInfo->topicIdType) << std::endl;
+    EV << "Topic name: " << lastPublishInfo.topicName << std::endl;
+    EV << "Topic ID: " << lastPublishInfo.topicId << std::endl;
+    EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(lastPublishInfo.itemInfo->topicIdType) << std::endl;
     EV << "Duplicate: " << false << std::endl;
-    EV << "QoS: " << ConversionHelper::qosToInt(lastPublish.dataInfo->qos) << std::endl;
-    EV << "Retain: " << lastPublish.dataInfo->retain << std::endl;
-    EV << "Data: " << lastPublish.dataInfo->data << std::endl;
+    EV << "QoS: " << ConversionHelper::qosToInt(lastPublishInfo.dataInfo->qos) << std::endl;
+    EV << "Retain: " << lastPublishInfo.dataInfo->retain << std::endl;
+    EV << "Data: " << lastPublishInfo.dataInfo->data << std::endl;
 }
 
 void MqttSNPublisher::retryLastPublish()
@@ -654,6 +673,50 @@ bool MqttSNPublisher::proceedWithPublish()
     if (dataIterator->second.qos != QoS::QOS_ZERO) {
         lastPublish.retry = true;
     }
+
+    return true;
+}
+
+bool MqttSNPublisher::proceedWithPublishMinusOne()
+{
+    int publishMinusOneLimit = par("publishMinusOneLimit");
+    // check if the publish limit is set and reached
+    if (publishMinusOneLimit != -1 && publishMinusOneLimit == publishMinusOneCounter) {
+        return false;
+    }
+
+    // randomly select an item from the map
+    auto itemIterator = items.begin();
+    std::advance(itemIterator, intuniform(0, items.size() - 1));
+
+    if (itemIterator->second.topicIdType != TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, publishMinusOneEvent);
+        return false;
+    }
+
+    // retrieve topic data
+    std::map<int, DataInfo>& data = itemIterator->second.data;
+
+    // check for data availability
+    if (data.empty()) {
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, publishMinusOneEvent);
+        return false;
+    }
+
+    // randomly select a data from the map
+    auto dataIterator = data.begin();
+    std::advance(dataIterator, intuniform(0, data.size() - 1));
+
+    if (dataIterator->second.qos != QoS::QOS_MINUS_ONE) {
+        scheduleClockEventAfter(MqttSNClient::MIN_WAITING_TIME, publishMinusOneEvent);
+        return false;
+    }
+
+    // update information about the last element
+    lastPublishMinusOne.topicName = itemIterator->second.topicName;
+    lastPublishMinusOne.topicId = itemIterator->second.topicId;
+    lastPublishMinusOne.itemInfo = &itemIterator->second;
+    lastPublishMinusOne.dataInfo = &dataIterator->second;
 
     return true;
 }
