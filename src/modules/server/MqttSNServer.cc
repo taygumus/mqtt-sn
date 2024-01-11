@@ -261,9 +261,15 @@ void MqttSNServer::processPacket(inet::Packet* pk)
     EV << "Server received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
 
     const auto& header = pk->peekData<MqttSNBase>();
-
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
     MsgType msgType = header->getMsgType();
+
+    // if the message type is PUBLISH and QoS is -1, process the packet and exit
+    if (msgType == MsgType::PUBLISH && pk->peekData<MqttSNPublish>()->getQoSFlag() == QoS::QOS_MINUS_ONE) {
+        processPublishMinusOne(pk);
+        delete pk;
+        return;
+    }
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
     ClientInfo* clientInfo = nullptr;
@@ -671,6 +677,12 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
     // send publish received
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
+}
+
+void MqttSNServer::processPublishMinusOne(inet::Packet* pk)
+{
+    const auto& payload = pk->peekData<MqttSNPublish>();
+    // TO DO ///
 }
 
 void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)

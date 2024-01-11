@@ -121,6 +121,7 @@ class MqttSNServer : public MqttSNApp
         virtual void processDisconnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, ClientInfo* clientInfo);
         virtual void processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processPublish(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
+        virtual void processPublishMinusOne(inet::Packet* pk);
         virtual void processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processSubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processUnsubscribe(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
