@@ -96,7 +96,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual bool proceedWithRegistration();
 
         // publication methods
-        virtual void printPublishMessage(const LastPublishInfo& lastPublish);
+        virtual void printPublishMessage(const LastPublishInfo& lastPublishInfo);
         virtual void retryLastPublish();
         virtual bool proceedWithPublish();
         virtual bool proceedWithPublishMinusOne();

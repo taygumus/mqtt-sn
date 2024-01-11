@@ -682,7 +682,25 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 void MqttSNServer::processPublishMinusOne(inet::Packet* pk)
 {
     const auto& payload = pk->peekData<MqttSNPublish>();
-    // TO DO ///
+    uint16_t topicId = payload->getTopicId();
+    TopicIdType topicIdType = (TopicIdType) payload->getTopicIdTypeFlag();
+
+    // handle the case where the topic is not registered or inconsistencies are detected
+    auto it = idsToTopics.find(topicId);
+    if (it == idsToTopics.end() || it->second.topicIdType != topicIdType || topicIdType != TopicIdType::PRE_DEFINED_TOPIC_ID) {
+        return;
+    }
+
+    MessageInfo messageInfo;
+    messageInfo.topicId = topicId;
+    messageInfo.topicIdType = TopicIdType::PRE_DEFINED_TOPIC_ID;
+    messageInfo.dup = false;
+    messageInfo.qos = QoS::QOS_MINUS_ONE;
+    messageInfo.retain = false;
+    messageInfo.data = payload->getData();
+
+    // handling QoS -1
+    dispatchPublishToSubscribers(messageInfo);
 }
 
 void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
