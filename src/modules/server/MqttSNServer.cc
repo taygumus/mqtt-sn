@@ -1130,8 +1130,8 @@ void MqttSNServer::handleRequestsCheckEvent()
             // calculate the minimum QoS level between subscription QoS and original publish QoS
             QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
 
-            if (resultQoS == QoS::QOS_ZERO) {
-                // send a publish message with QoS 0 to the subscriber
+            if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
+                // send a publish message with QoS -1 or QoS 0 to the subscriber
                 sendPublish(subscriberAddress, subscriberPort,
                             messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
                             messageInfo->topicId, 0,
@@ -1475,8 +1475,8 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
 void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
                                             QoS requestQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
-    if (requestQoS == QoS::QOS_ZERO) {
-        // send a publish message with QoS 0 to the subscriber
+    if (requestQoS == QoS::QOS_MINUS_ONE || requestQoS == QoS::QOS_ZERO) {
+        // send a publish message with QoS -1 or QoS 0 to the subscriber
         sendPublish(subscriberAddress, subscriberPort,
                     messageInfo.dup, requestQoS, messageInfo.retain, messageInfo.topicIdType,
                     messageInfo.topicId, 0,

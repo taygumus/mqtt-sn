@@ -253,8 +253,8 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     messageInfo.retain = retain;
     messageInfo.data = data;
 
-    if (qos == QoS::QOS_ZERO) {
-        // handling QoS 0
+    if (qos == QoS::QOS_MINUS_ONE || qos == QoS::QOS_ZERO) {
+        // handling QoS -1 or QoS 0
         printPublishMessage(messageInfo);
         return;
     }
@@ -585,7 +585,7 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "Topic name: " << messageInfo.topicName << std::endl;
     EV << "Topic ID: " << messageInfo.topicId << std::endl;
     EV << "Topic ID type: " << ConversionHelper::topicIdTypeToString(messageInfo.topicIdType) << std::endl;
-    EV << "Duplicate: " << (messageInfo.dup ? "True" : "False") << std::endl;
+    EV << "Duplicate: " << messageInfo.dup << std::endl;
     EV << "QoS: " << ConversionHelper::qosToInt(messageInfo.qos) << std::endl;
     EV << "Retain: " << messageInfo.retain << std::endl;
     EV << "Data: " << messageInfo.data << std::endl;
