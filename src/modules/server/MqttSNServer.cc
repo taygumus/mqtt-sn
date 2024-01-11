@@ -556,8 +556,7 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
     // ACK with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
 
-    // TO DO -> not affect existing subscriptions (6.12)
-    // TO DO -> manage disconnect with sleep duration field (6.14)
+    // TO DO -> Buffering of messages when the client state is asleep
 }
 
 void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -1066,8 +1065,6 @@ void MqttSNServer::handleAsleepClientsCheckEvent()
             // change the expired client state and activate the will feature
             clientInfo.currentState = ClientState::LOST;
             // will feature activation; to be implemented
-
-            // TO DO -> Buffering of messages to send
         }
     }
 
