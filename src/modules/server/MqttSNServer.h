@@ -158,8 +158,8 @@ class MqttSNServer : public MqttSNApp
         virtual void handleRegistrationsCheckEvent();
 
         // client methods
-        void cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType);
-        void updateClientType(ClientInfo* clientInfo, ClientType clientType);
+        virtual void cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType);
+        virtual void updateClientType(ClientInfo* clientInfo, ClientType clientType);
         virtual ClientInfo* addNewClient(const inet::L3Address& clientAddress, const int& clientPort);
         virtual ClientInfo* getClientInfo(const inet::L3Address& clientAddress, const int& clientPort);
 
