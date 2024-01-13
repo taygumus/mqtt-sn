@@ -852,7 +852,7 @@ void MqttSNServer::processRegAck(inet::Packet* pk, const inet::L3Address& srcAdd
     }
 
     // handle ACCEPTED return code
-    SubscriberTopicInfo* subscriberTopicInfo = getSubscriberTopic(srcAddress, srcPort, topicId);
+    SubscriberTopicInfo* subscriberTopicInfo = getSubscriberTopicInfo(srcAddress, srcPort, topicId);
 
     if (subscriberTopicInfo == nullptr) {
         // delayed topic registration; simply return
@@ -1114,7 +1114,7 @@ void MqttSNServer::handleRequestsCheckEvent()
             inet::L3Address subscriberAddress = requestInfo.subscriberAddress;
             int subscriberPort = requestInfo.subscriberPort;
 
-            // gets a message info pointer for regular or retained messages; memory allocation occurs for retained messages
+            // get a message info pointer for regular or retained messages; memory allocation occurs for retained messages
             MessageInfo* messageInfo = getRequestMessageInfo(requestInfo);
 
             // check for an existing subscription
@@ -1145,7 +1145,7 @@ void MqttSNServer::handleRequestsCheckEvent()
                         messageInfo->data);
 
             // deallocates memory for retain message info
-            deleteRequestMessageInfo(requestInfo, messageInfo);
+            deleteRequestMessage(requestInfo, messageInfo);
 
             // update the request
             requestInfo.retransmissionCounter++;
@@ -1375,7 +1375,18 @@ void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberA
     }
 }
 
-void MqttSNServer::deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo)
+void MqttSNServer::addNewMessage(const MessageInfo& messageInfo)
+{
+    // set new available message ID if possible; otherwise, throw an exception
+    MqttSNApp::getNewIdentifier(messageIds, currentMessageId,
+                                "Failed to assign a new message ID. All available message IDs are in use");
+
+    // add the new message in the data structures
+    messages[currentMessageId] = messageInfo;
+    messageIds.insert(currentMessageId);
+}
+
+void MqttSNServer::deleteRequestMessage(const RequestInfo& requestInfo, MessageInfo* messageInfo)
 {
     // deallocate memory if allocated for retain message
     if (messageInfo != nullptr && requestInfo.retainMessagesKey > 0) {
@@ -1654,7 +1665,7 @@ void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& subscriberAddre
 
 bool MqttSNServer::isTopicRegisteredForSubscriber(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
 {
-    SubscriberTopicInfo* subscriberTopicInfo = getSubscriberTopic(subscriberAddress, subscriberPort, topicId);
+    SubscriberTopicInfo* subscriberTopicInfo = getSubscriberTopicInfo(subscriberAddress, subscriberPort, topicId);
 
     if (subscriberTopicInfo == nullptr) {
         throw omnetpp::cRuntimeError("Topic not found for the subscriber");
@@ -1688,7 +1699,7 @@ SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& subscribe
     return nullptr;
 }
 
-SubscriberTopicInfo* MqttSNServer::getSubscriberTopic(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
+SubscriberTopicInfo* MqttSNServer::getSubscriberTopicInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
 {
     SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort);
 

@@ -178,8 +178,11 @@ class MqttSNServer : public MqttSNApp
         virtual void addNewRetainMessage(uint16_t topicId, bool dup, QoS qos, TopicIdType topicIdType, const std::string& data);
         virtual void addNewPendingRetainMessage(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId, QoS qos);
 
+        // message methods
+        virtual void addNewMessage(const MessageInfo& messageInfo);
+
         // request message methods
-        virtual void deleteRequestMessageInfo(const RequestInfo& requestInfo, MessageInfo* messageInfo);
+        virtual void deleteRequestMessage(const RequestInfo& requestInfo, MessageInfo* messageInfo);
         virtual MessageInfo* getRequestMessageInfo(const RequestInfo& requestInfo);
 
         // request handling methods
@@ -218,7 +221,7 @@ class MqttSNServer : public MqttSNApp
         virtual SubscriberInfo* getSubscriberInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort,
                                                   bool insertIfNotFound = false);
 
-        virtual SubscriberTopicInfo* getSubscriberTopic(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
+        virtual SubscriberTopicInfo* getSubscriberTopicInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
 
         // subscription methods
         virtual void deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
