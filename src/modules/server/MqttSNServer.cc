@@ -1090,8 +1090,8 @@ void MqttSNServer::handlePendingRetainCheckEvent()
 
 void MqttSNServer::handleRequestsCheckEvent()
 {
-    /* TO DO ///
-    inet::clocktime_t currentTime = getClockTime();
+    // structure to store allocated objects for future deallocation
+    std::vector<MessageInfo*> allocatedObjects;
 
     // iterate through the requests
     for (auto requestIt = requests.begin(); requestIt != requests.end(); ++requestIt) {
@@ -1104,37 +1104,59 @@ void MqttSNServer::handleRequestsCheckEvent()
 
         RequestInfo& requestInfo = requestIt->second;
 
+        // retrieve subscriber address and port
+        const inet::L3Address& subscriberAddress = requestInfo.subscriberAddress;
+        const int& subscriberPort = requestInfo.subscriberPort;
+
+        // get client information for the subscriber
+        ClientInfo* clientInfo = getSubscriberClientInfo(subscriberAddress, subscriberPort);
+
+        // check if the subscriber is in an ACTIVE or AWAKE state
+        if (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::AWAKE) {
+            continue;
+        }
+
+        // get a message info pointer for regular or retained messages; memory allocation occurs for retained messages
+        MessageInfo* messageInfo = getRequestMessageInfo(requestInfo, allocatedObjects);
+
+        // check for an existing subscription
+        std::pair<uint16_t, QoS> subscriptionKey;
+        if (!findSubscription(subscriberAddress, subscriberPort, messageInfo->topicId, subscriptionKey)) {
+            deleteRequest(requestIt, requestIdIt);
+            continue;
+        }
+
+        // calculate the minimum QoS level between subscription QoS and original publish QoS
+        QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
+
+        if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
+            // send a publish message with QoS -1 or QoS 0 to the subscriber
+            sendPublish(subscriberAddress, subscriberPort,
+                        messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
+                        messageInfo->topicId, 0,
+                        messageInfo->data);
+
+            deleteRequest(requestIt, requestIdIt);
+            continue;
+        }
+
+        if (requestInfo.sendAtLeastOnce) {
+            // send a publish message with QoS 1 or QoS 2 to the subscriber
+            sendPublish(subscriberAddress, subscriberPort,
+                        messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
+                        messageInfo->topicId, requestIt->first,
+                        messageInfo->data);
+
+            // update request info
+            requestInfo.sendAtLeastOnce = false;
+            requestInfo.requestTime = getClockTime();
+            continue;
+        }
+
         // check if the elapsed time from last received message is beyond the retransmission duration
-        if ((currentTime - requestInfo.requestTime) > MqttSNApp::retransmissionInterval) {
+        if ((getClockTime() - requestInfo.requestTime) > MqttSNApp::retransmissionInterval) {
             // check if the number of retries equals the threshold
             if (requestInfo.retransmissionCounter >= MqttSNApp::retransmissionCounter) {
-                deleteRequest(requestIt, requestIdIt);
-                continue;
-            }
-
-            inet::L3Address subscriberAddress = requestInfo.subscriberAddress;
-            int subscriberPort = requestInfo.subscriberPort;
-
-            // get a message info pointer for regular or retained messages; memory allocation occurs for retained messages
-            MessageInfo* messageInfo = getRequestMessageInfo(requestInfo);
-
-            // check for an existing subscription
-            std::pair<uint16_t, QoS> subscriptionKey;
-            if (!findSubscription(subscriberAddress, subscriberPort, messageInfo->topicId, subscriptionKey)) {
-                deleteRequest(requestIt, requestIdIt);
-                continue;
-            }
-
-            // calculate the minimum QoS level between subscription QoS and original publish QoS
-            QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
-
-            if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
-                // send a publish message with QoS -1 or QoS 0 to the subscriber
-                sendPublish(subscriberAddress, subscriberPort,
-                            messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
-                            messageInfo->topicId, 0,
-                            messageInfo->data);
-
                 deleteRequest(requestIt, requestIdIt);
                 continue;
             }
@@ -1145,17 +1167,17 @@ void MqttSNServer::handleRequestsCheckEvent()
                         messageInfo->topicId, requestIt->first,
                         messageInfo->data);
 
-            // deallocates memory for retain message info
-            deleteRequestMessage(requestInfo, messageInfo);
 
-            // update the request
+            // update request info
             requestInfo.retransmissionCounter++;
             requestInfo.requestTime = getClockTime();
         }
     }
 
+    // deallocate objects
+    deleteAllocatedMessages(allocatedObjects);
+
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
-    */
 }
 
 void MqttSNServer::handleRegistrationsCheckEvent()
@@ -1394,16 +1416,15 @@ void MqttSNServer::addAndMarkMessage(const MessageInfo& messageInfo, bool& isMes
     isMessageAdded = true;
 }
 
-void MqttSNServer::deleteRequestMessage(const RequestInfo& requestInfo, MessageInfo* messageInfo)
+void MqttSNServer::deleteAllocatedMessages(const std::vector<MessageInfo*>& messages)
 {
-    // deallocate memory if allocated for retain message
-    if (messageInfo != nullptr && requestInfo.retainMessagesKey > 0) {
-        delete messageInfo;
-        messageInfo = nullptr;
+    // delete objects pointed to by the pointers in the vector
+    for (auto message : messages) {
+        delete message;
     }
 }
 
-MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo)
+MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo, std::vector<MessageInfo*>& allocatedObjects)
 {
     MessageInfo* messageInfo = nullptr;
 
@@ -1430,6 +1451,9 @@ MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo)
             messageInfo->qos = retainMessageInfo.qos;
             messageInfo->retain = true;
             messageInfo->data = retainMessageInfo.data;
+
+            // add the object pointer to the vector for future deallocation
+            allocatedObjects.push_back(messageInfo);
         }
     }
     else {
@@ -1452,7 +1476,6 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
         if (subscriptionIt != subscriptions.end()) {
-
             // calculate the minimum QoS level between subscription QoS and incoming publish QoS
             QoS resultQoS = NumericHelper::minQoS(key.second, messageInfo.qos);
 
