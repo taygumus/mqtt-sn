@@ -1449,12 +1449,12 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
 
     // iterate for each QoS
     for (const auto& key : keys) {
-        // calculate the minimum QoS level between subscription QoS and incoming publish QoS
-        QoS resultQoS = NumericHelper::minQoS(key.second, messageInfo.qos);
-
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
         if (subscriptionIt != subscriptions.end()) {
+
+            // calculate the minimum QoS level between subscription QoS and incoming publish QoS
+            QoS resultQoS = NumericHelper::minQoS(key.second, messageInfo.qos);
 
             for (const auto& subscriber : subscriptionIt->second) {
                 // retrieve subscriber address and port
@@ -1526,16 +1526,16 @@ void MqttSNServer::bufferRequest(const inet::L3Address& subscriberAddress, const
     }
 
     // add a new publish request to be processed later
-    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
+    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, true, currentMessageId, 0);
 }
 
 void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                            QoS requestQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
+                                            QoS resultQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
-    if (requestQoS == QoS::QOS_MINUS_ONE || requestQoS == QoS::QOS_ZERO) {
+    if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
         // send a publish message with QoS -1 or QoS 0 to the subscriber
         sendPublish(subscriberAddress, subscriberPort,
-                    messageInfo.dup, requestQoS, messageInfo.retain, messageInfo.topicIdType,
+                    messageInfo.dup, resultQoS, messageInfo.retain, messageInfo.topicIdType,
                     messageInfo.topicId, 0,
                     messageInfo.data);
 
@@ -1543,17 +1543,17 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
         return;
     }
 
-    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, messagesKey, retainMessagesKey);
+    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, false, messagesKey, retainMessagesKey);
 
     // send a publish message with QoS 1 or QoS 2 to the subscriber
     sendPublish(subscriberAddress, subscriberPort,
-                messageInfo.dup, requestQoS, messageInfo.retain, messageInfo.topicIdType,
+                messageInfo.dup, resultQoS, messageInfo.retain, messageInfo.topicIdType,
                 messageInfo.topicId, currentRequestId,
                 messageInfo.data);
 }
 
 void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
-                                 uint16_t messagesKey, uint16_t retainMessagesKey)
+                                 bool sendAtLeastOnce, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
     // check for valid message types; throw an exception if invalid
     if (messageType != MsgType::PUBLISH && messageType != MsgType::PUBREL) {
@@ -1569,6 +1569,7 @@ void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const
     requestInfo.subscriberAddress = subscriberAddress;
     requestInfo.subscriberPort = subscriberPort;
     requestInfo.messageType = messageType;
+    requestInfo.sendAtLeastOnce = sendAtLeastOnce;
 
     if (messagesKey > 0) {
         requestInfo.messagesKey = messagesKey;

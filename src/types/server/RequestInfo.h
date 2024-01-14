@@ -6,7 +6,8 @@ struct RequestInfo {
     int retransmissionCounter = 0;
     inet::L3Address subscriberAddress;
     int subscriberPort = 0;
-    MsgType messageType;
+    MsgType messageType = MsgType::PUBLISH;
+    bool sendAtLeastOnce = true;
     uint16_t messagesKey = 0;
     uint16_t retainMessagesKey = 0;
 };
