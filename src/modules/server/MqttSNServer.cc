@@ -1462,11 +1462,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                 const int& subscriberPort = subscriber.second;
 
                 // get client information for the subscriber
-                ClientInfo* clientInfo = getClientInfo(subscriberAddress, subscriberPort);
-                if (clientInfo == nullptr) {
-                    throw omnetpp::cRuntimeError("Unable to find client information for subscriber (Address: %s, Port: %d).",
-                                                 subscriberAddress.str().c_str(), subscriberPort);
-                }
+                ClientInfo* clientInfo = getSubscriberClientInfo(subscriberAddress, subscriberPort);
 
                 // check subscriber state and handle accordingly
                 switch (clientInfo->currentState) {
@@ -1770,6 +1766,18 @@ SubscriberTopicInfo* MqttSNServer::getSubscriberTopicInfo(const inet::L3Address&
     }
 
     return nullptr;
+}
+
+ClientInfo* MqttSNServer::getSubscriberClientInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort)
+{
+    // get client information for the subscriber
+    ClientInfo* clientInfo = getClientInfo(subscriberAddress, subscriberPort);
+    if (clientInfo == nullptr) {
+        throw omnetpp::cRuntimeError("Unable to find client information for subscriber (Address: %s, Port: %d).",
+                                     subscriberAddress.str().c_str(), subscriberPort);
+    }
+
+    return clientInfo;
 }
 
 void MqttSNServer::deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)

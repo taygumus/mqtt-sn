@@ -232,6 +232,7 @@ class MqttSNServer : public MqttSNApp
                                                   bool insertIfNotFound = false);
 
         virtual SubscriberTopicInfo* getSubscriberTopicInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
+        virtual ClientInfo* getSubscriberClientInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort);
 
         // subscription methods
         virtual void deleteSubscriptionIfExists(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
