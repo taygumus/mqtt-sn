@@ -189,6 +189,15 @@ class MqttSNServer : public MqttSNApp
         // request handling methods
         virtual void dispatchPublishToSubscribers(const MessageInfo& messageInfo);
 
+        virtual void processRequestForActiveSubscriber(const inet::L3Address& subscriberAddress, int subscriberPort,
+                                                       const MessageInfo& messageInfo, QoS resultQoS, bool& isMessageAdded);
+
+        virtual void processRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                    QoS resultQoS, bool& isMessageAdded);
+
+        virtual void bufferRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                   bool& isMessageAdded);
+
         virtual void addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
                                               QoS requestQoS, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
@@ -196,12 +205,6 @@ class MqttSNServer : public MqttSNApp
                                    uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
         virtual void deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
-
-        virtual void processRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                    QoS resultQoS, bool& isMessageAdded);
-
-        virtual void bufferRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                   bool& isMessageAdded);
 
         virtual bool isValidRequest(uint16_t requestId, MsgType messageType, std::map<uint16_t, RequestInfo>::iterator& requestIt,
                                     std::set<uint16_t>::iterator& requestIdIt);

@@ -1090,6 +1090,7 @@ void MqttSNServer::handlePendingRetainCheckEvent()
 
 void MqttSNServer::handleRequestsCheckEvent()
 {
+    /* TO DO ///
     inet::clocktime_t currentTime = getClockTime();
 
     // iterate through the requests
@@ -1154,6 +1155,7 @@ void MqttSNServer::handleRequestsCheckEvent()
     }
 
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
+    */
 }
 
 void MqttSNServer::handleRegistrationsCheckEvent()
@@ -1469,17 +1471,8 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
                 // check subscriber state and handle accordingly
                 switch (clientInfo->currentState) {
                     case ClientState::ACTIVE:
-                        if (isTopicRegisteredForSubscriber(subscriberAddress, subscriberPort, messageInfo.topicId)) {
-                            // registered topic; send request directly, keeping only QoS 1 and QoS 2 requests
-                            processRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, isMessageAdded);
-                        }
-                        else {
-                            // unregistered topic; manage the registration for the subscriber
-                            manageRegistration(subscriberAddress, subscriberPort, messageInfo.topicId);
-
-                            // keep the request to be processed later
-                            bufferRequest(subscriberAddress, subscriberPort, messageInfo, isMessageAdded);
-                        }
+                        // check if the subscriber is registered for the topic and take appropriate action
+                        processRequestForActiveSubscriber(subscriberAddress, subscriberPort, messageInfo, resultQoS, isMessageAdded);
                         break;
 
                     case ClientState::AWAKE:
@@ -1498,6 +1491,46 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
             }
         }
     }
+}
+
+void MqttSNServer::processRequestForActiveSubscriber(const inet::L3Address& subscriberAddress, int subscriberPort,
+                                                     const MessageInfo& messageInfo, QoS resultQoS, bool& isMessageAdded)
+{
+    if (isTopicRegisteredForSubscriber(subscriberAddress, subscriberPort, messageInfo.topicId)) {
+        // registered topic; send request directly, keeping only QoS 1 and QoS 2 requests
+        processRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, isMessageAdded);
+    }
+    else {
+        // unregistered topic; manage the registration for the subscriber
+        manageRegistration(subscriberAddress, subscriberPort, messageInfo.topicId);
+
+        // keep the request to be processed later
+        bufferRequest(subscriberAddress, subscriberPort, messageInfo, isMessageAdded);
+    }
+}
+
+void MqttSNServer::processRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                  QoS resultQoS, bool& isMessageAdded)
+{
+    // add a request message if not added and if QoS is one or two
+    if (!isMessageAdded && (resultQoS == QoS::QOS_ONE || resultQoS == QoS::QOS_TWO)) {
+        addAndMarkMessage(messageInfo, isMessageAdded);
+    }
+
+    // process the publish request to the subscriber
+    addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
+}
+
+void MqttSNServer::bufferRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
+                                 bool& isMessageAdded)
+{
+    // add a request message if not added
+    if (!isMessageAdded) {
+        addAndMarkMessage(messageInfo, isMessageAdded);
+    }
+
+    // add a new publish request to be processed later
+    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
 }
 
 void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
@@ -1559,30 +1592,6 @@ void MqttSNServer::deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requ
     // remove the request from both structures
     requests.erase(requestIt);
     requestIds.erase(requestIdIt);
-}
-
-void MqttSNServer::processRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                  QoS resultQoS, bool& isMessageAdded)
-{
-    // add a request message if not added and if QoS is one or two
-    if (!isMessageAdded && (resultQoS == QoS::QOS_ONE || resultQoS == QoS::QOS_TWO)) {
-        addAndMarkMessage(messageInfo, isMessageAdded);
-    }
-
-    // process the publish request to the subscriber
-    addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
-}
-
-void MqttSNServer::bufferRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
-                                 bool& isMessageAdded)
-{
-    // add a request message if not added
-    if (!isMessageAdded) {
-        addAndMarkMessage(messageInfo, isMessageAdded);
-    }
-
-    // add a new publish request to be processed later
-    addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, currentMessageId, 0);
 }
 
 bool MqttSNServer::isValidRequest(uint16_t requestId, MsgType messageType, std::map<uint16_t, RequestInfo>::iterator& requestIt,
