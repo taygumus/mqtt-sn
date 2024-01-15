@@ -1126,6 +1126,15 @@ void MqttSNServer::handleRequestsCheckEvent()
             continue;
         }
 
+        // check if the subscriber is in the ACTIVE state and if the topic is registered for the subscriber
+        if (clientInfo->currentState == ClientState::ACTIVE &&
+            !isTopicRegisteredForSubscriber(subscriberAddress, subscriberPort, messageInfo->topicId)) {
+
+            // handle unregistered topic: initiate subscriber registration; the request will be processed later
+            manageRegistration(subscriberAddress, subscriberPort, messageInfo->topicId);
+            continue;
+        }
+
         // calculate the minimum QoS level between subscription QoS and original publish QoS
         QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
 
@@ -1147,7 +1156,7 @@ void MqttSNServer::handleRequestsCheckEvent()
                         messageInfo->topicId, requestIt->first,
                         messageInfo->data);
 
-            // update request info
+            // update request information
             requestInfo.sendAtLeastOnce = false;
             requestInfo.requestTime = getClockTime();
             continue;
@@ -1168,7 +1177,7 @@ void MqttSNServer::handleRequestsCheckEvent()
                         messageInfo->data);
 
 
-            // update request info
+            // update request information
             requestInfo.retransmissionCounter++;
             requestInfo.requestTime = getClockTime();
         }
