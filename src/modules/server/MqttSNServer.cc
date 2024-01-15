@@ -1176,7 +1176,6 @@ void MqttSNServer::handleRequestsCheckEvent()
                         messageInfo->topicId, requestIt->first,
                         messageInfo->data);
 
-
             // update request information
             requestInfo.retransmissionCounter++;
             requestInfo.requestTime = getClockTime();
