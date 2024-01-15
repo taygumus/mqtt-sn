@@ -32,6 +32,7 @@ class MqttSNServer : public MqttSNApp
         double pendingRetainCheckInterval;
         double requestsCheckInterval;
         double registrationsCheckInterval;
+        double awakenSubscriberCheckInterval;
 
         // gateway state management
         inet::ClockEvent* stateChangeEvent = nullptr;
@@ -151,11 +152,15 @@ class MqttSNServer : public MqttSNApp
 
         // event handlers
         virtual void handleAdvertiseEvent();
+
         virtual void handleActiveClientsCheckEvent();
         virtual void handleAsleepClientsCheckEvent();
+
         virtual void handlePendingRetainCheckEvent();
         virtual void handleRequestsCheckEvent();
         virtual void handleRegistrationsCheckEvent();
+
+        virtual void handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg);
 
         // client methods
         virtual void cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType);

@@ -59,6 +59,8 @@ void MqttSNServer::levelOneInit()
 
     registrationsCheckInterval = par("registrationsCheckInterval");
     registrationsCheckEvent = new inet::ClockEvent("registrationsCheckTimer");
+
+    awakenSubscriberCheckInterval = par("awakenSubscriberCheckInterval");
 }
 
 void MqttSNServer::finish()
@@ -125,6 +127,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     }
     else if (msg == registrationsCheckEvent) {
         handleRegistrationsCheckEvent();
+    }
+    else if (msg->hasPar("isAwakenSubscriberCheckEvent")) {
+        handleAwakenSubscriberCheckEvent(msg);
     }
     else {
         MqttSNApp::socket.processMessage(msg);
@@ -525,12 +530,28 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
             return;
         }
 
-        clientInfo->currentState = ClientState::AWAKE;
+        if (clientInfo->clientType == ClientType::SUBSCRIBER) {
+            // retrieve subscriber information using client source address and port
+            SubscriberInfo* subscriberInfo = getSubscriberInfo(srcAddress, srcPort);
+            if (subscriberInfo == nullptr) {
+                throw omnetpp::cRuntimeError("Subscriber not found during ping request processing");
+            }
 
-        // TO DO -> send buffered messages to the client
-        // TO DO -> this part can be improved e.g. check if there are buffered messages otherwise do not change state
+            // create a control event to check for pending requests
+            subscriberInfo->awakenSubscriberCheckEvent = new inet::ClockEvent("awakenSubscriberCheckTimer");
 
-        clientInfo->currentState = ClientState::ASLEEP;
+            // add the parameters
+            subscriberInfo->awakenSubscriberCheckEvent->addPar("isAwakenSubscriberCheckEvent");
+            subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberAddress").setStringValue(srcAddress.str().c_str());
+            subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberPort").setLongValue(srcPort);
+
+            // schedule the control event after a specified interval
+            scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo->awakenSubscriberCheckEvent);
+
+            // update the client (subscriber) state
+            clientInfo->currentState = ClientState::AWAKE;
+            return;
+        }
     }
 
     MqttSNApp::sendBase(srcAddress, srcPort, MsgType::PINGRESP);
@@ -555,8 +576,6 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
 
     // ACK with disconnect message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
-
-    // TO DO -> Buffering of messages when the client state is asleep
 }
 
 void MqttSNServer::processRegister(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -1223,11 +1242,47 @@ void MqttSNServer::handleRegistrationsCheckEvent()
     scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
 }
 
+void MqttSNServer::handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg)
+{
+    // extract subscriber address and port from the message
+    inet::L3Address subscriberAddress = inet::L3Address(msg->par("subscriberAddress").stringValue());
+    int subscriberPort = msg->par("subscriberPort").longValue();
+
+    std::pair<inet::L3Address, int> key = std::make_pair(subscriberAddress, subscriberPort);
+
+    // search for the subscriber in the structure
+    auto it = subscribers.find(key);
+    if (it == subscribers.end()) {
+        throw omnetpp::cRuntimeError("Subscriber not found while processing the check event");
+    }
+
+    SubscriberInfo& subscriberInfo = it->second;
+
+    // search if there is at least one pending request for the subscriber in AWAKE state
+    for (const auto& request : requests) {
+        if (request.second.subscriberAddress == subscriberAddress && request.second.subscriberPort == subscriberPort) {
+            // if there is a pending request, reschedule and check again next time
+            scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo.awakenSubscriberCheckEvent);
+            return;
+        }
+    }
+
+    // no pending requests found for the subscriber; set its state to ASLEEP and respond with PINGRESP
+    ClientInfo* clientInfo = getSubscriberClientInfo(subscriberAddress, subscriberPort);
+    clientInfo->currentState = ClientState::ASLEEP;
+
+    // send PINGRESP message to the subscriber
+    MqttSNApp::sendBase(subscriberAddress, subscriberPort, MsgType::PINGRESP);
+
+    // deallocate clock event object
+    delete subscriberInfo.awakenSubscriberCheckEvent;
+    subscriberInfo.awakenSubscriberCheckEvent = nullptr;
+}
+
 void MqttSNServer::cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType)
 {
     if (clientType == ClientType::PUBLISHER) {
         PublisherInfo* publisherInfo = getPublisherInfo(clientAddress, clientPort);
-        // if publisher is not found, throw an error
         if (publisherInfo == nullptr) {
             throw omnetpp::cRuntimeError("Publisher not found during the clean session operation");
         }
@@ -1244,7 +1299,6 @@ void MqttSNServer::cleanClientSession(const inet::L3Address& clientAddress, cons
 
     // handle the case when the client is identified as a subscriber
     SubscriberInfo* subscriberInfo = getSubscriberInfo(clientAddress, clientPort);
-    // if subscriber is not found, throw an error
     if (subscriberInfo == nullptr) {
         throw omnetpp::cRuntimeError("Subscriber not found during the clean session operation");
     }
@@ -1726,9 +1780,8 @@ void MqttSNServer::setAllSubscriberTopics(const inet::L3Address& subscriberAddre
                                           bool skipPredefinedTopics)
 {
     SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort);
-
-    // exit if the subscriber is not found
     if (subscriberInfo == nullptr) {
+        // exit if the subscriber is not found
         return;
     }
 
@@ -1783,9 +1836,8 @@ SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& subscribe
 SubscriberTopicInfo* MqttSNServer::getSubscriberTopicInfo(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId)
 {
     SubscriberInfo* subscriberInfo = getSubscriberInfo(subscriberAddress, subscriberPort);
-
     if (subscriberInfo == nullptr) {
-        throw omnetpp::cRuntimeError("Unexpected error: Subscriber not found");
+        throw omnetpp::cRuntimeError("Subscriber not found for topic retrieval");
     }
 
     // obtain the subscribed topics for the subscriber
