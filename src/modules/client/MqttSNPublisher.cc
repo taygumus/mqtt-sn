@@ -79,12 +79,6 @@ void MqttSNPublisher::cancelActiveStateClockEventsCustom()
     cancelClockEvent(publishMinusOneEvent);
 }
 
-void MqttSNPublisher::handleAllowedAwakeMsgTypes(std::vector<MsgType>& msgTypes)
-{
-    msgTypes.push_back(MsgType::PUBLISH);
-    msgTypes.push_back(MsgType::PUBREL);
-}
-
 void MqttSNPublisher::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
 {
     switch(msgType) {

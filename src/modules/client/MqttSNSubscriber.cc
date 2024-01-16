@@ -60,6 +60,12 @@ void MqttSNSubscriber::cancelActiveStateClockEventsCustom()
     cancelClockEvent(unsubscriptionEvent);
 }
 
+void MqttSNSubscriber::handleAllowedAwakeMsgTypes(std::vector<MsgType>& msgTypes)
+{
+    msgTypes.push_back(MsgType::PUBLISH);
+    msgTypes.push_back(MsgType::PUBREL);
+}
+
 void MqttSNSubscriber::processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
 {
     switch(msgType) {

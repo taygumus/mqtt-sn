@@ -292,12 +292,25 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         case MsgType::SUBSCRIBE:
         case MsgType::UNSUBSCRIBE:
         case MsgType::REGACK:
+            clientInfo = getClientInfo(srcAddress, srcPort);
+            // discard packet if client is not found or not in ACTIVE state
+            if (clientInfo == nullptr || (clientInfo->currentState != ClientState::ACTIVE)) {
+                delete pk;
+                return;
+            }
+
+            clientInfo->lastReceivedMsgTime = getClockTime();
+            break;
+
+        // packet types that require an ACTIVE or AWAKE client state
         case MsgType::PUBACK:
         case MsgType::PUBREC:
         case MsgType::PUBCOMP:
             clientInfo = getClientInfo(srcAddress, srcPort);
-            // discard packet if client is not found or not in ACTIVE state
-            if (clientInfo == nullptr || (clientInfo->currentState != ClientState::ACTIVE)) {
+            // discard packet if client is not found or not in ACTIVE or AWAKE state
+            if (clientInfo == nullptr ||
+               (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::AWAKE)) {
+
                 delete pk;
                 return;
             }

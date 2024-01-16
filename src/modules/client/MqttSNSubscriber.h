@@ -48,7 +48,7 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void cancelActiveStateClockEventsCustom() override;
 
         // awake state management
-        virtual void handleAllowedAwakeMsgTypes(std::vector<MsgType>& msgTypes) override {};
+        virtual void handleAllowedAwakeMsgTypes(std::vector<MsgType>& msgTypes) override;
 
         // incoming packet handling
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
