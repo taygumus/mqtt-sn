@@ -703,13 +703,11 @@ void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& de
 
 void MqttSNClient::handleCheckGatewaysEvent()
 {
-    inet::clocktime_t currentTime = getClockTime();
-
     for (auto it = gateways.begin(); it != gateways.end();) {
         const GatewayInfo& gatewayInfo = it->second;
 
         // check if the elapsed time exceeds the threshold
-        if ((currentTime - gatewayInfo.lastUpdatedTime) > ((int) par("nadv")*  gatewayInfo.duration)) {
+        if ((getClockTime() - gatewayInfo.lastUpdatedTime) > ((int) par("nadv")*  gatewayInfo.duration)) {
             // gateway is considered unavailable
             it = gateways.erase(it);
         }
