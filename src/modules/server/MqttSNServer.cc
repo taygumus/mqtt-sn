@@ -550,16 +550,18 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
                 throw omnetpp::cRuntimeError("Subscriber not found during ping request processing");
             }
 
-            // create a control event to check for pending requests
-            subscriberInfo->awakenSubscriberCheckEvent = new inet::ClockEvent("awakenSubscriberCheckTimer");
+            if (subscriberInfo->awakenSubscriberCheckEvent == nullptr) {
+                // create a control event to check for pending requests
+                subscriberInfo->awakenSubscriberCheckEvent = new inet::ClockEvent("awakenSubscriberCheckTimer");
 
-            // add the parameters
-            subscriberInfo->awakenSubscriberCheckEvent->addPar("isAwakenSubscriberCheckEvent");
-            subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberAddress").setStringValue(srcAddress.str().c_str());
-            subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberPort").setLongValue(srcPort);
+                // add parameters
+                subscriberInfo->awakenSubscriberCheckEvent->addPar("isAwakenSubscriberCheckEvent");
+                subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberAddress").setStringValue(srcAddress.str().c_str());
+                subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberPort").setLongValue(srcPort);
 
-            // schedule the control event after a specified interval
-            scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo->awakenSubscriberCheckEvent);
+                // schedule the control event after a specified interval
+                scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo->awakenSubscriberCheckEvent);
+            }
 
             // update the client (subscriber) state
             clientInfo->currentState = ClientState::AWAKE;
