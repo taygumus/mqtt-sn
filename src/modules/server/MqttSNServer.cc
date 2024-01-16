@@ -559,6 +559,9 @@ void MqttSNServer::processPingReq(inet::Packet* pk, const inet::L3Address& srcAd
                 subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberAddress").setStringValue(srcAddress.str().c_str());
                 subscriberInfo->awakenSubscriberCheckEvent->addPar("subscriberPort").setLongValue(srcPort);
 
+                // record the start time of the schedule
+                subscriberInfo->awakenSubscriberCheckStartTime = getClockTime();
+
                 // schedule the control event after a specified interval
                 scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo->awakenSubscriberCheckEvent);
             }
@@ -1058,14 +1061,12 @@ void MqttSNServer::handleAdvertiseEvent()
 
 void MqttSNServer::handleActiveClientsCheckEvent()
 {
-    inet::clocktime_t currentTime = getClockTime();
-
     for (auto it = clients.begin(); it != clients.end(); ++it) {
         ClientInfo& clientInfo = it->second;
 
         // check if the client is ACTIVE and if the elapsed time from last received message is beyond the keep alive duration
         if (clientInfo.currentState == ClientState::ACTIVE &&
-            (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.keepAliveDuration) {
+            (getClockTime() - clientInfo.lastReceivedMsgTime) > clientInfo.keepAliveDuration) {
 
             if (clientInfo.sentPingReq) {
                 // change the expired client state and activate the will feature
@@ -1087,14 +1088,12 @@ void MqttSNServer::handleActiveClientsCheckEvent()
 
 void MqttSNServer::handleAsleepClientsCheckEvent()
 {
-    inet::clocktime_t currentTime = getClockTime();
-
     for (auto it = clients.begin(); it != clients.end(); ++it) {
         ClientInfo& clientInfo = it->second;
 
         // check if the client is ASLEEP and if the elapsed time from last received message is beyond the sleep duration
         if (clientInfo.currentState == ClientState::ASLEEP &&
-            (currentTime - clientInfo.lastReceivedMsgTime) > clientInfo.sleepDuration) {
+            (getClockTime() - clientInfo.lastReceivedMsgTime) > clientInfo.sleepDuration) {
 
             // change the expired client state and activate the will feature
             clientInfo.currentState = ClientState::LOST;
@@ -1224,8 +1223,6 @@ void MqttSNServer::handleRequestsCheckEvent()
 
 void MqttSNServer::handleRegistrationsCheckEvent()
 {
-    inet::clocktime_t currentTime = getClockTime();
-
     // iterate through the registrations
     for (auto registrationIt = registrations.begin(); registrationIt != registrations.end(); ++registrationIt) {
         // find the same registration ID in the set
@@ -1238,7 +1235,7 @@ void MqttSNServer::handleRegistrationsCheckEvent()
         RegisterInfo& registerInfo = registrationIt->second;
 
         // check if the elapsed time from last received message is beyond the retransmission duration
-        if ((currentTime - registerInfo.requestTime) > MqttSNApp::retransmissionInterval) {
+        if ((getClockTime() - registerInfo.requestTime) > MqttSNApp::retransmissionInterval) {
             // check if the number of retries equals the threshold
             if (registerInfo.retransmissionCounter >= MqttSNApp::retransmissionCounter) {
                 deleteRegistration(registrationIt, registrationIdIt);
@@ -1273,12 +1270,17 @@ void MqttSNServer::handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg)
 
     SubscriberInfo& subscriberInfo = it->second;
 
-    // search if there is at least one pending request for the subscriber in AWAKE state
-    for (const auto& request : requests) {
-        if (request.second.subscriberAddress == subscriberAddress && request.second.subscriberPort == subscriberPort) {
-            // if there is a pending request, reschedule and check again next time
-            scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo.awakenSubscriberCheckEvent);
-            return;
+    // check if the elapsed time since the start of the scheduled event is within the threshold
+    if ((getClockTime() - subscriberInfo.awakenSubscriberCheckStartTime) <=
+        MqttSNApp::retransmissionCounter * MqttSNApp::retransmissionInterval) {
+
+        // search if there is at least one pending request for the subscriber in AWAKE state
+        for (const auto& request : requests) {
+            if (request.second.subscriberAddress == subscriberAddress && request.second.subscriberPort == subscriberPort) {
+                // if there is a pending request, reschedule and check again next time
+                scheduleClockEventAfter(awakenSubscriberCheckInterval, subscriberInfo.awakenSubscriberCheckEvent);
+                return;
+            }
         }
     }
 
