@@ -476,7 +476,8 @@ void MqttSNClient::processPacket(inet::Packet* pk)
     }
 
     std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
-    // TO DO -> pure virtual function -> the subscriber implementation will add into the vector the PUBLISH message
+    handleAllowedAwakeMsgTypes(allowedAwakeMsgTypes);
+
     if (currentState == ClientState::AWAKE &&
         std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
         // delete the packet if the message type is not in the allowed list while the client is AWAKE
@@ -684,8 +685,7 @@ void MqttSNClient::sendSearchGw()
     MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
 
-void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag,
-                               uint16_t duration)
+void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration)
 {
     const auto& payload = inet::makeShared<MqttSNConnect>();
     payload->setMsgType(MsgType::CONNECT);

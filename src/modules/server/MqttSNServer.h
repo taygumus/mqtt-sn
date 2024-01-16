@@ -206,8 +206,8 @@ class MqttSNServer : public MqttSNApp
         virtual void addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
                                               QoS resultQoS, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
-        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
-                                   bool sendAtLeastOnce, uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
+        virtual void addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType, bool sendAtLeastOnce,
+                                   uint16_t messagesKey = 0, uint16_t retainMessagesKey = 0);
 
         virtual void deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt);
 

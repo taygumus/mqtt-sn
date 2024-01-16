@@ -1637,8 +1637,8 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
                 messageInfo.data);
 }
 
-void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType,
-                                 bool sendAtLeastOnce, uint16_t messagesKey, uint16_t retainMessagesKey)
+void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType, bool sendAtLeastOnce,
+                                 uint16_t messagesKey, uint16_t retainMessagesKey)
 {
     // check for valid message types; throw an exception if invalid
     if (messageType != MsgType::PUBLISH && messageType != MsgType::PUBREL) {

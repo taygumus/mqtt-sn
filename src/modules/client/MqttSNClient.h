@@ -106,9 +106,7 @@ class MqttSNClient : public MqttSNApp
 
         // outgoing packet handling
         virtual void sendSearchGw();
-
-        virtual void sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag,
-                                 uint16_t duration);
+        virtual void sendConnect(const inet::L3Address& destAddress, const int& destPort, bool willFlag, bool cleanSessionFlag, uint16_t duration);
 
         // event handlers
         virtual void handleCheckGatewaysEvent();
@@ -155,6 +153,8 @@ class MqttSNClient : public MqttSNApp
         virtual void scheduleActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateClockEventsCustom() = 0;
+
+        virtual void handleAllowedAwakeMsgTypes(std::vector<MsgType>& msgTypes) = 0;
 
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) = 0;
         virtual void processConnAckCustom() = 0;
