@@ -1410,21 +1410,21 @@ void MqttSNServer::checkTopicsToIds(const std::string& topicName, uint16_t topic
     }
 }
 
-TopicInfo MqttSNServer::getTopicById(uint16_t topicId)
-{
-    auto it = idsToTopics.find(topicId);
-    if (it == idsToTopics.end()) {
-        throw omnetpp::cRuntimeError("Topic ID not found in the structure");
-    }
-
-    return it->second;
-}
-
 uint16_t MqttSNServer::getTopicByName(const std::string& topicName)
 {
     auto it = topicsToIds.find(topicName);
     if (it == topicsToIds.end()) {
         throw omnetpp::cRuntimeError("Topic name not found in the structure");
+    }
+
+    return it->second;
+}
+
+TopicInfo MqttSNServer::getTopicById(uint16_t topicId)
+{
+    auto it = idsToTopics.find(topicId);
+    if (it == idsToTopics.end()) {
+        throw omnetpp::cRuntimeError("Topic ID not found in the structure");
     }
 
     return it->second;
