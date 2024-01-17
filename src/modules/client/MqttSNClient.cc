@@ -475,14 +475,16 @@ void MqttSNClient::processPacket(inet::Packet* pk)
         return;
     }
 
-    std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
-    handleAllowedAwakeMsgTypes(allowedAwakeMsgTypes);
+    if (currentState == ClientState::AWAKE) {
+        // define and populate a vector of allowed message types for an AWAKE client
+        std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
+        handleAllowedAwakeMsgTypes(allowedAwakeMsgTypes);
 
-    if (currentState == ClientState::AWAKE &&
-        std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
         // delete the packet if the message type is not in the allowed list while the client is AWAKE
-        delete pk;
-        return;
+        if (std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
+            delete pk;
+            return;
+        }
     }
 
     EV << "Client received packet: " << inet::UdpSocket::getReceivedPacketInfo(pk) << std::endl;
