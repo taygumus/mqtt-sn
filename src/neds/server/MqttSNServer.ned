@@ -22,6 +22,7 @@ module MqttSNServer extends MqttSNApp
         double pendingRetainCheckInterval @unit(s) = default(500ms); // check interval for verifying pending retain messages
         double requestsCheckInterval @unit(s) = default(500ms); // check interval for verifying requests to subscribers
         double registrationsCheckInterval @unit(s) = default(500ms); // check interval for verifying topic registrations
-        
         double awakenSubscriberCheckInterval @unit(s) = default(500ms); // check interval for verifying awaken subscriber
+        
+        double messagesClearInterval @unit(s) = default(60s); // interval for clearing request messages
 }

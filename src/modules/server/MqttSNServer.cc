@@ -61,6 +61,9 @@ void MqttSNServer::levelOneInit()
     registrationsCheckEvent = new inet::ClockEvent("registrationsCheckTimer");
 
     awakenSubscriberCheckInterval = par("awakenSubscriberCheckInterval");
+
+    messagesClearInterval = par("messagesClearInterval");
+    messagesClearEvent = new inet::ClockEvent("messagesClearTimer");
 }
 
 void MqttSNServer::finish()
@@ -131,6 +134,9 @@ void MqttSNServer::handleMessageWhenUp(omnetpp::cMessage* msg)
     else if (msg->hasPar("isAwakenSubscriberCheckEvent")) {
         handleAwakenSubscriberCheckEvent(msg);
     }
+    else if (msg == messagesClearEvent) {
+        handleMessagesClearEvent();
+    }
     else {
         MqttSNApp::socket.processMessage(msg);
     }
@@ -167,6 +173,7 @@ void MqttSNServer::scheduleOnlineStateEvents()
     scheduleClockEventAfter(pendingRetainCheckInterval, pendingRetainCheckEvent);
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
     scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
+    scheduleClockEventAfter(messagesClearInterval, messagesClearEvent);
 }
 
 void MqttSNServer::cancelOnlineStateEvents()
@@ -177,6 +184,7 @@ void MqttSNServer::cancelOnlineStateEvents()
     cancelEvent(pendingRetainCheckEvent);
     cancelEvent(requestsCheckEvent);
     cancelEvent(registrationsCheckEvent);
+    cancelEvent(messagesClearEvent);
 }
 
 void MqttSNServer::cancelOnlineStateClockEvents()
@@ -188,6 +196,7 @@ void MqttSNServer::cancelOnlineStateClockEvents()
     cancelClockEvent(pendingRetainCheckEvent);
     cancelClockEvent(requestsCheckEvent);
     cancelClockEvent(registrationsCheckEvent);
+    cancelClockEvent(messagesClearEvent);
 }
 
 bool MqttSNServer::fromOfflineToOnline()
@@ -1296,6 +1305,12 @@ void MqttSNServer::handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg)
     subscriberInfo.awakenSubscriberCheckEvent = nullptr;
 }
 
+void MqttSNServer::handleMessagesClearEvent()
+{
+    // TO DO
+    scheduleClockEventAfter(messagesClearInterval, messagesClearEvent);
+}
+
 void MqttSNServer::cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType)
 {
     if (clientType == ClientType::PUBLISHER) {
@@ -2076,6 +2091,7 @@ MqttSNServer::~MqttSNServer()
     cancelAndDelete(pendingRetainCheckEvent);
     cancelAndDelete(requestsCheckEvent);
     cancelAndDelete(registrationsCheckEvent);
+    cancelAndDelete(messagesClearEvent);
 }
 
 } /* namespace mqttsn */

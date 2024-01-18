@@ -33,6 +33,7 @@ class MqttSNServer : public MqttSNApp
         double requestsCheckInterval;
         double registrationsCheckInterval;
         double awakenSubscriberCheckInterval;
+        double messagesClearInterval;
 
         // gateway state management
         inet::ClockEvent* stateChangeEvent = nullptr;
@@ -78,6 +79,9 @@ class MqttSNServer : public MqttSNApp
         std::map<std::pair<inet::L3Address, int>, SubscriberInfo> subscribers;
         std::map<uint16_t, std::set<QoS>> topicIdToQoS;
         std::map<std::pair<uint16_t, QoS>, std::set<std::pair<inet::L3Address, int>>> subscriptions;
+
+        // clear events
+        inet::ClockEvent* messagesClearEvent = nullptr;
 
         // statistics
         int numAdvertiseSent = 0;
@@ -155,12 +159,12 @@ class MqttSNServer : public MqttSNApp
 
         virtual void handleActiveClientsCheckEvent();
         virtual void handleAsleepClientsCheckEvent();
-
         virtual void handlePendingRetainCheckEvent();
         virtual void handleRequestsCheckEvent();
         virtual void handleRegistrationsCheckEvent();
-
         virtual void handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg);
+
+        virtual void handleMessagesClearEvent();
 
         // client methods
         virtual void cleanClientSession(const inet::L3Address& clientAddress, const int& clientPort, ClientType clientType);
