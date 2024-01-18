@@ -709,13 +709,13 @@ void MqttSNClient::handleCheckGatewaysEvent()
         const GatewayInfo& gatewayInfo = it->second;
 
         // check if the elapsed time exceeds the threshold
-        if ((getClockTime() - gatewayInfo.lastUpdatedTime) > ((int) par("nadv")*  gatewayInfo.duration)) {
-            // gateway is considered unavailable
+        if ((getClockTime() - gatewayInfo.lastUpdatedTime) > ((int) par("nadv") * gatewayInfo.duration)) {
+            // gateway is considered unavailable, remove it
             it = gateways.erase(it);
+            continue;
         }
-        else {
-            ++it;
-        }
+
+        ++it;
     }
 
     scheduleClockEventAfter(checkGatewaysInterval, checkGatewaysEvent);
@@ -1001,10 +1001,12 @@ void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
 void MqttSNClient::clearRetransmissions()
 {
     // clear the map to remove all elements
-    for (auto it = retransmissions.begin(); it != retransmissions.end(); ++it) {
+    for (auto it = retransmissions.begin(); it != retransmissions.end();) {
         // cancel all associated events in the map
         cancelAndDelete(it->second.retransmissionEvent);
-        retransmissions.erase(it);
+
+        // remove the element from the map
+        it = retransmissions.erase(it);
     }
 }
 

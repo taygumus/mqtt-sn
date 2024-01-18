@@ -1115,7 +1115,7 @@ void MqttSNServer::handleAsleepClientsCheckEvent()
 
 void MqttSNServer::handlePendingRetainCheckEvent()
 {
-    for (auto it = pendingRetainMessages.begin(); it != pendingRetainMessages.end(); ++it) {
+    for (auto it = pendingRetainMessages.begin(); it != pendingRetainMessages.end();) {
         // extract the information
         std::pair<inet::L3Address, int> subscriber = it->first;
         const MessageInfo& messageInfo = it->second;
@@ -1124,7 +1124,7 @@ void MqttSNServer::handlePendingRetainCheckEvent()
         addAndSendPublishRequest(subscriber.first, subscriber.second, messageInfo, messageInfo.qos, 0, messageInfo.topicId);
 
         // remove the subscriber after sending the message
-        pendingRetainMessages.erase(it);
+        it = pendingRetainMessages.erase(it);
     }
 
     scheduleClockEventAfter(pendingRetainCheckInterval, pendingRetainCheckEvent);
@@ -1136,7 +1136,7 @@ void MqttSNServer::handleRequestsCheckEvent()
     std::vector<MessageInfo*> allocatedObjects;
 
     // iterate through the requests
-    for (auto requestIt = requests.begin(); requestIt != requests.end(); ++requestIt) {
+    for (auto requestIt = requests.begin(); requestIt != requests.end();) {
         // find the same request ID in the set
         auto requestIdIt = requestIds.find(requestIt->first);
         if (requestIdIt == requestIds.end()) {
@@ -1155,6 +1155,7 @@ void MqttSNServer::handleRequestsCheckEvent()
 
         // check if the subscriber is in an ACTIVE or AWAKE state
         if (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::AWAKE) {
+            ++requestIt;
             continue;
         }
 
@@ -1174,6 +1175,8 @@ void MqttSNServer::handleRequestsCheckEvent()
 
             // handle unregistered topic: initiate subscriber registration; the request will be processed later
             manageRegistration(subscriberAddress, subscriberPort, messageInfo->topicId);
+
+            ++requestIt;
             continue;
         }
 
@@ -1201,6 +1204,8 @@ void MqttSNServer::handleRequestsCheckEvent()
             // update request information
             requestInfo.sendAtLeastOnce = false;
             requestInfo.requestTime = getClockTime();
+
+            ++requestIt;
             continue;
         }
 
@@ -1222,6 +1227,8 @@ void MqttSNServer::handleRequestsCheckEvent()
             requestInfo.retransmissionCounter++;
             requestInfo.requestTime = getClockTime();
         }
+
+        ++requestIt;
     }
 
     // deallocate objects
@@ -1233,7 +1240,7 @@ void MqttSNServer::handleRequestsCheckEvent()
 void MqttSNServer::handleRegistrationsCheckEvent()
 {
     // iterate through the registrations
-    for (auto registrationIt = registrations.begin(); registrationIt != registrations.end(); ++registrationIt) {
+    for (auto registrationIt = registrations.begin(); registrationIt != registrations.end();) {
         // find the same registration ID in the set
         auto registrationIdIt = registrationIds.find(registrationIt->first);
         if (registrationIdIt == registrationIds.end()) {
@@ -1258,6 +1265,8 @@ void MqttSNServer::handleRegistrationsCheckEvent()
             registerInfo.retransmissionCounter++;
             registerInfo.requestTime = getClockTime();
         }
+
+        ++registrationIt;
     }
 
     scheduleClockEventAfter(registrationsCheckInterval, registrationsCheckEvent);
@@ -1308,7 +1317,7 @@ void MqttSNServer::handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg)
 void MqttSNServer::handleMessagesClearEvent()
 {
     // iterate through messages
-    for (auto messageIt = messages.begin(); messageIt != messages.end(); ++messageIt) {
+    for (auto messageIt = messages.begin(); messageIt != messages.end();) {
         // find the same message ID in the set
         auto messageIdIt = messageIds.find(messageIt->first);
         if (messageIdIt == messageIds.end()) {
@@ -1328,7 +1337,10 @@ void MqttSNServer::handleMessagesClearEvent()
         // if the message is not used, remove it
         if (!isUsed) {
             deleteMessage(messageIt, messageIdIt);
+            continue;
         }
+
+        ++messageIt;
     }
 
     scheduleClockEventAfter(messagesClearInterval, messagesClearEvent);
@@ -1536,8 +1548,8 @@ void MqttSNServer::addAndMarkMessage(const MessageInfo& messageInfo, bool& isMes
 void MqttSNServer::deleteMessage(std::map<uint16_t, MessageInfo>::iterator& messageIt, std::set<uint16_t>::iterator& messageIdIt)
 {
     // remove the message from both structures
-    messages.erase(messageIt);
-    messageIds.erase(messageIdIt);
+    messageIt = messages.erase(messageIt);
+    messageIdIt = messageIds.erase(messageIdIt);
 }
 
 void MqttSNServer::deleteAllocatedMessages(const std::vector<MessageInfo*>& messages)
@@ -1734,8 +1746,8 @@ void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const
 void MqttSNServer::deleteRequest(std::map<uint16_t, RequestInfo>::iterator& requestIt, std::set<uint16_t>::iterator& requestIdIt)
 {
     // remove the request from both structures
-    requests.erase(requestIt);
-    requestIds.erase(requestIdIt);
+    requestIt = requests.erase(requestIt);
+    requestIdIt = requestIds.erase(requestIdIt);
 }
 
 bool MqttSNServer::isValidRequest(uint16_t requestId, MsgType messageType, std::map<uint16_t, RequestInfo>::iterator& requestIt,
@@ -1772,7 +1784,6 @@ bool MqttSNServer::processRequestAck(uint16_t requestId, MsgType messageType)
     }
 
     deleteRequest(requestIt, requestIdIt);
-
     return true;
 }
 
@@ -1808,12 +1819,11 @@ void MqttSNServer::addNewRegistration(const inet::L3Address& subscriberAddress, 
     registrationIds.insert(currentRegistrationId);
 }
 
-void MqttSNServer::deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt,
-                                      std::set<uint16_t>::iterator& registrationIdIt)
+void MqttSNServer::deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt, std::set<uint16_t>::iterator& registrationIdIt)
 {
     // remove the registration from both structures
-    registrations.erase(registrationIt);
-    registrationIds.erase(registrationIdIt);
+    registrationIt = registrations.erase(registrationIt);
+    registrationIdIt = registrationIds.erase(registrationIdIt);
 }
 
 bool MqttSNServer::processRegistrationAck(uint16_t registrationId)
@@ -1834,7 +1844,6 @@ bool MqttSNServer::processRegistrationAck(uint16_t registrationId)
     }
 
     deleteRegistration(registrationIt, registrationIdIt);
-
     return true;
 }
 
