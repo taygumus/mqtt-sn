@@ -33,6 +33,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet) override;
         virtual void socketErrorArrived(inet::UdpSocket* socket, inet::Indication* indication) override;
         virtual void socketClosed(inet::UdpSocket* socket) override;
+        virtual void socketConfiguration();
 
         // outgoing packet handling
         virtual void sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress = "", uint16_t gatewayPort = 0);

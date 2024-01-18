@@ -68,12 +68,7 @@ void MqttSNServer::levelOneInit()
 
 void MqttSNServer::handleStartOperation(inet::LifecycleOperation* operation)
 {
-    MqttSNApp::socket.setOutputGate(gate("socketOut"));
-    MqttSNApp::socket.setCallback(this);
-
-    const char* localAddress = par("localAddress");
-    MqttSNApp::socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
-    MqttSNApp::socket.setBroadcast(true);
+    MqttSNApp::socketConfiguration();
 
     EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
 

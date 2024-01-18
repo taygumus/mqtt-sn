@@ -1,4 +1,5 @@
 #include "MqttSNApp.h"
+#include "inet/networklayer/common/L3AddressResolver.h"
 #include "externals/nlohmann/json.hpp"
 #include "helpers/StringHelper.h"
 #include "types/shared/Length.h"
@@ -47,6 +48,16 @@ void MqttSNApp::socketClosed(inet::UdpSocket* socket)
 {
     if (operationalState == State::STOPPING_OPERATION)
         startActiveOperationExtraTimeOrFinish(-1);
+}
+
+void MqttSNApp::socketConfiguration()
+{
+    socket.setOutputGate(gate("socketOut"));
+    socket.setCallback(this);
+
+    const char* localAddress = par("localAddress");
+    socket.bind(*localAddress ? inet::L3AddressResolver().resolve(localAddress) : inet::L3Address(), par("localPort"));
+    socket.setBroadcast(true);
 }
 
 void MqttSNApp::sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress, uint16_t gatewayPort)
