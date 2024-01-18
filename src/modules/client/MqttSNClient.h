@@ -60,9 +60,6 @@ class MqttSNClient : public MqttSNApp
         // initialization
         virtual void levelOneInit() override;
 
-        virtual void finish() override;
-        virtual void refreshDisplay() const override;
-
         // lifecycle
         virtual void handleStartOperation(inet::LifecycleOperation* operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation* operation) override;

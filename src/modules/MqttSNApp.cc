@@ -22,6 +22,16 @@ void MqttSNApp::initialize(int stage)
     }
 }
 
+void MqttSNApp::finish()
+{
+    inet::ApplicationBase::finish();
+}
+
+void MqttSNApp::refreshDisplay() const
+{
+    inet::ApplicationBase::refreshDisplay();
+}
+
 void MqttSNApp::socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet)
 {
     processPacket(packet);

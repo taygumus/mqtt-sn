@@ -66,16 +66,6 @@ void MqttSNServer::levelOneInit()
     messagesClearEvent = new inet::ClockEvent("messagesClearTimer");
 }
 
-void MqttSNServer::finish()
-{
-    inet::ApplicationBase::finish();
-}
-
-void MqttSNServer::refreshDisplay() const
-{
-    inet::ApplicationBase::refreshDisplay();
-}
-
 void MqttSNServer::handleStartOperation(inet::LifecycleOperation* operation)
 {
     MqttSNApp::socket.setOutputGate(gate("socketOut"));

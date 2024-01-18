@@ -48,16 +48,6 @@ void MqttSNClient::levelOneInit()
     levelTwoInit();
 }
 
-void MqttSNClient::finish()
-{
-    inet::ApplicationBase::finish();
-}
-
-void MqttSNClient::refreshDisplay() const
-{
-    inet::ApplicationBase::refreshDisplay();
-}
-
 void MqttSNClient::handleStartOperation(inet::LifecycleOperation* operation)
 {
     MqttSNApp::socket.setOutputGate(gate("socketOut"));

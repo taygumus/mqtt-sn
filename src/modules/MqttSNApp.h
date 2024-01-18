@@ -26,6 +26,9 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }
         virtual void initialize(int stage) override;
 
+        virtual void finish() override;
+        virtual void refreshDisplay() const override;
+
         // socket handling
         virtual void socketDataArrived(inet::UdpSocket* socket, inet::Packet* packet) override;
         virtual void socketErrorArrived(inet::UdpSocket* socket, inet::Indication* indication) override;
