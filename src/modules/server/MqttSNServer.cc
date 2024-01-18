@@ -1307,7 +1307,30 @@ void MqttSNServer::handleAwakenSubscriberCheckEvent(omnetpp::cMessage* msg)
 
 void MqttSNServer::handleMessagesClearEvent()
 {
-    // TO DO
+    // iterate through messages
+    for (auto messageIt = messages.begin(); messageIt != messages.end(); ++messageIt) {
+        // find the same message ID in the set
+        auto messageIdIt = messageIds.find(messageIt->first);
+        if (messageIdIt == messageIds.end()) {
+            throw omnetpp::cRuntimeError("Mismatch between message structures during message clearance");
+        }
+
+        bool isUsed = false;
+
+        // check if the message is used in at least one request
+        for (auto requestIt = requests.begin(); requestIt != requests.end(); ++requestIt) {
+            if (requestIt->second.messagesKey == messageIt->first) {
+                isUsed = true;
+                break;
+            }
+        }
+
+        // if the message is not used, remove it
+        if (!isUsed) {
+            deleteMessage(messageIt, messageIdIt);
+        }
+    }
+
     scheduleClockEventAfter(messagesClearInterval, messagesClearEvent);
 }
 
@@ -1508,6 +1531,13 @@ void MqttSNServer::addAndMarkMessage(const MessageInfo& messageInfo, bool& isMes
 {
     addNewMessage(messageInfo);
     isMessageAdded = true;
+}
+
+void MqttSNServer::deleteMessage(std::map<uint16_t, MessageInfo>::iterator& messageIt, std::set<uint16_t>::iterator& messageIdIt)
+{
+    // remove the message from both structures
+    messages.erase(messageIt);
+    messageIds.erase(messageIdIt);
 }
 
 void MqttSNServer::deleteAllocatedMessages(const std::vector<MessageInfo*>& messages)

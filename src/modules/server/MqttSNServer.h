@@ -190,6 +190,7 @@ class MqttSNServer : public MqttSNApp
         // message methods
         virtual void addNewMessage(const MessageInfo& messageInfo);
         virtual void addAndMarkMessage(const MessageInfo& messageInfo, bool& isMessageAdded);
+        virtual void deleteMessage(std::map<uint16_t, MessageInfo>::iterator& messageIt, std::set<uint16_t>::iterator& messageIdIt);
         virtual void deleteAllocatedMessages(const std::vector<MessageInfo*>& messages);
 
         // request message methods
