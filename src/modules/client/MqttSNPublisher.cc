@@ -518,7 +518,10 @@ void MqttSNPublisher::populateItems()
 
 void MqttSNPublisher::resetAndPopulateTopics()
 {
-    topics.clear();
+    // clear existing topics if any
+    if (!topics.empty()) {
+        topics.clear();
+    }
 
     for (auto& pair : items) {
         ItemInfo& itemInfo = pair.second;
