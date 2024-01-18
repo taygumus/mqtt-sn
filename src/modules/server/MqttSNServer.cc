@@ -261,6 +261,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
     const auto& header = pk->peekData<MqttSNBase>();
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+
     MsgType msgType = header->getMsgType();
 
     // if the message type is PUBLISH and QoS is -1, process the packet and exit
@@ -273,64 +274,22 @@ void MqttSNServer::processPacket(inet::Packet* pk)
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
     ClientInfo* clientInfo = nullptr;
 
-    switch(msgType) {
-        // packet types that require an ACTIVE client state
-        case MsgType::WILLTOPIC:
-        case MsgType::WILLTOPICUPD:
-        case MsgType::WILLMSG:
-        case MsgType::WILLMSGUPD:
-        case MsgType::PINGRESP:
-        case MsgType::REGISTER:
-        case MsgType::PUBLISH:
-        case MsgType::PUBREL:
-        case MsgType::SUBSCRIBE:
-        case MsgType::UNSUBSCRIBE:
-        case MsgType::REGACK:
-            clientInfo = getClientInfo(srcAddress, srcPort);
-            // discard packet if client is not found or not in ACTIVE state
-            if (clientInfo == nullptr || (clientInfo->currentState != ClientState::ACTIVE)) {
-                delete pk;
-                return;
-            }
-
-            clientInfo->lastReceivedMsgTime = getClockTime();
-            break;
-
-        // packet types that require an ACTIVE or AWAKE client state
-        case MsgType::PUBACK:
-        case MsgType::PUBREC:
-        case MsgType::PUBCOMP:
-            clientInfo = getClientInfo(srcAddress, srcPort);
-            // discard packet if client is not found or not in ACTIVE or AWAKE state
-            if (clientInfo == nullptr ||
-               (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::AWAKE)) {
-
-                delete pk;
-                return;
-            }
-
-            clientInfo->lastReceivedMsgTime = getClockTime();
-            break;
-
-        // packet types that require an ACTIVE or ASLEEP client state
-        case MsgType::PINGREQ:
-        case MsgType::DISCONNECT:
-            clientInfo = getClientInfo(srcAddress, srcPort);
-            // discard packet if client is not found or not in ACTIVE or ASLEEP state
-            if (clientInfo == nullptr ||
-               (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::ASLEEP)) {
-
-                delete pk;
-                return;
-            }
-
-            clientInfo->lastReceivedMsgTime = getClockTime();
-            break;
-
-        default:
-            break;
+    // validate the packet and get client information
+    if (!isValidPacket(srcAddress, srcPort, msgType, clientInfo)) {
+        delete pk;
+        return;
     }
 
+    // process the packet based on the message type
+    processByMessageType(pk, srcAddress, srcPort, msgType, clientInfo);
+
+    // delete the packet after processing
+    delete pk;
+}
+
+void MqttSNServer::processByMessageType(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType,
+                                        ClientInfo* clientInfo)
+{
     switch(msgType) {
         case MsgType::SEARCHGW:
             processSearchGw();
@@ -411,8 +370,66 @@ void MqttSNServer::processPacket(inet::Packet* pk)
         default:
             break;
     }
+}
 
-    delete pk;
+bool MqttSNServer::isValidPacket(const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType, ClientInfo*& clientInfo)
+{
+    switch(msgType) {
+        // packet types that require an ACTIVE client state
+        case MsgType::WILLTOPIC:
+        case MsgType::WILLTOPICUPD:
+        case MsgType::WILLMSG:
+        case MsgType::WILLMSGUPD:
+        case MsgType::PINGRESP:
+        case MsgType::REGISTER:
+        case MsgType::PUBLISH:
+        case MsgType::PUBREL:
+        case MsgType::SUBSCRIBE:
+        case MsgType::UNSUBSCRIBE:
+        case MsgType::REGACK:
+            clientInfo = getClientInfo(srcAddress, srcPort);
+            // discard packet if client is not found or not in ACTIVE state
+            if (clientInfo == nullptr || (clientInfo->currentState != ClientState::ACTIVE)) {
+                return false;
+            }
+
+            clientInfo->lastReceivedMsgTime = getClockTime();
+            break;
+
+        // packet types that require an ACTIVE or AWAKE client state
+        case MsgType::PUBACK:
+        case MsgType::PUBREC:
+        case MsgType::PUBCOMP:
+            clientInfo = getClientInfo(srcAddress, srcPort);
+            // discard packet if client is not found or not in ACTIVE or AWAKE state
+            if (clientInfo == nullptr ||
+                (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::AWAKE)) {
+
+                return false;
+            }
+
+            clientInfo->lastReceivedMsgTime = getClockTime();
+            break;
+
+        // packet types that require an ACTIVE or ASLEEP client state
+        case MsgType::PINGREQ:
+        case MsgType::DISCONNECT:
+            clientInfo = getClientInfo(srcAddress, srcPort);
+            // discard packet if client is not found or not in ACTIVE or ASLEEP state
+            if (clientInfo == nullptr ||
+                (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::ASLEEP)) {
+
+                return false;
+            }
+
+            clientInfo->lastReceivedMsgTime = getClockTime();
+            break;
+
+        default:
+            break;
+    }
+
+    return true;
 }
 
 void MqttSNServer::processSearchGw()

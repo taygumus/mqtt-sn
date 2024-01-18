@@ -114,6 +114,13 @@ class MqttSNServer : public MqttSNApp
 
         // incoming packet handling
         virtual void processPacket(inet::Packet* pk) override;
+
+        virtual void processByMessageType(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType,
+                                          ClientInfo* clientInfo);
+
+        virtual bool isValidPacket(const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType, ClientInfo*& clientInfo);
+
+        // incoming packet processing
         virtual void processSearchGw();
         virtual void processConnect(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processWillTopic(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, bool isDirectUpdate = false);
