@@ -1,9 +1,0 @@
-#ifndef TYPES_SERVER_GATEWAYSTATE_H_
-#define TYPES_SERVER_GATEWAYSTATE_H_
-
-enum GatewayState {
-    ONLINE,
-    OFFLINE
-};
-
-#endif /* TYPES_SERVER_GATEWAYSTATE_H_ */
