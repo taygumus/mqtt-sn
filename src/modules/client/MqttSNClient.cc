@@ -485,6 +485,9 @@ void MqttSNClient::processPacket(inet::Packet* pk)
     // process packet based on the message type
     processPacketByMessageType(pk, srcAddress, srcPort, msgType);
 
+    // custom packet processing
+    processPacketCustom(pk, srcAddress, srcPort, msgType);
+
     // delete packet after processing
     delete pk;
 }
@@ -523,8 +526,6 @@ void MqttSNClient::processPacketByMessageType(inet::Packet* pk, const inet::L3Ad
         default:
             break;
     }
-
-    processPacketCustom(pk, srcAddress, srcPort, msgType);
 }
 
 bool MqttSNClient::isValidPacket(const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
