@@ -252,6 +252,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 {
     inet::L3Address srcAddress = pk->getTag<inet::L3AddressInd>()->getSrcAddress();
 
+    // discard packet if the server is OFFLINE or if the address is a self-broadcast
     if (currentState == GatewayState::OFFLINE || MqttSNApp::isSelfBroadcastAddress(srcAddress)) {
         delete pk;
         return;
@@ -264,7 +265,7 @@ void MqttSNServer::processPacket(inet::Packet* pk)
 
     MsgType msgType = header->getMsgType();
 
-    // if the message type is PUBLISH and QoS is -1, process the packet and exit
+    // if message type is PUBLISH and QoS is -1, process the packet and exit
     if (msgType == MsgType::PUBLISH && pk->peekData<MqttSNPublish>()->getQoSFlag() == QoS::QOS_MINUS_ONE) {
         processPublishMinusOne(pk);
         delete pk;
@@ -274,21 +275,21 @@ void MqttSNServer::processPacket(inet::Packet* pk)
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
     ClientInfo* clientInfo = nullptr;
 
-    // validate the packet and get client information
+    // validate received packet and get client information
     if (!isValidPacket(srcAddress, srcPort, msgType, clientInfo)) {
         delete pk;
         return;
     }
 
-    // process the packet based on the message type
-    processByMessageType(pk, srcAddress, srcPort, msgType, clientInfo);
+    // process packet based on the message type
+    processPacketByMessageType(pk, srcAddress, srcPort, msgType, clientInfo);
 
-    // delete the packet after processing
+    // delete packet after processing
     delete pk;
 }
 
-void MqttSNServer::processByMessageType(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType,
-                                        ClientInfo* clientInfo)
+void MqttSNServer::processPacketByMessageType(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType,
+                                              ClientInfo* clientInfo)
 {
     switch(msgType) {
         case MsgType::SEARCHGW:
@@ -388,6 +389,7 @@ bool MqttSNServer::isValidPacket(const inet::L3Address& srcAddress, const int& s
         case MsgType::UNSUBSCRIBE:
         case MsgType::REGACK:
             clientInfo = getClientInfo(srcAddress, srcPort);
+
             // discard packet if client is not found or not in ACTIVE state
             if (clientInfo == nullptr || (clientInfo->currentState != ClientState::ACTIVE)) {
                 return false;
@@ -401,6 +403,7 @@ bool MqttSNServer::isValidPacket(const inet::L3Address& srcAddress, const int& s
         case MsgType::PUBREC:
         case MsgType::PUBCOMP:
             clientInfo = getClientInfo(srcAddress, srcPort);
+
             // discard packet if client is not found or not in ACTIVE or AWAKE state
             if (clientInfo == nullptr ||
                 (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::AWAKE)) {
@@ -415,6 +418,7 @@ bool MqttSNServer::isValidPacket(const inet::L3Address& srcAddress, const int& s
         case MsgType::PINGREQ:
         case MsgType::DISCONNECT:
             clientInfo = getClientInfo(srcAddress, srcPort);
+
             // discard packet if client is not found or not in ACTIVE or ASLEEP state
             if (clientInfo == nullptr ||
                 (clientInfo->currentState != ClientState::ACTIVE && clientInfo->currentState != ClientState::ASLEEP)) {

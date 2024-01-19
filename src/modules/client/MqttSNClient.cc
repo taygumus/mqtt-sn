@@ -437,6 +437,7 @@ std::vector<ClientState> MqttSNClient::getNextPossibleStates(ClientState current
 
 void MqttSNClient::processPacket(inet::Packet* pk)
 {
+    // delete packet if the client is in DISCONNECTED or LOST state
     if (currentState == ClientState::DISCONNECTED || currentState == ClientState::LOST) {
         delete pk;
         return;
@@ -450,23 +451,22 @@ void MqttSNClient::processPacket(inet::Packet* pk)
     }
 
     const auto& header = pk->peekData<MqttSNBase>();
-
     MqttSNApp::checkPacketIntegrity((inet::B) pk->getByteLength(), (inet::B) header->getLength());
+
     MsgType msgType = header->getMsgType();
 
-    // delete packet if client is ASLEEP and message type is not DISCONNECT
+    // delete packet if the client is ASLEEP and the message type is not DISCONNECT
     if (currentState == ClientState::ASLEEP && msgType != MsgType::DISCONNECT) {
         delete pk;
         return;
     }
 
+    // delete packet if the client is AWAKE and the message type is not allowed
     if (currentState == ClientState::AWAKE) {
-        // define and populate a vector of allowed message types for an AWAKE client
-        std::vector<MsgType> allowedAwakeMsgTypes = {MsgType::PINGRESP};
-        handleAllowedAwakeMsgTypes(allowedAwakeMsgTypes);
+        std::vector<MsgType> allowedMsgTypes = {MsgType::PINGRESP};
+        handleAllowedPacketTypes(allowedMsgTypes);
 
-        // delete the packet if the message type is not in the allowed list while the client is AWAKE
-        if (std::find(allowedAwakeMsgTypes.begin(), allowedAwakeMsgTypes.end(), msgType) == allowedAwakeMsgTypes.end()) {
+        if (std::find(allowedMsgTypes.begin(), allowedMsgTypes.end(), msgType) == allowedMsgTypes.end()) {
             delete pk;
             return;
         }
@@ -476,29 +476,21 @@ void MqttSNClient::processPacket(inet::Packet* pk)
 
     int srcPort = pk->getTag<inet::L4PortInd>()->getSrcPort();
 
-    switch(msgType) {
-        // packet types that are allowed only from the selected gateway
-        case MsgType::CONNACK:
-            if (!isSelectedGateway(srcAddress, srcPort)) {
-                delete pk;
-                return;
-            }
-            break;
-
-        // packet types that are allowed only from the connected gateway
-        case MsgType::PINGREQ:
-        case MsgType::PINGRESP:
-        case MsgType::DISCONNECT:
-            if (!isConnectedGateway(srcAddress, srcPort)) {
-                delete pk;
-                return;
-            }
-            break;
-
-        default:
-            break;
+    // validate received packet
+    if (!isValidPacket(srcAddress, srcPort, msgType)) {
+        delete pk;
+        return;
     }
 
+    // process packet based on the message type
+    processPacketByMessageType(pk, srcAddress, srcPort, msgType);
+
+    // delete packet after processing
+    delete pk;
+}
+
+void MqttSNClient::processPacketByMessageType(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
+{
     switch(msgType) {
         case MsgType::ADVERTISE:
             processAdvertise(pk, srcAddress, srcPort);
@@ -533,8 +525,34 @@ void MqttSNClient::processPacket(inet::Packet* pk)
     }
 
     processPacketCustom(pk, srcAddress, srcPort, msgType);
+}
 
-    delete pk;
+bool MqttSNClient::isValidPacket(const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType)
+{
+    switch(msgType) {
+        // packet types that are allowed only from the selected gateway
+        case MsgType::CONNACK:
+            if (!isSelectedGateway(srcAddress, srcPort)) {
+                return false;
+            }
+
+            break;
+
+        // packet types that are allowed only from the connected gateway
+        case MsgType::PINGREQ:
+        case MsgType::PINGRESP:
+        case MsgType::DISCONNECT:
+            if (!isConnectedGateway(srcAddress, srcPort)) {
+                return false;
+            }
+
+            break;
+
+        default:
+            break;
+    }
+
+    return true;
 }
 
 void MqttSNClient::processAdvertise(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)

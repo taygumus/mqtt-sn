@@ -93,6 +93,10 @@ class MqttSNClient : public MqttSNApp
 
         // incoming packet handling
         virtual void processPacket(inet::Packet* pk) override;
+        virtual void processPacketByMessageType(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType);
+        virtual bool isValidPacket(const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType);
+
+        // incoming packet type methods
         virtual void processAdvertise(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
         virtual void processSearchGw();
         virtual void processGwInfo(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort);
@@ -151,11 +155,9 @@ class MqttSNClient : public MqttSNApp
         virtual void cancelActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateClockEventsCustom() = 0;
 
-        virtual void handleAllowedAwakeMsgTypes(std::vector<MsgType>& msgTypes) = 0;
-
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) = 0;
+        virtual void handleAllowedPacketTypes(std::vector<MsgType>& msgTypes) = 0;
         virtual void processConnAckCustom() = 0;
-
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
         virtual void populateItems() = 0;
 
