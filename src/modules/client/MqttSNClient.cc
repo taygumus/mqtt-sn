@@ -536,7 +536,6 @@ bool MqttSNClient::isValidPacket(const inet::L3Address& srcAddress, const int& s
             if (!isSelectedGateway(srcAddress, srcPort)) {
                 return false;
             }
-
             break;
 
         // packet types that are allowed only from the connected gateway
@@ -546,7 +545,6 @@ bool MqttSNClient::isValidPacket(const inet::L3Address& srcAddress, const int& s
             if (!isConnectedGateway(srcAddress, srcPort)) {
                 return false;
             }
-
             break;
 
         default:
