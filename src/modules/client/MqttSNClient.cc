@@ -461,10 +461,10 @@ void MqttSNClient::processPacket(inet::Packet* pk)
         return;
     }
 
-    // delete packet if the client is AWAKE and the message type is not allowed
+    // delete packet if the client is AWAKE and the message type is not in the allowed list
     if (currentState == ClientState::AWAKE) {
         std::vector<MsgType> allowedMsgTypes = {MsgType::PINGRESP};
-        handleAllowedPacketTypes(allowedMsgTypes);
+        adjustAllowedPacketTypes(allowedMsgTypes);
 
         if (std::find(allowedMsgTypes.begin(), allowedMsgTypes.end(), msgType) == allowedMsgTypes.end()) {
             delete pk;
@@ -485,7 +485,7 @@ void MqttSNClient::processPacket(inet::Packet* pk)
     // process packet based on the message type
     processPacketByMessageType(pk, srcAddress, srcPort, msgType);
 
-    // custom packet processing
+    // additional custom packet processing
     processPacketCustom(pk, srcAddress, srcPort, msgType);
 
     // delete packet after processing

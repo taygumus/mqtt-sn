@@ -155,8 +155,8 @@ class MqttSNClient : public MqttSNApp
         virtual void cancelActiveStateEventsCustom() = 0;
         virtual void cancelActiveStateClockEventsCustom() = 0;
 
+        virtual void adjustAllowedPacketTypes(std::vector<MsgType>& msgTypes) = 0;
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) = 0;
-        virtual void handleAllowedPacketTypes(std::vector<MsgType>& msgTypes) = 0;
         virtual void processConnAckCustom() = 0;
         virtual void handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort) = 0;
         virtual void populateItems() = 0;

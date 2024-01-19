@@ -56,8 +56,8 @@ class MqttSNPublisher : public MqttSNClient
         virtual void cancelActiveStateClockEventsCustom() override;
 
         // incoming packet handling
+        virtual void adjustAllowedPacketTypes(std::vector<MsgType>& msgTypes) override {};
         virtual void processPacketCustom(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort, MsgType msgType) override;
-        virtual void handleAllowedPacketTypes(std::vector<MsgType>& msgTypes) override {};
         virtual void processConnAckCustom() override;
 
         // incoming packet type methods
