@@ -10,9 +10,9 @@ module MqttSNClient extends MqttSNApp
         
         // time intervals for each state, -1s means forever
         double disconnectedStateInterval @unit(s) = default(5s);
-        double activeStateInterval @unit(s) = default(120s);
+        double activeStateInterval @unit(s) = default(30s);
         double lostStateInterval @unit(s) = default(5s);
-        double asleepStateInterval @unit(s) = default(5s); // linked to sleep duration field; range between 0..65535 seconds
+        double asleepStateInterval @unit(s) = default(60s); // linked to sleep duration field; range between 0..65535 seconds
         
         double checkGatewaysInterval @unit(s) = default(500ms); // check interval for active gateways in the map
         int nadv = default(2); // the number of consecutive times without receiving ADVERTISE (NADV)
