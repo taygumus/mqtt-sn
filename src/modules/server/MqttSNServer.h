@@ -83,9 +83,6 @@ class MqttSNServer : public MqttSNApp
         // clear events
         inet::ClockEvent* messagesClearEvent = nullptr;
 
-        // statistics
-        int numAdvertiseSent = 0;
-
     protected:
         // initialization
         virtual void levelOneInit() override;

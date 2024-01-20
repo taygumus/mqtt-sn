@@ -961,13 +961,10 @@ void MqttSNServer::sendAdvertise()
     payload->setDuration(advertiseInterval);
     payload->setChunkLength(inet::B(payload->getLength()));
 
-    std::ostringstream str;
-    str << "AdvertisePacket"<< "-" << numAdvertiseSent;
-    inet::Packet* packet = new inet::Packet(str.str().c_str());
+    inet::Packet* packet = new inet::Packet("AdvertisePacket");
     packet->insertAtBack(payload);
 
     MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
-    numAdvertiseSent++;
 }
 
 void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, ReturnCode returnCode)
