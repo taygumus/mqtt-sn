@@ -232,12 +232,16 @@ class MqttSNServer : public MqttSNApp
                                         uint16_t topicId);
 
         virtual void deleteRegistration(std::map<uint16_t, RegisterInfo>::iterator& registrationIt, std::set<uint16_t>::iterator& registrationIdIt);
-
         virtual bool processRegistrationAck(uint16_t registrationId);
 
         // subscriber methods
         virtual void setAllSubscriberTopics(const inet::L3Address& subscriberAddress, const int& subscriberPort, bool isRegistered,
                                             bool skipPredefinedTopics = true);
+
+        virtual void handleSubscriberPingRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort);
+
+        virtual void manageAwakenSubscriberEvent(const inet::L3Address& subscriberAddress, const int& subscriberPort,
+                                                 SubscriberInfo* subscriberInfo);
 
         virtual bool isTopicRegisteredForSubscriber(const inet::L3Address& subscriberAddress, const int& subscriberPort, uint16_t topicId);
 
