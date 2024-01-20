@@ -5,7 +5,6 @@ import mqttsn.neds.MqttSNApp;
 module MqttSNClient extends MqttSNApp
 {
     parameters:
-        @display("i=block/app");
         @class(MqttSNClient);
         
         // time intervals for each state, -1s means forever

@@ -3,7 +3,6 @@ package mqttsn.neds.client;
 module MqttSNSubscriber extends MqttSNClient
 {
     parameters:
-        @display("i=block/app");
         @class(MqttSNSubscriber);
         
         double subscriptionInterval @unit(s) = default(5s); // subscription interval for new topics

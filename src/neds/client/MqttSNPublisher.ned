@@ -3,7 +3,6 @@ package mqttsn.neds.client;
 module MqttSNPublisher extends MqttSNClient
 {
     parameters:
-        @display("i=block/app");
         @class(MqttSNPublisher);
         
         bool will = default(false);
