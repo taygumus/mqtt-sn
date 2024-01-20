@@ -5,8 +5,8 @@ import mqttsn.neds.MqttSNApp;
 module MqttSNServer extends MqttSNApp
 {
     parameters:
+        @display("i=block/app");
         @class(MqttSNServer);
-        @display("i=block/routing;bgb=20,20");
         
         // time intervals for each state, -1s means forever
         double offlineStateInterval @unit(s) = default(2s);

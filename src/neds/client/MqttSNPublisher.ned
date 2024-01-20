@@ -3,8 +3,8 @@ package mqttsn.neds.client;
 module MqttSNPublisher extends MqttSNClient
 {
     parameters:
+        @display("i=block/app");
         @class(MqttSNPublisher);
-        @display("i=block/routing;bgb=20,20");
         
         bool will = default(false);
         int willQoS = default(0); // valid QoS values: 0, 1, 2 and -1

@@ -5,7 +5,9 @@ import inet.applications.contract.IApp;
 simple MqttSNApp like IApp
 {
     parameters:
+        @display("i=block/app");
         @class(MqttSNApp);
+        @lifecycleSupport;
 
         string localAddress = default("");
         string broadcastAddress = default("255.255.255.255");

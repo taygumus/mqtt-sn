@@ -5,8 +5,8 @@ import mqttsn.neds.MqttSNApp;
 module MqttSNClient extends MqttSNApp
 {
     parameters:
+        @display("i=block/app");
         @class(MqttSNClient);
-		@display("i=block/routing;bgb=20,20");
         
         // time intervals for each state, -1s means forever
         double disconnectedStateInterval @unit(s) = default(5s);
