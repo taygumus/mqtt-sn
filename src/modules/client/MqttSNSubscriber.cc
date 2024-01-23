@@ -155,7 +155,6 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
 
     lastSubscription.retry = false;
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
-    subscriptionCounter++;
 
     EV << "Subscription completed - Topic Name: " << lastSubscription.topicName << ", Topic ID: " << topicId << std::endl;
 }
@@ -182,7 +181,6 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
 
     lastUnsubscription.retry = false;
     scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
-    unsubscriptionCounter++;
 
     EV << "Unsubscription completed - Topic Name: " << lastUnsubscription.topicName << std::endl;
 }
@@ -547,6 +545,7 @@ bool MqttSNSubscriber::proceedWithSubscription()
     lastSubscription.itemInfo = &it->second;
     lastSubscription.retry = true;
 
+    subscriptionCounter++;
     return true;
 }
 
@@ -585,6 +584,7 @@ bool MqttSNSubscriber::proceedWithUnsubscription()
     lastUnsubscription.itemInfo = &it->second;
     lastUnsubscription.retry = true;
 
+    unsubscriptionCounter++;
     return true;
 }
 
