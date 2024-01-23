@@ -156,7 +156,7 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
     lastSubscription.retry = false;
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
 
-    EV << "Subscription completed - Topic Name: " << lastSubscription.topicName << ", Topic ID: " << topicId << std::endl;
+    EV << "Subscription completed - Topic Name: " << lastSubscription.topicName << std::endl;
 }
 
 void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
