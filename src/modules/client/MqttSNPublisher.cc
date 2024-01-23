@@ -215,7 +215,6 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     lastRegistration.retry = false;
     scheduleClockEventAfter(registrationInterval, registrationEvent);
-    registrationCounter++;
 
     EV << "Registration completed - Topic Name: " << lastRegistration.topicName << ", Topic ID: " << topicId << std::endl;
 }
@@ -265,8 +264,6 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
     // handle operations when publish is ACCEPTED
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
-
-    publishCounter++;
 }
 
 void MqttSNPublisher::processPubRec(inet::Packet* pk, const inet::L3Address& srcAddress, const int& srcPort)
@@ -298,8 +295,6 @@ void MqttSNPublisher::processPubComp(inet::Packet* pk)
     // proceed with the next publish
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
-
-    publishCounter++;
 }
 
 void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, QoS qosFlag,
@@ -405,9 +400,6 @@ void MqttSNPublisher::handlePublishEvent()
         return;
     }
 
-    // print information about the publication message
-    printPublishMessage(lastPublish);
-
     QoS qos = lastPublish.dataInfo->qos;
 
     if (qos == QoS::QOS_ZERO) {
@@ -431,9 +423,6 @@ void MqttSNPublisher::handlePublishMinusOneEvent()
     if (!proceedWithPublishMinusOne()) {
         return;
     }
-
-    // print information about the publication message
-    printPublishMessage(lastPublishMinusOne);
 
     // send QoS -1 publication
     sendPublish(publishMinusOneDestAddress, publishMinusOneDestPort, false, QoS::QOS_MINUS_ONE, false,
@@ -595,6 +584,7 @@ bool MqttSNPublisher::proceedWithRegistration()
     lastRegistration.itemInfo = &it->second;
     lastRegistration.retry = true;
 
+    registrationCounter++;
     return true;
 }
 
@@ -677,6 +667,11 @@ bool MqttSNPublisher::proceedWithPublish()
         lastPublish.retry = true;
     }
 
+    publishCounter++;
+
+    // print information about the publication message
+    printPublishMessage(lastPublish);
+
     return true;
 }
 
@@ -720,6 +715,11 @@ bool MqttSNPublisher::proceedWithPublishMinusOne()
     lastPublishMinusOne.topicId = itemIterator->second.topicId;
     lastPublishMinusOne.itemInfo = &itemIterator->second;
     lastPublishMinusOne.dataInfo = &dataIterator->second;
+
+    publishMinusOneCounter++;
+
+    // print information about the publication message
+    printPublishMessage(lastPublishMinusOne);
 
     return true;
 }
