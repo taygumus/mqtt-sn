@@ -43,6 +43,9 @@ class MqttSNPublisher : public MqttSNClient
         LastPublishInfo lastPublishMinusOne;
         int publishMinusOneCounter = 0;
 
+        // metrics calculation usage
+        static int publishPkIdentifier;
+
     protected:
         // initialization
         virtual void levelTwoInit() override;
@@ -77,7 +80,8 @@ class MqttSNPublisher : public MqttSNClient
         virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName);
 
         virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
-                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
+                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data,
+                                 inet::clocktime_t pkTimestamp = 0, int pkIdentifier = 0);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 

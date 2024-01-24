@@ -7,6 +7,8 @@ struct LastPublishInfo {
     ItemInfo* itemInfo = nullptr;
     DataInfo* dataInfo = nullptr;
     bool retry = false;
+    inet::clocktime_t pkTimestamp = 0;
+    int pkIdentifier = 0;
 };
 
 #endif /* TYPES_CLIENT_PUBLISHER_LASTPUBLISHINFO_H_ */

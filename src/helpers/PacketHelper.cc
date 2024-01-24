@@ -22,7 +22,7 @@ inet::Packet* PacketHelper::getRegisterPacket(uint16_t topicId, uint16_t msgId, 
 }
 
 inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId,
-                                             uint16_t msgId, const std::string& data)
+                                             uint16_t msgId, const std::string& data, inet::clocktime_t pkTimestamp, int pkIdentifier)
 {
     const auto& payload = inet::makeShared<MqttSNPublish>();
     payload->setMsgType(MsgType::PUBLISH);
@@ -37,6 +37,17 @@ inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool ret
 
     inet::Packet* packet = new inet::Packet("PublishPacket");
     packet->insertAtBack(payload);
+
+    if (pkTimestamp == 0) {
+        packet->setTimestamp();
+    }
+    else {
+        packet->setTimestamp(CLOCKTIME_AS_SIMTIME(pkTimestamp));
+    }
+
+    if (pkIdentifier > 0) {
+        packet->addPar("packetId") = pkIdentifier;
+    }
 
     return packet;
 }

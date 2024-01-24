@@ -17,6 +17,8 @@ Define_Module(MqttSNPublisher);
 
 using json = nlohmann::json;
 
+int MqttSNPublisher::publishPkIdentifier = 0;
+
 void MqttSNPublisher::levelTwoInit()
 {
     willQoS = par("willQoS");
@@ -34,6 +36,8 @@ void MqttSNPublisher::levelTwoInit()
 
     publishMinusOneInterval = par("publishMinusOneInterval");
     publishMinusOneEvent = new inet::ClockEvent("publishMinusOneTimer");
+
+    publishPkIdentifier = 0;
 }
 
 bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
@@ -362,10 +366,11 @@ void MqttSNPublisher::sendRegister(const inet::L3Address& destAddress, const int
 }
 
 void MqttSNPublisher::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
-                                  TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
+                                  TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data,
+                                  inet::clocktime_t pkTimestamp, int pkIdentifier)
 {
     MqttSNApp::socket.sendTo(
-            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data),
+            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data, pkTimestamp, pkIdentifier),
             destAddress,
             destPort
     );
@@ -404,7 +409,8 @@ void MqttSNPublisher::handlePublishEvent()
 
     if (qos == QoS::QOS_ZERO) {
         sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, false, qos, lastPublish.dataInfo->retain,
-                    lastPublish.itemInfo->topicIdType, lastPublish.topicId, 0, lastPublish.dataInfo->data);
+                    lastPublish.itemInfo->topicIdType, lastPublish.topicId, 0, lastPublish.dataInfo->data,
+                    lastPublish.pkTimestamp, lastPublish.pkIdentifier);
 
         // no need to wait for an ACK
         scheduleClockEventAfter(publishInterval, publishEvent);
@@ -412,7 +418,8 @@ void MqttSNPublisher::handlePublishEvent()
     }
 
     sendPublish(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, false, qos, lastPublish.dataInfo->retain,
-                lastPublish.itemInfo->topicIdType, lastPublish.topicId, MqttSNClient::getNewMsgId(), lastPublish.dataInfo->data);
+                lastPublish.itemInfo->topicIdType, lastPublish.topicId, MqttSNClient::getNewMsgId(), lastPublish.dataInfo->data,
+                lastPublish.pkTimestamp, lastPublish.pkIdentifier);
 
     // schedule publish retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNClient::currentMsgId);
@@ -426,7 +433,8 @@ void MqttSNPublisher::handlePublishMinusOneEvent()
 
     // send QoS -1 publication
     sendPublish(publishMinusOneDestAddress, publishMinusOneDestPort, false, QoS::QOS_MINUS_ONE, false,
-                TopicIdType::PRE_DEFINED_TOPIC_ID, lastPublishMinusOne.topicId, 0, lastPublishMinusOne.dataInfo->data);
+                TopicIdType::PRE_DEFINED_TOPIC_ID, lastPublishMinusOne.topicId, 0, lastPublishMinusOne.dataInfo->data,
+                lastPublishMinusOne.pkTimestamp, lastPublishMinusOne.pkIdentifier);
 
     scheduleClockEventAfter(publishMinusOneInterval, publishMinusOneEvent);
 }
@@ -598,6 +606,8 @@ void MqttSNPublisher::printPublishMessage(const LastPublishInfo& lastPublishInfo
     EV << "QoS: " << ConversionHelper::qosToInt(lastPublishInfo.dataInfo->qos) << std::endl;
     EV << "Retain: " << lastPublishInfo.dataInfo->retain << std::endl;
     EV << "Data: " << lastPublishInfo.dataInfo->data << std::endl;
+    EV << "Timestamp: " << lastPublishInfo.pkTimestamp << std::endl;
+    EV << "Unique ID: " << lastPublishInfo.pkIdentifier << std::endl;
 }
 
 void MqttSNPublisher::retryLastPublish()
@@ -667,6 +677,10 @@ bool MqttSNPublisher::proceedWithPublish()
         lastPublish.retry = true;
     }
 
+    // update packet extra information
+    lastPublish.pkTimestamp = getClockTime();
+    lastPublish.pkIdentifier = ++publishPkIdentifier;
+
     publishCounter++;
 
     // print information about the publication message
@@ -715,6 +729,10 @@ bool MqttSNPublisher::proceedWithPublishMinusOne()
     lastPublishMinusOne.topicId = itemIterator->second.topicId;
     lastPublishMinusOne.itemInfo = &itemIterator->second;
     lastPublishMinusOne.dataInfo = &dataIterator->second;
+
+    // update packet extra information
+    lastPublishMinusOne.pkTimestamp = getClockTime();
+    lastPublishMinusOne.pkIdentifier = ++publishPkIdentifier;
 
     publishMinusOneCounter++;
 
@@ -771,7 +789,8 @@ void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, con
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendPublish(destAddress, destPort, true, lastPublish.dataInfo->qos, lastPublish.dataInfo->retain, lastPublish.itemInfo->topicIdType,
-                lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()), lastPublish.dataInfo->data);
+                lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()), lastPublish.dataInfo->data,
+                lastPublish.pkTimestamp, lastPublish.pkIdentifier);
 }
 
 void MqttSNPublisher::retransmitPubRel(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
