@@ -607,7 +607,7 @@ void MqttSNPublisher::printPublishMessage(const LastPublishInfo& lastPublishInfo
     EV << "Retain: " << lastPublishInfo.dataInfo->retain << std::endl;
     EV << "Data: " << lastPublishInfo.dataInfo->data << std::endl;
     EV << "Timestamp: " << lastPublishInfo.pkTimestamp << std::endl;
-    EV << "Unique ID: " << lastPublishInfo.pkIdentifier << std::endl;
+    EV << "Packet ID: " << lastPublishInfo.pkIdentifier << std::endl;
 }
 
 void MqttSNPublisher::retryLastPublish()
