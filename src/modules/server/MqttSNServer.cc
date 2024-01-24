@@ -35,13 +35,7 @@ void MqttSNServer::levelOneInit()
     advertiseInterval = par("advertiseInterval");
     advertiseEvent = new inet::ClockEvent("advertiseTimer");
 
-    if (gatewayIdCounter < UINT8_MAX) {
-        gatewayIdCounter++;
-    }
-    else {
-        throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
-    }
-    gatewayId = gatewayIdCounter;
+    gatewayIdCounter = -1;
 
     activeClientsCheckInterval = par("activeClientsCheckInterval");
     activeClientsCheckEvent = new inet::ClockEvent("activeClientsCheckTimer");
@@ -69,6 +63,8 @@ void MqttSNServer::levelOneInit()
 void MqttSNServer::handleStartOperation(inet::LifecycleOperation* operation)
 {
     MqttSNApp::socketConfiguration();
+
+    setGatewayId();
 
     EV << "Current gateway state: " << getGatewayStateAsString() << std::endl;
 
@@ -246,6 +242,18 @@ std::string MqttSNServer::getGatewayStateAsString()
         case GatewayState::ONLINE:
             return "Online";
     }
+}
+
+void MqttSNServer::setGatewayId()
+{
+    if (gatewayIdCounter < UINT8_MAX) {
+        gatewayIdCounter++;
+    }
+    else {
+        throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
+    }
+
+    gatewayId = gatewayIdCounter;
 }
 
 void MqttSNServer::processPacket(inet::Packet* pk)

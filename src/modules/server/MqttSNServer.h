@@ -43,7 +43,7 @@ class MqttSNServer : public MqttSNApp
         inet::ClockEvent* advertiseEvent = nullptr;
 
         static int gatewayIdCounter;
-        uint8_t gatewayId;
+        uint8_t gatewayId = 0;
 
         std::map<std::pair<inet::L3Address, int>, ClientInfo> clients;
         inet::ClockEvent* activeClientsCheckEvent = nullptr;
@@ -108,6 +108,9 @@ class MqttSNServer : public MqttSNApp
         virtual bool performStateTransition(GatewayState currentState, GatewayState nextState);
         virtual double getStateInterval(GatewayState currentState);
         virtual std::string getGatewayStateAsString();
+
+        // gateway methods
+        virtual void setGatewayId();
 
         // incoming packet handling
         virtual void processPacket(inet::Packet* pk) override;
