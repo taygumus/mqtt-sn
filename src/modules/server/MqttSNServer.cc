@@ -679,7 +679,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     }
 
     TagInfo tagInfo;
-    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());;
+    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());
     tagInfo.identifier = payload->findTag<IdentifierTag>()->getIdentifier();
 
     MessageInfo messageInfo;

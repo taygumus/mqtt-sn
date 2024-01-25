@@ -251,7 +251,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     std::string data = payload->getData();
 
     TagInfo tagInfo;
-    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());;
+    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());
     tagInfo.identifier = payload->findTag<IdentifierTag>()->getIdentifier();
 
     MessageInfo messageInfo;
