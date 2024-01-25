@@ -36,6 +36,9 @@ class MqttSNSubscriber : public MqttSNClient
 
         std::map<uint16_t, DataInfo> messages;
 
+        // metrics calculation usage
+        static std::set<unsigned> publishMsgIdentifiers;
+
     protected:
         // initialization
         virtual void levelTwoInit() override;
@@ -91,6 +94,7 @@ class MqttSNSubscriber : public MqttSNClient
 
         // publication methods
         virtual void printPublishMessage(const MessageInfo& messageInfo);
+        virtual void handlePublishMessageMetrics(const MessageInfo& messageInfo);
 
         // retransmission management
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
