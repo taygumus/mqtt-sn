@@ -1,5 +1,7 @@
 #include "MqttSNSubscriber.h"
 #include "externals/nlohmann/json.hpp"
+#include "inet/common/TimeTag_m.h"
+#include "tags/IdentifierTag.h"
 #include "helpers/ConversionHelper.h"
 #include "helpers/StringHelper.h"
 #include "helpers/NumericHelper.h"
@@ -248,6 +250,10 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     bool retain = payload->getRetainFlag();
     std::string data = payload->getData();
 
+    TagInfo tagInfo;
+    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());;
+    tagInfo.identifier = payload->findTag<IdentifierTag>()->getIdentifier();
+
     MessageInfo messageInfo;
     messageInfo.topicName = topics[topicId].topicName;
     messageInfo.topicId = topicId;
@@ -256,6 +262,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     messageInfo.qos = qos;
     messageInfo.retain = retain;
     messageInfo.data = data;
+    messageInfo.tagInfo = tagInfo;
 
     if (qos == QoS::QOS_MINUS_ONE || qos == QoS::QOS_ZERO) {
         // handling QoS -1 or QoS 0
@@ -282,6 +289,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     dataInfo.topicIdType = topicIdType;
     dataInfo.retain = retain;
     dataInfo.data = data;
+    dataInfo.tagInfo = tagInfo;
 
     // save message data for reuse
     messages[msgId] = dataInfo;
@@ -309,6 +317,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
         messageInfo.qos = QoS::QOS_TWO;
         messageInfo.retain = dataInfo.retain;
         messageInfo.data = dataInfo.data;
+        messageInfo.tagInfo = dataInfo.tagInfo;
 
         // handling QoS 2
         printPublishMessage(messageInfo);
@@ -598,6 +607,8 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "QoS: " << ConversionHelper::qosToInt(messageInfo.qos) << std::endl;
     EV << "Retain: " << messageInfo.retain << std::endl;
     EV << "Data: " << messageInfo.data << std::endl;
+    EV << "Timestamp tag: " << messageInfo.tagInfo.timestamp << std::endl;
+    EV << "ID tag: " << messageInfo.tagInfo.identifier << std::endl;
 }
 
 void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,

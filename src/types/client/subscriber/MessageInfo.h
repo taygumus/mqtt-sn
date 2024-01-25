@@ -9,6 +9,7 @@ struct MessageInfo {
     QoS qos = QoS::QOS_ZERO;
     bool retain = false;
     std::string data = "";
+    TagInfo tagInfo;
 };
 
 #endif /* TYPES_CLIENT_SUBSCRIBER_MESSAGEINFO_H_ */

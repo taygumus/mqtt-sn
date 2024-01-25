@@ -7,6 +7,7 @@ struct DataInfo {
     TopicIdType topicIdType = TopicIdType::NORMAL_TOPIC_ID;
     bool retain = false;
     std::string data = "";
+    TagInfo tagInfo;
 };
 
 #endif /* TYPES_CLIENT_SUBSCRIBER_DATAINFO_H_ */
