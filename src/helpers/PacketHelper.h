@@ -8,6 +8,7 @@
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
 #include "types/shared/ReturnCode.h"
+#include "types/shared/TagInfo.h"
 
 namespace mqttsn {
 
@@ -17,7 +18,7 @@ class PacketHelper : public BaseHelper
         static inet::Packet* getRegisterPacket(uint16_t topicId, uint16_t msgId, const std::string& topicName);
 
         static inet::Packet* getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId,
-                                              uint16_t msgId, const std::string& data, inet::clocktime_t pkTimestamp = 0, int pkIdentifier = 0);
+                                              uint16_t msgId, const std::string& data, const TagInfo& tagInfo);
 
         static inet::Packet* getBaseWithMsgIdPacket(MsgType msgType, uint16_t msgId);
         static inet::Packet* getMsgIdWithTopicIdPlusPacket(MsgType msgType, uint16_t topicId, uint16_t msgId, ReturnCode returnCode);

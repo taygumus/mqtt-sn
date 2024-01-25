@@ -4,6 +4,7 @@
 #include "MqttSNClient.h"
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
+#include "types/shared/TagInfo.h"
 #include "types/client/publisher/DataInfo.h"
 #include "types/client/publisher/ItemInfo.h"
 #include "types/client/publisher/TopicInfo.h"
@@ -44,7 +45,7 @@ class MqttSNPublisher : public MqttSNClient
         int publishMinusOneCounter = 0;
 
         // metrics calculation usage
-        static int publishPkIdentifier;
+        static unsigned publishMsgIdentifier;
 
     protected:
         // initialization
@@ -80,8 +81,7 @@ class MqttSNPublisher : public MqttSNClient
         virtual void sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t msgId, const std::string& topicName);
 
         virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
-                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data,
-                                 inet::clocktime_t pkTimestamp = 0, int pkIdentifier = 0);
+                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data, const TagInfo& tagInfo);
 
         virtual void sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId);
 

@@ -7,6 +7,7 @@
 #include "types/shared/QoS.h"
 #include "types/shared/TopicIdType.h"
 #include "types/shared/ClientState.h"
+#include "types/shared/TagInfo.h"
 #include "types/server/GatewayState.h"
 #include "types/server/ClientType.h"
 #include "types/server/ClientInfo.h"
@@ -156,7 +157,7 @@ class MqttSNServer : public MqttSNApp
                                   const std::string& topicName);
 
         virtual void sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
-                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data);
+                                 TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data, const TagInfo& tagInfo);
 
         // event handlers
         virtual void handleAdvertiseEvent();

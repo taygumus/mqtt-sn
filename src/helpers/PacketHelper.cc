@@ -1,4 +1,6 @@
 #include "PacketHelper.h"
+#include "inet/common/TimeTag_m.h"
+#include "tags/IdentifierTag.h"
 #include "messages/MqttSNRegister.h"
 #include "messages/MqttSNPublish.h"
 #include "messages/MqttSNBaseWithMsgId.h"
@@ -22,7 +24,7 @@ inet::Packet* PacketHelper::getRegisterPacket(uint16_t topicId, uint16_t msgId, 
 }
 
 inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool retainFlag, TopicIdType topicIdTypeFlag, uint16_t topicId,
-                                             uint16_t msgId, const std::string& data, inet::clocktime_t pkTimestamp, int pkIdentifier)
+                                             uint16_t msgId, const std::string& data, const TagInfo& tagInfo)
 {
     const auto& payload = inet::makeShared<MqttSNPublish>();
     payload->setMsgType(MsgType::PUBLISH);
@@ -35,19 +37,16 @@ inet::Packet* PacketHelper::getPublishPacket(bool dupFlag, QoS qosFlag, bool ret
     payload->setData(data);
     payload->setChunkLength(inet::B(payload->getLength()));
 
+    if (tagInfo.timestamp > 0) {
+        payload->addTag<inet::CreationTimeTag>()->setCreationTime(CLOCKTIME_AS_SIMTIME(tagInfo.timestamp));
+    }
+
+    if (tagInfo.identifier > 0) {
+        payload->addTag<IdentifierTag>()->setIdentifier(tagInfo.identifier);
+    }
+
     inet::Packet* packet = new inet::Packet("PublishPacket");
     packet->insertAtBack(payload);
-
-    if (pkTimestamp == 0) {
-        packet->setTimestamp();
-    }
-    else {
-        packet->setTimestamp(CLOCKTIME_AS_SIMTIME(pkTimestamp));
-    }
-
-    if (pkIdentifier > 0) {
-        packet->addPar("packetId") = pkIdentifier;
-    }
 
     return packet;
 }

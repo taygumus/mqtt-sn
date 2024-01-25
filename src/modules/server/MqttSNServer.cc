@@ -2,10 +2,12 @@
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/networklayer/common/L3AddressTag_m.h"
 #include "inet/transportlayer/common/L4PortTag_m.h"
+#include "inet/common/TimeTag_m.h"
 #include "helpers/StringHelper.h"
 #include "helpers/PacketHelper.h"
 #include "helpers/NumericHelper.h"
 #include "types/shared/Length.h"
+#include "tags/IdentifierTag.h"
 #include "messages/MqttSNAdvertise.h"
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBase.h"
@@ -661,7 +663,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
     QoS qos = (QoS) payload->getQoSFlag();
     bool retain = payload->getRetainFlag();
-
+EV << "QoS: " << (int) qos << std::endl;
     // check for congestion; if congested, send a rejection code
     if (checkPublishCongestion(qos, retain)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_CONGESTION);
@@ -675,6 +677,16 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
         // add a new retained message for the specified topic
         addNewRetainMessage(topicId, dup, qos, topicIdType, data);
     }
+
+    ///
+    inet::clocktime_t timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());
+    EV << "TS:: " << timestamp << std::endl;
+
+    unsigned identifier = payload->findTag<IdentifierTag>()->getIdentifier();
+    EV << "ID:: " << identifier << std::endl;
+
+    return;
+    ///
 
     MessageInfo messageInfo;
     messageInfo.topicId = topicId;
@@ -1044,10 +1056,10 @@ void MqttSNServer::sendRegister(const inet::L3Address& destAddress, const int& d
 }
 
 void MqttSNServer::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
-                               TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data)
+                               TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data, const TagInfo& tagInfo)
 {
     MqttSNApp::socket.sendTo(
-            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data),
+            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data, tagInfo),
             destAddress,
             destPort
     );
@@ -1124,6 +1136,7 @@ void MqttSNServer::handlePendingRetainCheckEvent()
 
 void MqttSNServer::handleRequestsCheckEvent()
 {
+    /*
     // structure to store allocated objects for future deallocation
     std::vector<MessageInfo*> allocatedObjects;
 
@@ -1227,6 +1240,7 @@ void MqttSNServer::handleRequestsCheckEvent()
     deleteAllocatedMessages(allocatedObjects);
 
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
+    */
 }
 
 void MqttSNServer::handleRegistrationsCheckEvent()
@@ -1683,6 +1697,7 @@ void MqttSNServer::bufferRequest(const inet::L3Address& subscriberAddress, const
 void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
                                             QoS resultQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
+    /*
     if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
         // send a publish message with QoS -1 or QoS 0 to the subscriber
         sendPublish(subscriberAddress, subscriberPort,
@@ -1701,6 +1716,7 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
                 messageInfo.dup, resultQoS, messageInfo.retain, messageInfo.topicIdType,
                 messageInfo.topicId, currentRequestId,
                 messageInfo.data);
+   */
 }
 
 void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType, bool sendAtLeastOnce,
