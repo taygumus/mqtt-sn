@@ -663,7 +663,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
 
     QoS qos = (QoS) payload->getQoSFlag();
     bool retain = payload->getRetainFlag();
-EV << "QoS: " << (int) qos << std::endl;
+
     // check for congestion; if congested, send a rejection code
     if (checkPublishCongestion(qos, retain)) {
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::REJECTED_CONGESTION);
@@ -678,15 +678,9 @@ EV << "QoS: " << (int) qos << std::endl;
         addNewRetainMessage(topicId, dup, qos, topicIdType, data);
     }
 
-    ///
-    inet::clocktime_t timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());
-    EV << "TS:: " << timestamp << std::endl;
-
-    unsigned identifier = payload->findTag<IdentifierTag>()->getIdentifier();
-    EV << "ID:: " << identifier << std::endl;
-
-    return;
-    ///
+    TagInfo tagInfo;
+    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());;
+    tagInfo.identifier = payload->findTag<IdentifierTag>()->getIdentifier();
 
     MessageInfo messageInfo;
     messageInfo.topicId = topicId;
@@ -695,6 +689,7 @@ EV << "QoS: " << (int) qos << std::endl;
     messageInfo.qos = qos;
     messageInfo.retain = retain;
     messageInfo.data = data;
+    messageInfo.tagInfo = tagInfo;
 
     if (qos == QoS::QOS_ZERO) {
         // handling QoS 0
@@ -723,6 +718,7 @@ EV << "QoS: " << (int) qos << std::endl;
     dataInfo.topicIdType = topicIdType;
     dataInfo.retain = retain;
     dataInfo.data = data;
+    dataInfo.tagInfo = tagInfo;
 
     // save message data for reuse
     publisherInfo->messages[msgId] = dataInfo;
@@ -743,6 +739,10 @@ void MqttSNServer::processPublishMinusOne(inet::Packet* pk)
         return;
     }
 
+    TagInfo tagInfo;
+    tagInfo.timestamp = inet::ClockTime::SIMTIME_AS_CLOCKTIME(payload->findTag<inet::CreationTimeTag>()->getCreationTime());;
+    tagInfo.identifier = payload->findTag<IdentifierTag>()->getIdentifier();
+
     MessageInfo messageInfo;
     messageInfo.topicId = topicId;
     messageInfo.topicIdType = TopicIdType::PRE_DEFINED_TOPIC_ID;
@@ -750,6 +750,7 @@ void MqttSNServer::processPublishMinusOne(inet::Packet* pk)
     messageInfo.qos = QoS::QOS_MINUS_ONE;
     messageInfo.retain = false;
     messageInfo.data = payload->getData();
+    messageInfo.tagInfo = tagInfo;
 
     // handling QoS -1
     dispatchPublishToSubscribers(messageInfo);
@@ -782,6 +783,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
         messageInfo.qos = QoS::QOS_TWO;
         messageInfo.retain = dataInfo.retain;
         messageInfo.data = dataInfo.data;
+        messageInfo.tagInfo = dataInfo.tagInfo;
 
         // handling QoS 2
         dispatchPublishToSubscribers(messageInfo);
@@ -1136,7 +1138,6 @@ void MqttSNServer::handlePendingRetainCheckEvent()
 
 void MqttSNServer::handleRequestsCheckEvent()
 {
-    /*
     // structure to store allocated objects for future deallocation
     std::vector<MessageInfo*> allocatedObjects;
 
@@ -1190,10 +1191,8 @@ void MqttSNServer::handleRequestsCheckEvent()
 
         if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
             // send a publish message with QoS -1 or QoS 0 to the subscriber
-            sendPublish(subscriberAddress, subscriberPort,
-                        messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
-                        messageInfo->topicId, 0,
-                        messageInfo->data);
+            sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
+                        messageInfo->topicIdType, messageInfo->topicId, 0, messageInfo->data, messageInfo->tagInfo);
 
             deleteRequest(requestIt, requestIdIt);
             continue;
@@ -1201,10 +1200,8 @@ void MqttSNServer::handleRequestsCheckEvent()
 
         if (requestInfo.sendAtLeastOnce) {
             // send a publish message with QoS 1 or QoS 2 to the subscriber
-            sendPublish(subscriberAddress, subscriberPort,
-                        messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
-                        messageInfo->topicId, requestIt->first,
-                        messageInfo->data);
+            sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
+                        messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
 
             // update request information
             requestInfo.sendAtLeastOnce = false;
@@ -1223,10 +1220,8 @@ void MqttSNServer::handleRequestsCheckEvent()
             }
 
             // send a publish message with QoS 1 or QoS 2 to the subscriber
-            sendPublish(subscriberAddress, subscriberPort,
-                        messageInfo->dup, resultQoS, messageInfo->retain, messageInfo->topicIdType,
-                        messageInfo->topicId, requestIt->first,
-                        messageInfo->data);
+            sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
+                        messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
 
             // update request information
             requestInfo.retransmissionCounter++;
@@ -1240,7 +1235,6 @@ void MqttSNServer::handleRequestsCheckEvent()
     deleteAllocatedMessages(allocatedObjects);
 
     scheduleClockEventAfter(requestsCheckInterval, requestsCheckEvent);
-    */
 }
 
 void MqttSNServer::handleRegistrationsCheckEvent()
@@ -1697,13 +1691,10 @@ void MqttSNServer::bufferRequest(const inet::L3Address& subscriberAddress, const
 void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, const MessageInfo& messageInfo,
                                             QoS resultQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
-    /*
     if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
         // send a publish message with QoS -1 or QoS 0 to the subscriber
-        sendPublish(subscriberAddress, subscriberPort,
-                    messageInfo.dup, resultQoS, messageInfo.retain, messageInfo.topicIdType,
-                    messageInfo.topicId, 0,
-                    messageInfo.data);
+        sendPublish(subscriberAddress, subscriberPort, messageInfo.dup, resultQoS, messageInfo.retain,
+                    messageInfo.topicIdType, messageInfo.topicId, 0, messageInfo.data, messageInfo.tagInfo);
 
         // continue to the next subscriber
         return;
@@ -1712,11 +1703,8 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
     addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, false, messagesKey, retainMessagesKey);
 
     // send a publish message with QoS 1 or QoS 2 to the subscriber
-    sendPublish(subscriberAddress, subscriberPort,
-                messageInfo.dup, resultQoS, messageInfo.retain, messageInfo.topicIdType,
-                messageInfo.topicId, currentRequestId,
-                messageInfo.data);
-   */
+    sendPublish(subscriberAddress, subscriberPort, messageInfo.dup, resultQoS, messageInfo.retain,
+                messageInfo.topicIdType, messageInfo.topicId, currentRequestId, messageInfo.data, messageInfo.tagInfo);
 }
 
 void MqttSNServer::addNewRequest(const inet::L3Address& subscriberAddress, const int& subscriberPort, MsgType messageType, bool sendAtLeastOnce,
