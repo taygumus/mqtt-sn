@@ -271,14 +271,14 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     if (qos == QoS::QOS_MINUS_ONE || qos == QoS::QOS_ZERO) {
         // handling QoS -1 or QoS 0
         printPublishMessage(messageInfo);
-        handlePublishMessageMetrics(messageInfo);
+        handlePublishMessageMetrics(tagInfo);
         return;
     }
 
     if (qos == QoS::QOS_ONE) {
         // handling QoS 1
         printPublishMessage(messageInfo);
-        handlePublishMessageMetrics(messageInfo);
+        handlePublishMessageMetrics(tagInfo);
         sendMsgIdWithTopicIdPlus(srcAddress, srcPort, MsgType::PUBACK, topicId, msgId, ReturnCode::ACCEPTED);
         return;
     }
@@ -327,7 +327,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
 
         // handling QoS 2
         printPublishMessage(messageInfo);
-        handlePublishMessageMetrics(messageInfo);
+        handlePublishMessageMetrics(messageInfo.tagInfo);
 
         // after processing, delete the message from the map
         messages.erase(messageIt);
@@ -616,21 +616,23 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "Data: " << messageInfo.data << std::endl;
     EV << "Timestamp tag: " << messageInfo.tagInfo.timestamp << std::endl;
     EV << "ID tag: " << messageInfo.tagInfo.identifier << std::endl;
+    EV << std::endl;
 }
 
-void MqttSNSubscriber::handlePublishMessageMetrics(const MessageInfo& messageInfo)
+void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
 {
-    const TagInfo& tagInfo = messageInfo.tagInfo;
-
     // insert the message identifier into the set to track distinct messages
     publishMsgIdentifiers.insert(tagInfo.identifier);
 
-    // end-to-end delay in seconds
+    // count of unique publish messages received so far
+    MqttSNClient::numReceivedPublishMsgs = publishMsgIdentifiers.size();
+
+    // end-to-end delay in seconds of current message
     inet::clocktime_t endToEndDelay = getClockTime() - tagInfo.timestamp;
 
     // print the metrics
     EV << "End-to-end delay of current message: " << endToEndDelay << " seconds" << std::endl;
-    EV << "Total distinct received messages: " << publishMsgIdentifiers.size() << std::endl;
+    EV << "Total distinct received messages: " << MqttSNClient::numReceivedPublishMsgs << std::endl;
 }
 
 void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,

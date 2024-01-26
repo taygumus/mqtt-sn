@@ -15,6 +15,9 @@ namespace mqttsn {
 
 const std::string MqttSNClient::TOPIC_DELIMITER = "-";
 
+unsigned MqttSNClient::numSentPublishMsgs = 0;
+unsigned MqttSNClient::numReceivedPublishMsgs = 0;
+
 void MqttSNClient::levelOneInit()
 {
     stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
@@ -44,6 +47,9 @@ void MqttSNClient::levelOneInit()
     waitingInterval = par("waitingInterval");
 
     predefinedTopics = MqttSNApp::getPredefinedTopics();
+
+    numSentPublishMsgs = 0;
+    numReceivedPublishMsgs = 0;
 
     levelTwoInit();
 }

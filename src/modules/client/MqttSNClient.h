@@ -56,6 +56,10 @@ class MqttSNClient : public MqttSNApp
         // retransmission management
         std::map<MsgType, RetransmissionInfo> retransmissions;
 
+        // metrics attributes
+        static unsigned numSentPublishMsgs;
+        static unsigned numReceivedPublishMsgs;
+
     protected:
         // initialization
         virtual void levelOneInit() override;

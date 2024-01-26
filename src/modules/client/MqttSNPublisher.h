@@ -44,7 +44,7 @@ class MqttSNPublisher : public MqttSNClient
         LastPublishInfo lastPublishMinusOne;
         int publishMinusOneCounter = 0;
 
-        // metrics calculation usage
+        // metrics attributes
         static unsigned publishMsgIdentifier;
 
     protected:
