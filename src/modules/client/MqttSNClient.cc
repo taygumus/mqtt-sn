@@ -15,8 +15,8 @@ namespace mqttsn {
 
 const std::string MqttSNClient::TOPIC_DELIMITER = "-";
 
-unsigned MqttSNClient::numSentPublishMsgs = 0;
-unsigned MqttSNClient::numReceivedPublishMsgs = 0;
+unsigned MqttSNClient::sentUniquePublishMsgs = 0;
+unsigned MqttSNClient::receivedUniquePublishMsgs = 0;
 
 void MqttSNClient::levelOneInit()
 {
@@ -48,10 +48,17 @@ void MqttSNClient::levelOneInit()
 
     predefinedTopics = MqttSNApp::getPredefinedTopics();
 
-    numSentPublishMsgs = 0;
-    numReceivedPublishMsgs = 0;
+    sentUniquePublishMsgs = 0;
+    receivedUniquePublishMsgs = 0;
 
     levelTwoInit();
+}
+
+void MqttSNClient::finish()
+{
+    handleFinalSimulationResults();
+
+    MqttSNApp::finish();
 }
 
 void MqttSNClient::handleStartOperation(inet::LifecycleOperation* operation)
@@ -953,6 +960,16 @@ uint16_t MqttSNClient::getPredefinedTopicId(const std::string& topicName)
     }
 
     return predefinedTopicsIt->second;
+}
+
+void MqttSNClient::handleFinalSimulationResults()
+{
+    static bool alreadyPrinted = false;
+
+    if (!alreadyPrinted) {
+        // TO DO ///
+        alreadyPrinted = true;
+    }
 }
 
 void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType,

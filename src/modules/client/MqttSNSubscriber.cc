@@ -625,14 +625,14 @@ void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
     publishMsgIdentifiers.insert(tagInfo.identifier);
 
     // count of unique publish messages received so far
-    MqttSNClient::numReceivedPublishMsgs = publishMsgIdentifiers.size();
+    MqttSNClient::receivedUniquePublishMsgs = publishMsgIdentifiers.size();
 
     // end-to-end delay in seconds of current message
     inet::clocktime_t endToEndDelay = getClockTime() - tagInfo.timestamp;
 
     // print the metrics
     EV << "End-to-end delay of current message: " << endToEndDelay << " seconds" << std::endl;
-    EV << "Total distinct received messages: " << MqttSNClient::numReceivedPublishMsgs << std::endl;
+    EV << "Total distinct received messages: " << MqttSNClient::receivedUniquePublishMsgs << std::endl;
 }
 
 void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,

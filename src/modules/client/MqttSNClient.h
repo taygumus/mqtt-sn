@@ -57,12 +57,15 @@ class MqttSNClient : public MqttSNApp
         std::map<MsgType, RetransmissionInfo> retransmissions;
 
         // metrics attributes
-        static unsigned numSentPublishMsgs;
-        static unsigned numReceivedPublishMsgs;
+        static unsigned sentUniquePublishMsgs;
+        static unsigned receivedUniquePublishMsgs;
 
     protected:
         // initialization
         virtual void levelOneInit() override;
+
+        // application base
+        virtual void finish() override;
 
         // lifecycle
         virtual void handleStartOperation(inet::LifecycleOperation* operation) override;
@@ -139,6 +142,9 @@ class MqttSNClient : public MqttSNApp
         // topic methods
         virtual void checkTopicConsistency(const std::string& topicName, TopicIdType topicIdType, bool isFound);
         virtual uint16_t getPredefinedTopicId(const std::string& topicName);
+
+        // result handling
+        virtual void handleFinalSimulationResults();
 
         // retransmission management
         virtual void scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType,

@@ -683,7 +683,7 @@ bool MqttSNPublisher::proceedWithPublish()
     }
 
     publishCounter++;
-    MqttSNClient::numSentPublishMsgs++;
+    MqttSNClient::sentUniquePublishMsgs++;
 
     // print information about the publication message
     printPublishMessage(lastPublish);
@@ -740,7 +740,7 @@ bool MqttSNPublisher::proceedWithPublishMinusOne()
     lastPublishMinusOne.tagInfo = tagInfo;
 
     publishMinusOneCounter++;
-    MqttSNClient::numSentPublishMsgs++;
+    MqttSNClient::sentUniquePublishMsgs++;
 
     // print information about the publication message
     printPublishMessage(lastPublishMinusOne);
