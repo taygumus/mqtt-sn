@@ -15,6 +15,9 @@ namespace mqttsn {
 
 const std::string MqttSNClient::TOPIC_DELIMITER = "-";
 
+double MqttSNClient::sumReceivedPublishMsgTimestamps;
+unsigned MqttSNClient::receivedTotalPublishMsgs;
+
 unsigned MqttSNClient::sentUniquePublishMsgs = 0;
 unsigned MqttSNClient::receivedUniquePublishMsgs = 0;
 
@@ -47,6 +50,9 @@ void MqttSNClient::levelOneInit()
     waitingInterval = par("waitingInterval");
 
     predefinedTopics = MqttSNApp::getPredefinedTopics();
+
+    sumReceivedPublishMsgTimestamps = 0;
+    receivedTotalPublishMsgs = 0;
 
     sentUniquePublishMsgs = 0;
     receivedUniquePublishMsgs = 0;
@@ -964,11 +970,37 @@ uint16_t MqttSNClient::getPredefinedTopicId(const std::string& topicName)
 
 void MqttSNClient::handleFinalSimulationResults()
 {
-    static bool alreadyPrinted = false;
+    static bool resultsProcessed = false;
 
-    if (!alreadyPrinted) {
-        // TO DO ///
-        alreadyPrinted = true;
+    if (!resultsProcessed) {
+        // compute and print the results
+        computePublishEndToEndDelay();
+        computePublishHitRate();
+
+        resultsProcessed = true;
+    }
+}
+
+void MqttSNClient::computePublishEndToEndDelay()
+{
+    if (receivedTotalPublishMsgs > 0) {
+        std::cout << "Average end-to-end publish message delay: "
+                  << sumReceivedPublishMsgTimestamps / receivedTotalPublishMsgs
+                  << " seconds" << std::endl;
+    }
+    else {
+        std::cout << "No publish messages received to calculate average delay" << std::endl;
+    }
+}
+
+void MqttSNClient::computePublishHitRate()
+{
+    if (sentUniquePublishMsgs > 0) {
+        std::cout << "Hit rate of publish messages: "
+                  << static_cast<double>(receivedUniquePublishMsgs) / sentUniquePublishMsgs
+                  << std::endl;
+    } else {
+        std::cout << "No publish messages sent to calculate hit rate" << std::endl;
     }
 }
 

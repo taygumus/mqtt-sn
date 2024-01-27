@@ -57,6 +57,9 @@ class MqttSNClient : public MqttSNApp
         std::map<MsgType, RetransmissionInfo> retransmissions;
 
         // metrics attributes
+        static double sumReceivedPublishMsgTimestamps;
+        static unsigned receivedTotalPublishMsgs;
+
         static unsigned sentUniquePublishMsgs;
         static unsigned receivedUniquePublishMsgs;
 
@@ -145,6 +148,8 @@ class MqttSNClient : public MqttSNApp
 
         // result handling
         virtual void handleFinalSimulationResults();
+        virtual void computePublishEndToEndDelay();
+        virtual void computePublishHitRate();
 
         // retransmission management
         virtual void scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType,

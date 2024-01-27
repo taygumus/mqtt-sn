@@ -621,14 +621,17 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
 
 void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
 {
+    // end-to-end delay in seconds of current message
+    inet::clocktime_t endToEndDelay = getClockTime() - tagInfo.timestamp;
+
+    MqttSNClient::sumReceivedPublishMsgTimestamps += endToEndDelay.dbl();
+    MqttSNClient::receivedTotalPublishMsgs++;
+
     // insert the message identifier into the set to track distinct messages
     publishMsgIdentifiers.insert(tagInfo.identifier);
 
     // count of unique publish messages received so far
     MqttSNClient::receivedUniquePublishMsgs = publishMsgIdentifiers.size();
-
-    // end-to-end delay in seconds of current message
-    inet::clocktime_t endToEndDelay = getClockTime() - tagInfo.timestamp;
 
     // print the metrics
     EV << "End-to-end delay of current message: " << endToEndDelay << " seconds" << std::endl;
