@@ -973,7 +973,10 @@ void MqttSNClient::handleFinalSimulationResults()
     static bool resultsProcessed = false;
 
     if (!resultsProcessed) {
+        std::cout << "==== Publish Messages Results ====" << std::endl;
+
         // compute and print the results
+        printStatistics();
         computePublishEndToEndDelay();
         computePublishHitRate();
 
@@ -981,12 +984,18 @@ void MqttSNClient::handleFinalSimulationResults()
     }
 }
 
+void MqttSNClient::printStatistics()
+{
+    std::cout << "Unique sent: " << sentUniquePublishMsgs << std::endl;
+    std::cout << "Unique received: " << receivedUniquePublishMsgs << std::endl;
+    std::cout << "Total received: " << receivedTotalPublishMsgs << std::endl;
+    std::cout << std::endl;
+}
+
 void MqttSNClient::computePublishEndToEndDelay()
 {
     if (receivedTotalPublishMsgs > 0) {
-        std::cout << "Average end-to-end publish message delay: "
-                  << sumReceivedPublishMsgTimestamps / receivedTotalPublishMsgs
-                  << " seconds" << std::endl;
+        std::cout << "Average end-to-end delay: " << sumReceivedPublishMsgTimestamps / receivedTotalPublishMsgs << " seconds" << std::endl;
     }
     else {
         std::cout << "No publish messages received to calculate average delay" << std::endl;
@@ -996,9 +1005,7 @@ void MqttSNClient::computePublishEndToEndDelay()
 void MqttSNClient::computePublishHitRate()
 {
     if (sentUniquePublishMsgs > 0) {
-        std::cout << "Hit rate of publish messages: "
-                  << static_cast<double>(receivedUniquePublishMsgs) / sentUniquePublishMsgs
-                  << std::endl;
+        std::cout << "Hit rate: " << static_cast<double>(receivedUniquePublishMsgs) / sentUniquePublishMsgs * 100 << " %" << std::endl;
     } else {
         std::cout << "No publish messages sent to calculate hit rate" << std::endl;
     }

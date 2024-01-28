@@ -148,6 +148,7 @@ class MqttSNClient : public MqttSNApp
 
         // result handling
         virtual void handleFinalSimulationResults();
+        virtual void printStatistics();
         virtual void computePublishEndToEndDelay();
         virtual void computePublishHitRate();
 
