@@ -469,17 +469,19 @@ void MqttSNPublisher::populateItems()
         MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
 
         auto predefinedTopicIt = MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName));
+        bool isPredefined = predefinedTopicIt != MqttSNClient::predefinedTopics.end();
 
         // validate topic consistency
-        MqttSNClient::checkTopicConsistency(
-                topicName, topicIdType,
-                predefinedTopicIt != MqttSNClient::predefinedTopics.end()
-        );
+        MqttSNClient::checkTopicConsistency(topicName, topicIdType, isPredefined);
 
         ItemInfo itemInfo;
         itemInfo.topicName = topicName;
         itemInfo.topicIdType = topicIdType;
-        itemInfo.topicId = predefinedTopicIt->second;
+
+        if (isPredefined) {
+            itemInfo.topicId = predefinedTopicIt->second;
+            itemInfo.counter = 1;
+        }
 
         int dataKey = 0;
 
@@ -570,12 +572,24 @@ bool MqttSNPublisher::proceedWithRegistration()
         throw omnetpp::cRuntimeError("No item available");
     }
 
-    // randomly select an element from the map
-    auto it = items.begin();
-    std::advance(it, intuniform(0, items.size() - 1));
+    auto itemIt = items.end();
 
-    TopicIdType topicIdType = it->second.topicIdType;
-    int counter = it->second.counter;
+    // search for the first item with counter zero
+    for (auto it = items.begin(); it != items.end(); ++it) {
+        if (it->second.counter == 0) {
+            itemIt = it;
+            break;
+        }
+    }
+
+    // randomly select an item if all items are registered at least once
+    if (itemIt == items.end()) {
+        itemIt = items.begin();
+        std::advance(itemIt, intuniform(0, items.size() - 1));
+    }
+
+    TopicIdType topicIdType = itemIt->second.topicIdType;
+    int counter = itemIt->second.counter;
 
     // short topics are registered only once; predefined topics are ignored for registration
     if ((topicIdType == TopicIdType::SHORT_TOPIC_ID && counter == 1) ||
@@ -586,8 +600,8 @@ bool MqttSNPublisher::proceedWithRegistration()
     }
 
     // update information about the last element
-    lastRegistration.topicName = StringHelper::appendCounterToString(it->second.topicName, MqttSNClient::TOPIC_DELIMITER, counter);
-    lastRegistration.itemInfo = &it->second;
+    lastRegistration.topicName = StringHelper::appendCounterToString(itemIt->second.topicName, MqttSNClient::TOPIC_DELIMITER, counter);
+    lastRegistration.itemInfo = &itemIt->second;
     lastRegistration.retry = true;
 
     registrationCounter++;

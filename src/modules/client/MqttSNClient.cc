@@ -948,12 +948,12 @@ void MqttSNClient::checkTopicConsistency(const std::string& topicName, TopicIdTy
         if (!isFound) {
             throw omnetpp::cRuntimeError("Predefined topic '%s' is not defined", topicName.c_str());
         }
+        return;
     }
-    else {
-        // topic name should not be present in the predefined topics definition
-        if (isFound) {
-            throw omnetpp::cRuntimeError("Topic '%s' has an ambiguous type", topicName.c_str());
-        }
+
+    // topic name should not be present in the predefined topics definition
+    if (isFound) {
+        throw omnetpp::cRuntimeError("Topic '%s' has an ambiguous type", topicName.c_str());
     }
 }
 
@@ -996,19 +996,20 @@ void MqttSNClient::computePublishEndToEndDelay()
 {
     if (receivedTotalPublishMsgs > 0) {
         std::cout << "Average end-to-end delay: " << sumReceivedPublishMsgTimestamps / receivedTotalPublishMsgs << " seconds" << std::endl;
+        return;
     }
-    else {
-        std::cout << "No publish messages received to calculate average delay" << std::endl;
-    }
+
+    std::cout << "No publish messages received to calculate average delay" << std::endl;
 }
 
 void MqttSNClient::computePublishHitRate()
 {
     if (sentUniquePublishMsgs > 0) {
         std::cout << "Hit rate: " << static_cast<double>(receivedUniquePublishMsgs) / sentUniquePublishMsgs * 100 << " %" << std::endl;
-    } else {
-        std::cout << "No publish messages sent to calculate hit rate" << std::endl;
+        return;
     }
+
+    std::cout << "No publish messages sent to calculate hit rate" << std::endl;
 }
 
 void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType,

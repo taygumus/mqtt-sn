@@ -453,18 +453,19 @@ void MqttSNSubscriber::populateItems()
         MqttSNApp::checkTopicLength(topicName.length(), topicIdType);
 
         auto predefinedTopicIt = MqttSNClient::predefinedTopics.find(StringHelper::base64Encode(topicName));
+        bool isPredefined = predefinedTopicIt != MqttSNClient::predefinedTopics.end();
 
         // validate topic consistency
-        MqttSNClient::checkTopicConsistency(
-                topicName, topicIdType,
-                predefinedTopicIt != MqttSNClient::predefinedTopics.end()
-        );
+        MqttSNClient::checkTopicConsistency(topicName, topicIdType, isPredefined);
 
         ItemInfo itemInfo;
         itemInfo.topicName = topicName;
         itemInfo.topicIdType = topicIdType;
-        itemInfo.topicId = predefinedTopicIt->second;
         itemInfo.qos = ConversionHelper::intToQoS(item["qos"]);
+
+        if (isPredefined) {
+            itemInfo.topicId = predefinedTopicIt->second;
+        }
 
         items[itemsKey++] = itemInfo;
     }
@@ -541,12 +542,24 @@ bool MqttSNSubscriber::proceedWithSubscription()
         throw omnetpp::cRuntimeError("No item available");
     }
 
-    // randomly select an element from the map
-    auto it = items.begin();
-    std::advance(it, intuniform(0, items.size() - 1));
+    auto itemIt = items.end();
 
-    TopicIdType topicIdType = it->second.topicIdType;
-    int subscribeCounter = it->second.subscribeCounter;
+    // search for the first item with counter zero
+    for (auto it = items.begin(); it != items.end(); ++it) {
+        if (it->second.subscribeCounter == 0) {
+            itemIt = it;
+            break;
+        }
+    }
+
+    // randomly select an item if all items are subscribed at least once
+    if (itemIt == items.end()) {
+        itemIt = items.begin();
+        std::advance(itemIt, intuniform(0, items.size() - 1));
+    }
+
+    TopicIdType topicIdType = itemIt->second.topicIdType;
+    int subscribeCounter = itemIt->second.subscribeCounter;
 
     // subscribe predefined/short topics once: initially or post-unsubscribe
     if ((topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID || topicIdType == TopicIdType::SHORT_TOPIC_ID) &&
@@ -557,8 +570,8 @@ bool MqttSNSubscriber::proceedWithSubscription()
     }
 
     // update information about the last element
-    lastSubscription.topicName = StringHelper::appendCounterToString(it->second.topicName, MqttSNClient::TOPIC_DELIMITER, subscribeCounter);
-    lastSubscription.itemInfo = &it->second;
+    lastSubscription.topicName = StringHelper::appendCounterToString(itemIt->second.topicName, MqttSNClient::TOPIC_DELIMITER, subscribeCounter);
+    lastSubscription.itemInfo = &itemIt->second;
     lastSubscription.retry = true;
 
     subscriptionCounter++;
