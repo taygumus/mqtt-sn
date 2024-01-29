@@ -36,11 +36,8 @@ network WifiNetwork
         subscriber3: WirelessHost {
             @display("p=633,310");
         }
-        server1: WirelessHost {
-            @display("p=409,139");
-        }
-        server2: WirelessHost {
-            @display("p=409,219");
+        server: WirelessHost {
+            @display("p=415,200");
         }
 }
 
