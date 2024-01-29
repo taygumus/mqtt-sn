@@ -634,6 +634,11 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
 
 void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
 {
+    // return if the tag information is not valid
+    if (tagInfo.timestamp == 0 || tagInfo.identifier == 0) {
+        return;
+    }
+
     // end-to-end delay in seconds of current message
     inet::clocktime_t endToEndDelay = getClockTime() - tagInfo.timestamp;
 
