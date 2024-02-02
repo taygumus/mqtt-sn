@@ -60,6 +60,9 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
 {
+    // reset registration counter
+    registrationCounter = 0;
+
     // reset and initialize topics
     resetAndPopulateTopics();
     lastPublish.topicId = 0;
@@ -515,18 +518,10 @@ void MqttSNPublisher::populateItems()
 
 void MqttSNPublisher::resetAndPopulateTopics()
 {
-    // clear existing topics if any
-    if (!topics.empty()) {
-        topics.clear();
-    }
+    topics.clear();
 
     for (auto& pair : items) {
         ItemInfo& itemInfo = pair.second;
-
-        // reset the counter if the topic uses a short ID type
-        if (itemInfo.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
-            itemInfo.counter = 0;
-        }
 
         // insert the predefined topics
         if (itemInfo.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
@@ -535,7 +530,11 @@ void MqttSNPublisher::resetAndPopulateTopics()
             topicInfo.itemInfo = &itemInfo;
 
             topics[MqttSNClient::getPredefinedTopicId(itemInfo.topicName)] = topicInfo;
+            continue;
         }
+
+        // reset the counter for the other topic ID types
+        itemInfo.counter = 0;
     }
 }
 

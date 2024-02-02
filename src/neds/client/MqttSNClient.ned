@@ -30,5 +30,5 @@ module MqttSNClient extends MqttSNApp
         bool cleanSession = default(false); // controls session cleanup: deletes will data for publishers, subscriptions for subscribers
         
         string itemsJson; // json string containing topic-related items
-        double waitingInterval @unit(s) = default(300s); // waiting time before restarting a procedure (TWAIT)
+        double waitingInterval @unit(s) = default(30s); // waiting time before restarting a procedure (TWAIT)
 }

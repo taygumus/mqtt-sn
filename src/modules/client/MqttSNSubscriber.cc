@@ -51,6 +51,11 @@ bool MqttSNSubscriber::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 {
+    // reset counters
+    subscriptionCounter = 0;
+    unsubscriptionCounter = 0;
+
+    // reset and initialize topics
     resetAndPopulateTopics();
 }
 
@@ -486,24 +491,19 @@ ItemInfo* MqttSNSubscriber::findItemByTopicName(const std::string& topicName)
 
 void MqttSNSubscriber::resetAndPopulateTopics()
 {
-    // clear existing topics if any
-    if (!topics.empty()) {
-        topics.clear();
-    }
+    topics.clear();
 
     for (auto& pair : items) {
         ItemInfo& itemInfo = pair.second;
-
-        // reset the counters if the topic uses a short ID type
-        if (itemInfo.topicIdType == TopicIdType::SHORT_TOPIC_ID) {
-            itemInfo.subscribeCounter = 0;
-            itemInfo.unsubscribeCounter = 0;
-        }
 
         // insert the predefined topics
         if (itemInfo.topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID) {
             addNewTopic(MqttSNClient::getPredefinedTopicId(itemInfo.topicName), itemInfo.topicName, &itemInfo);
         }
+
+        // reset the counters
+        itemInfo.subscribeCounter = 0;
+        itemInfo.unsubscribeCounter = 0;
     }
 }
 
