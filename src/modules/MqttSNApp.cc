@@ -71,16 +71,13 @@ void MqttSNApp::checkPacketIntegrity(const inet::B& receivedLength, const inet::
     }
 }
 
-inet::Packet* MqttSNApp::corruptPacket(inet::Packet* packet, double ber)
+void MqttSNApp::corruptPacket(inet::Packet* packet, double ber)
 {
     // determine if the packet should be considered corrupted
     bool hasErrors = hasProbabilisticError(packet->getDataLength(), ber);
 
     // set bit error flag
     packet->setBitError(hasErrors);
-
-    // return the potentially corrupted packet
-    return packet;
 }
 
 void MqttSNApp::sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress, uint16_t gatewayPort)

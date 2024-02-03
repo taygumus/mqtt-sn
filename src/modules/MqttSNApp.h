@@ -38,7 +38,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
 
         // packet handling
         virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
-        virtual inet::Packet* corruptPacket(inet::Packet* packet, double ber);
+        virtual void corruptPacket(inet::Packet* packet, double ber);
 
         // outgoing packet handling
         virtual void sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress = "", uint16_t gatewayPort = 0);
