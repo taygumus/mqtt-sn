@@ -36,6 +36,10 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void socketClosed(inet::UdpSocket* socket) override;
         virtual void socketConfiguration();
 
+        // packet handling
+        virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
+        virtual inet::Packet* corruptPacket(inet::Packet* packet, double ber);
+
         // outgoing packet handling
         virtual void sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress = "", uint16_t gatewayPort = 0);
         virtual void sendPingReq(const inet::L3Address& destAddress, const int& destPort, const std::string& clientId = "");
@@ -43,8 +47,8 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         virtual void sendDisconnect(const inet::L3Address& destAddress, const int& destPort, uint16_t duration = 0);
 
         // check methods
-        virtual void checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength);
         virtual bool isSelfBroadcastAddress(const inet::L3Address& address);
+        virtual bool hasProbabilisticError(inet::b length, double ber);
 
         // identifier methods
         virtual bool setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue = true);

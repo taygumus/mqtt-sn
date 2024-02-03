@@ -60,6 +60,29 @@ void MqttSNApp::socketConfiguration()
     socket.setBroadcast(true);
 }
 
+void MqttSNApp::checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength)
+{
+    if (receivedLength != fieldLength) {
+        throw omnetpp::cRuntimeError(
+                "Packet integrity error: Received length (%d bytes) does not match the expected length (%d bytes)",
+                (uint16_t) receivedLength.get(),
+                (uint16_t) fieldLength.get()
+        );
+    }
+}
+
+inet::Packet* MqttSNApp::corruptPacket(inet::Packet* packet, double ber)
+{
+    // determine if the packet should be considered corrupted
+    bool hasErrors = hasProbabilisticError(packet->getDataLength(), ber);
+
+    // set bit error flag
+    packet->setBitError(hasErrors);
+
+    // return the potentially corrupted packet
+    return packet;
+}
+
 void MqttSNApp::sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress, uint16_t gatewayPort)
 {
     const auto& payload = inet::makeShared<MqttSNGwInfo>();
@@ -140,21 +163,22 @@ void MqttSNApp::sendDisconnect(const inet::L3Address& destAddress, const int& de
     socket.sendTo(packet, destAddress, destPort);
 }
 
-void MqttSNApp::checkPacketIntegrity(const inet::B& receivedLength, const inet::B& fieldLength)
-{
-    if (receivedLength != fieldLength) {
-        throw omnetpp::cRuntimeError(
-                "Packet integrity error: Received length (%d bytes) does not match the expected length (%d bytes)",
-                (uint16_t) receivedLength.get(),
-                (uint16_t) fieldLength.get()
-        );
-    }
-}
-
 bool MqttSNApp::isSelfBroadcastAddress(const inet::L3Address& address)
 {
     inet::L3Address selfBroadcastAddress = inet::L3Address("127.0.0.1");
     return (address == selfBroadcastAddress);
+}
+
+bool MqttSNApp::hasProbabilisticError(inet::b length, double ber)
+{
+    // calculate error probability using BER and packet length in bits
+    double errorProbability = 1 - std::pow(1 - ber, length.get());
+
+    // generate a random number between 0 and 1
+    double rand = uniform(0, 1);
+
+    // return true if random number is less than error probability, indicating corruption
+    return rand < errorProbability;
 }
 
 bool MqttSNApp::setNextAvailableId(const std::set<uint16_t>& usedIds, uint16_t& currentId, bool allowMaxValue)
