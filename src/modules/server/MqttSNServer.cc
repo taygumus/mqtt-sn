@@ -62,6 +62,14 @@ void MqttSNServer::levelOneInit()
     messagesClearEvent = new inet::ClockEvent("messagesClearTimer");
 }
 
+void MqttSNServer::finish()
+{
+    clearPublishersData();
+    clearSubscribersData();
+
+    MqttSNApp::finish();
+}
+
 void MqttSNServer::handleStartOperation(inet::LifecycleOperation* operation)
 {
     MqttSNApp::socketConfiguration();
@@ -2146,6 +2154,28 @@ bool MqttSNServer::checkPublishCongestion(QoS qos, bool retain)
 
     // no congestion detected
     return false;
+}
+
+void MqttSNServer::clearPublishersData()
+{
+    for (auto& publisherPair : publishers) {
+        auto& messages = publisherPair.second.messages;
+
+        for (auto it = messages.begin(); it != messages.end();) {
+            it = messages.erase(it);
+        }
+    }
+}
+
+void MqttSNServer::clearSubscribersData()
+{
+    for (auto& subscriberPair : subscribers) {
+        auto& topics = subscriberPair.second.subscriberTopics;
+
+        for (auto it = topics.begin(); it != topics.end();) {
+            it = topics.erase(it);
+        }
+    }
 }
 
 MqttSNServer::~MqttSNServer()

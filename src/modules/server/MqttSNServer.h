@@ -88,6 +88,9 @@ class MqttSNServer : public MqttSNApp
         // initialization
         virtual void levelOneInit() override;
 
+        // application base
+        virtual void finish() override;
+
         // lifecycle
         virtual void handleStartOperation(inet::LifecycleOperation* operation) override;
         virtual void handleStopOperation(inet::LifecycleOperation* operation) override;
@@ -270,6 +273,10 @@ class MqttSNServer : public MqttSNApp
         virtual bool checkClientsCongestion();
         virtual bool checkIDSpaceCongestion(const std::set<uint16_t>& usedIds, bool allowMaxValue = true);
         virtual bool checkPublishCongestion(QoS qos, bool retain);
+
+        // clear methods
+        virtual void clearPublishersData();
+        virtual void clearSubscribersData();
 
     public:
         MqttSNServer() {};
