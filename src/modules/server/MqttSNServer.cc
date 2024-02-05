@@ -970,6 +970,7 @@ void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAdd
 
     // update the request
     requestIt->second.requestTime = getClockTime();
+    requestIt->second.retransmissionCounter = 0;
     requestIt->second.messageType = MsgType::PUBREL;
 }
 
@@ -1194,29 +1195,33 @@ void MqttSNServer::handleRequestsCheckEvent()
             continue;
         }
 
-        // calculate the minimum QoS level between subscription QoS and original publish QoS
-        QoS resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
+        QoS resultQoS;
 
-        if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
-            // send a publish message with QoS -1 or QoS 0 to the subscriber
-            sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
-                        messageInfo->topicIdType, messageInfo->topicId, 0, messageInfo->data, messageInfo->tagInfo);
+        if (requestInfo.messageType == MsgType::PUBLISH) {
+            // calculate the minimum QoS level between subscription QoS and original publish QoS
+            resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
 
-            deleteRequest(requestIt, requestIdIt);
-            continue;
-        }
+            if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
+                // send a publish message with QoS -1 or QoS 0 to the subscriber
+                sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
+                            messageInfo->topicIdType, messageInfo->topicId, 0, messageInfo->data, messageInfo->tagInfo);
 
-        if (requestInfo.sendAtLeastOnce) {
-            // send a publish message with QoS 1 or QoS 2 to the subscriber
-            sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
-                        messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
+                deleteRequest(requestIt, requestIdIt);
+                continue;
+            }
 
-            // update request information
-            requestInfo.sendAtLeastOnce = false;
-            requestInfo.requestTime = getClockTime();
+            if (requestInfo.sendAtLeastOnce) {
+                // send a publish message with QoS 1 or QoS 2 to the subscriber
+                sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
+                            messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
 
-            ++requestIt;
-            continue;
+                // update request information
+                requestInfo.sendAtLeastOnce = false;
+                requestInfo.requestTime = getClockTime();
+
+                ++requestIt;
+                continue;
+            }
         }
 
         // check if the elapsed time from last received message is beyond the retransmission duration
@@ -1227,9 +1232,17 @@ void MqttSNServer::handleRequestsCheckEvent()
                 continue;
             }
 
-            // send a publish message with QoS 1 or QoS 2 to the subscriber
-            sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
-                        messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
+            resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
+
+            if (requestInfo.messageType == MsgType::PUBLISH) {
+                // send a publish message with QoS 1 or QoS 2 to the subscriber
+                sendPublish(subscriberAddress, subscriberPort, true, resultQoS, messageInfo->retain,
+                            messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
+            }
+            else if (requestInfo.messageType == MsgType::PUBREL) {
+                // send publish release
+                sendBaseWithMsgId(subscriberAddress, subscriberPort, MsgType::PUBREL, requestIt->first);
+            }
 
             // update request information
             requestInfo.retransmissionCounter++;
