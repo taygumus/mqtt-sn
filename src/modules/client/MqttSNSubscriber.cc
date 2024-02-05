@@ -51,12 +51,19 @@ bool MqttSNSubscriber::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 {
+    // reset last operations
+    lastSubscription.retry = false;
+    lastUnsubscription.retry = false;
+
     // reset counters
     subscriptionCounter = 0;
     unsubscriptionCounter = 0;
 
     // reset and initialize topics
     resetAndPopulateTopics();
+
+    // reset messages, if any
+    messages.clear();
 }
 
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
@@ -167,6 +174,8 @@ void MqttSNSubscriber::processSubAck(inet::Packet* pk, const inet::L3Address& sr
     lastSubscription.retry = false;
     scheduleClockEventAfter(subscriptionInterval, subscriptionEvent);
 
+    subscriptionCounter++;
+
     EV << "Subscription completed - Topic Name: " << lastSubscription.topicName << std::endl;
 }
 
@@ -192,6 +201,8 @@ void MqttSNSubscriber::processUnsubAck(inet::Packet* pk, const inet::L3Address& 
 
     lastUnsubscription.retry = false;
     scheduleClockEventAfter(unsubscriptionInterval, unsubscriptionEvent);
+
+    unsubscriptionCounter++;
 
     EV << "Unsubscription completed - Topic Name: " << lastUnsubscription.topicName << std::endl;
 }
@@ -572,9 +583,7 @@ bool MqttSNSubscriber::proceedWithSubscription()
     // update information about the last element
     lastSubscription.topicName = StringHelper::appendCounterToString(itemIt->second.topicName, MqttSNClient::TOPIC_DELIMITER, subscribeCounter);
     lastSubscription.itemInfo = &itemIt->second;
-    lastSubscription.retry = true;
 
-    subscriptionCounter++;
     return true;
 }
 
@@ -611,9 +620,7 @@ bool MqttSNSubscriber::proceedWithUnsubscription()
     // update information about the last element
     lastUnsubscription.topicName = StringHelper::appendCounterToString(it->second.topicName, MqttSNClient::TOPIC_DELIMITER, unsubscribeCounter);
     lastUnsubscription.itemInfo = &it->second;
-    lastUnsubscription.retry = true;
 
-    unsubscriptionCounter++;
     return true;
 }
 

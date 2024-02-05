@@ -60,12 +60,16 @@ bool MqttSNPublisher::handleMessageWhenUpCustom(omnetpp::cMessage* msg)
 
 void MqttSNPublisher::scheduleActiveStateEventsCustom()
 {
+    // reset last operations
+    lastRegistration.retry = false;
+    lastPublish.retry = false;
+    lastPublishMinusOne.retry = false;
+
     // reset registration counter
     registrationCounter = 0;
 
     // reset and initialize topics
     resetAndPopulateTopics();
-    lastPublish.topicId = 0;
 
     // validate destination gateway and schedule QoS -1 publications
     validatePublishMinusOneGateway();
@@ -222,6 +226,8 @@ void MqttSNPublisher::processRegAck(inet::Packet* pk)
 
     lastRegistration.retry = false;
     scheduleClockEventAfter(registrationInterval, registrationEvent);
+
+    registrationCounter++;
 
     EV << "Registration completed - Topic Name: " << lastRegistration.topicName << ", Topic ID: " << topicId << std::endl;
 }
@@ -538,21 +544,6 @@ void MqttSNPublisher::resetAndPopulateTopics()
     }
 }
 
-bool MqttSNPublisher::findTopicByName(const std::string& topicName, uint16_t& topicId)
-{
-    // iterate through the map to find the specified topic name
-    for (const auto& pair : topics) {
-        if (pair.second.topicName == topicName) {
-            // topic name found in the map, assign the corresponding topic ID and return true
-            topicId = pair.first;
-            return true;
-        }
-    }
-
-    // topic name not found in the map
-    return false;
-}
-
 bool MqttSNPublisher::proceedWithRegistration()
 {
     // check if a registration attempt needs to be retried
@@ -601,9 +592,7 @@ bool MqttSNPublisher::proceedWithRegistration()
     // update information about the last element
     lastRegistration.topicName = StringHelper::appendCounterToString(itemIt->second.topicName, MqttSNClient::TOPIC_DELIMITER, counter);
     lastRegistration.itemInfo = &itemIt->second;
-    lastRegistration.retry = true;
 
-    registrationCounter++;
     return true;
 }
 
@@ -625,6 +614,7 @@ void MqttSNPublisher::retryLastPublish()
 {
     lastPublish.retry = true;
 
+    // reschedule the last publish
     cancelEvent(publishEvent);
     scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
 }
@@ -633,10 +623,6 @@ bool MqttSNPublisher::proceedWithPublish()
 {
     // if it's a retry, use the last sent element
     if (lastPublish.retry) {
-        // update topic ID after publisher reconnection to a server
-        if (lastPublish.topicId == 0) {
-            findTopicByName(lastPublish.topicName, lastPublish.topicId);
-        }
         return true;
     }
 
@@ -689,11 +675,6 @@ bool MqttSNPublisher::proceedWithPublish()
 
     // update tags about the last element
     lastPublish.tagInfo = tagInfo;
-
-    // retry after publisher reconnection to a server
-    if (dataIterator->second.qos != QoS::QOS_ZERO) {
-        lastPublish.retry = true;
-    }
 
     publishCounter++;
     MqttSNClient::sentUniquePublishMsgs++;
