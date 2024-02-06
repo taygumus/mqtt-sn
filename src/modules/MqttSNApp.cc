@@ -19,6 +19,8 @@ void MqttSNApp::initialize(int stage)
         retransmissionInterval = par("retransmissionInterval");
         retransmissionCounter = par("retransmissionCounter");
 
+        packetBER = par("packetBER");
+
         levelOneInit();
     }
 }

@@ -1033,14 +1033,18 @@ void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, co
 void MqttSNServer::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId,
                                             uint16_t msgId, ReturnCode returnCode)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, topicId, msgId, returnCode),
-                             destAddress,
-                             destPort);
+    inet::Packet* packet = PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, topicId, msgId, returnCode);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
+    inet::Packet* packet = PacketHelper::getBaseWithMsgIdPacket(msgType, msgId);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& destPort, QoS qosFlag, uint16_t topicId, uint16_t msgId,
@@ -1056,6 +1060,7 @@ void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& des
 
     inet::Packet* packet = new inet::Packet("SubAckPacket");
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
@@ -1063,17 +1068,19 @@ void MqttSNServer::sendSubAck(const inet::L3Address& destAddress, const int& des
 void MqttSNServer::sendRegister(const inet::L3Address& destAddress, const int& destPort, uint16_t topicId, uint16_t msgId,
                                 const std::string& topicName)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getRegisterPacket(topicId, msgId, topicName), destAddress, destPort);
+    inet::Packet* packet = PacketHelper::getRegisterPacket(topicId, msgId, topicName);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::sendPublish(const inet::L3Address& destAddress, const int& destPort, bool dupFlag, QoS qosFlag, bool retainFlag,
                                TopicIdType topicIdTypeFlag, uint16_t topicId, uint16_t msgId, const std::string& data, const TagInfo& tagInfo)
 {
-    MqttSNApp::socket.sendTo(
-            PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data, tagInfo),
-            destAddress,
-            destPort
-    );
+    inet::Packet* packet = PacketHelper::getPublishPacket(dupFlag, qosFlag, retainFlag, topicIdTypeFlag, topicId, msgId, data, tagInfo);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNServer::handleAdvertiseEvent()

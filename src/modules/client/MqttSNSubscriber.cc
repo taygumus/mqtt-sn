@@ -377,6 +377,7 @@ void MqttSNSubscriber::sendSubscribe(const inet::L3Address& destAddress, const i
 
     inet::Packet* packet = new inet::Packet("SubscribePacket");
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
@@ -402,6 +403,7 @@ void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const
 
     inet::Packet* packet = new inet::Packet("UnsubscribePacket");
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
@@ -409,14 +411,18 @@ void MqttSNSubscriber::sendUnsubscribe(const inet::L3Address& destAddress, const
 void MqttSNSubscriber::sendMsgIdWithTopicIdPlus(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t topicId,
                                                 uint16_t msgId, ReturnCode returnCode)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, topicId, msgId, returnCode),
-                             destAddress,
-                             destPort);
+    inet::Packet* packet = PacketHelper::getMsgIdWithTopicIdPlusPacket(msgType, topicId, msgId, returnCode);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNSubscriber::sendBaseWithMsgId(const inet::L3Address& destAddress, const int& destPort, MsgType msgType, uint16_t msgId)
 {
-    MqttSNApp::socket.sendTo(PacketHelper::getBaseWithMsgIdPacket(msgType, msgId), destAddress, destPort);
+    inet::Packet* packet = PacketHelper::getBaseWithMsgIdPacket(msgType, msgId);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
+
+    MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
 
 void MqttSNSubscriber::handleCheckConnectionEventCustom(const inet::L3Address& destAddress, const int& destPort)

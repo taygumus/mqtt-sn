@@ -17,6 +17,7 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         // parameters
         double retransmissionInterval;
         int retransmissionCounter;
+        double packetBER;
 
         // app state
         inet::UdpSocket socket;
