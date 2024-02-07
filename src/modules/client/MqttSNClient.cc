@@ -704,6 +704,7 @@ void MqttSNClient::sendSearchGw()
 
     inet::Packet* packet = new inet::Packet("SearchGwPacket");
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
@@ -720,6 +721,7 @@ void MqttSNClient::sendConnect(const inet::L3Address& destAddress, const int& de
 
     inet::Packet* packet = new inet::Packet("ConnectPacket");
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }

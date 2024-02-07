@@ -93,6 +93,7 @@ void MqttSNApp::sendGwInfo(uint8_t gatewayId, const std::string& gatewayAddress,
 
     inet::Packet* packet = new inet::Packet("GwInfoPacket");
     packet->insertAtBack(payload);
+    corruptPacket(packet, packetBER);
 
     socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
@@ -110,6 +111,7 @@ void MqttSNApp::sendPingReq(const inet::L3Address& destAddress, const int& destP
 
     inet::Packet* packet = new inet::Packet("PingReqPacket");
     packet->insertAtBack(payload);
+    corruptPacket(packet, packetBER);
 
     socket.sendTo(packet, destAddress, destPort);
 }
@@ -141,6 +143,7 @@ void MqttSNApp::sendBase(const inet::L3Address& destAddress, const int& destPort
 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
+    corruptPacket(packet, packetBER);
 
     socket.sendTo(packet, destAddress, destPort);
 }
@@ -158,6 +161,7 @@ void MqttSNApp::sendDisconnect(const inet::L3Address& destAddress, const int& de
 
     inet::Packet* packet = new inet::Packet("DisconnectPacket");
     packet->insertAtBack(payload);
+    corruptPacket(packet, packetBER);
 
     socket.sendTo(packet, destAddress, destPort);
 }

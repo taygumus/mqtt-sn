@@ -994,6 +994,7 @@ void MqttSNServer::sendAdvertise()
 
     inet::Packet* packet = new inet::Packet("AdvertisePacket");
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, inet::L3Address(par("broadcastAddress")), par("destPort"));
 }
@@ -1026,6 +1027,7 @@ void MqttSNServer::sendBaseWithReturnCode(const inet::L3Address& destAddress, co
 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }

@@ -337,6 +337,7 @@ void MqttSNPublisher::sendBaseWithWillTopic(const inet::L3Address& destAddress, 
 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
@@ -365,6 +366,7 @@ void MqttSNPublisher::sendBaseWithWillMsg(const inet::L3Address& destAddress, co
 
     inet::Packet* packet = new inet::Packet(packetName.c_str());
     packet->insertAtBack(payload);
+    MqttSNApp::corruptPacket(packet, MqttSNApp::packetBER);
 
     MqttSNApp::socket.sendTo(packet, destAddress, destPort);
 }
