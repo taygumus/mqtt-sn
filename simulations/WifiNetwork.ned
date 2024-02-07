@@ -27,17 +27,20 @@ network WifiNetwork
         publisher2: WirelessHost {
             @display("p=207,252");
         }
-        subscriber1: WirelessHost {
-            @display("p=633,132");
-        }
-        subscriber2: WirelessHost {
-            @display("p=633,219");
-        }
-        //subscriber3: WirelessHost {
-        //    @display("p=633,310");
-        //}
         server: WirelessHost {
             @display("p=415,200");
+        }
+        subscriber1: WirelessHost {
+            @display("p=633,91");
+        }
+        subscriber2: WirelessHost {
+            @display("p=633,167");
+        }
+        subscriber3: WirelessHost {
+            @display("p=633,243");
+        }
+        subscriber4: WirelessHost {
+            @display("p=633,325");
         }
 }
 
