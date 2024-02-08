@@ -19,19 +19,19 @@ network WifiNetwork
             @display("p=60,42");
         }
         configurator: Ipv4NetworkConfigurator {
-            @display("p=60,111");
+            @display("p=60,110");
         }
         publisher1: WirelessHost {
-            @display("p=207,139");
+            @display("p=207,140");
         }
         publisher2: WirelessHost {
             @display("p=207,252");
         }
         server: WirelessHost {
-            @display("p=415,200");
+            @display("p=415,190");
         }
         subscriber1: WirelessHost {
-            @display("p=633,91");
+            @display("p=633,90");
         }
         subscriber2: WirelessHost {
             @display("p=633,167");
