@@ -62,6 +62,7 @@ class MqttSNClient : public MqttSNApp
 
         static unsigned sentUniquePublishMsgs;
         static unsigned receivedUniquePublishMsgs;
+        static unsigned receivedDuplicatePublishMsgs;
 
     protected:
         // initialization

@@ -20,6 +20,7 @@ unsigned MqttSNClient::receivedTotalPublishMsgs;
 
 unsigned MqttSNClient::sentUniquePublishMsgs = 0;
 unsigned MqttSNClient::receivedUniquePublishMsgs = 0;
+unsigned MqttSNClient::receivedDuplicatePublishMsgs = 0;
 
 void MqttSNClient::levelOneInit()
 {
@@ -56,6 +57,7 @@ void MqttSNClient::levelOneInit()
 
     sentUniquePublishMsgs = 0;
     receivedUniquePublishMsgs = 0;
+    receivedDuplicatePublishMsgs = 0;
 
     levelTwoInit();
 }
@@ -991,6 +993,7 @@ void MqttSNClient::printStatistics()
     std::cout << "Unique sent: " << sentUniquePublishMsgs << std::endl;
     std::cout << "Unique received: " << receivedUniquePublishMsgs << std::endl;
     std::cout << "Total received: " << receivedTotalPublishMsgs << std::endl;
+    std::cout << "Total received duplicates: " << receivedDuplicatePublishMsgs << std::endl;
     std::cout << std::endl;
 }
 

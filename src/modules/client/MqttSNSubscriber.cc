@@ -31,6 +31,7 @@ void MqttSNSubscriber::levelTwoInit()
     unsubscriptionInterval = par("unsubscriptionInterval");
     unsubscriptionEvent = new inet::ClockEvent("unsubscriptionTimer");
 
+    instancePublishMsgIdentifiers.clear();
     publishMsgIdentifiers.clear();
 }
 
@@ -64,6 +65,9 @@ void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 
     // reset messages, if any
     messages.clear();
+
+    // clear the set of message identifiers for this subscriber instance
+    instancePublishMsgIdentifiers.clear();
 }
 
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
@@ -642,7 +646,6 @@ void MqttSNSubscriber::printPublishMessage(const MessageInfo& messageInfo)
     EV << "Data: " << messageInfo.data << std::endl;
     EV << "Timestamp tag: " << messageInfo.tagInfo.timestamp << std::endl;
     EV << "ID tag: " << messageInfo.tagInfo.identifier << std::endl;
-    EV << std::endl;
 }
 
 void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
@@ -655,18 +658,28 @@ void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
     // end-to-end delay in seconds of current message
     inet::clocktime_t endToEndDelay = getClockTime() - tagInfo.timestamp;
 
+    // print the current message delay
+    EV << "End-to-end delay: " << endToEndDelay << " seconds" << std::endl;
+
     MqttSNClient::sumReceivedPublishMsgTimestamps += endToEndDelay.dbl();
     MqttSNClient::receivedTotalPublishMsgs++;
+
+    // duplicate detection
+    auto identifierIt = instancePublishMsgIdentifiers.find(tagInfo.identifier);
+    if (identifierIt == instancePublishMsgIdentifiers.end()) {
+        // insert the message identifier into the instance set to track distinct messages
+        instancePublishMsgIdentifiers.insert(tagInfo.identifier);
+    }
+    else {
+        // increment the count of duplicate publish messages received so far
+        MqttSNClient::receivedDuplicatePublishMsgs++;
+    }
 
     // insert the message identifier into the set to track distinct messages
     publishMsgIdentifiers.insert(tagInfo.identifier);
 
     // count of unique publish messages received so far
     MqttSNClient::receivedUniquePublishMsgs = publishMsgIdentifiers.size();
-
-    // print the metrics
-    EV << "End-to-end delay of current message: " << endToEndDelay << " seconds" << std::endl;
-    EV << "Total distinct received messages: " << MqttSNClient::receivedUniquePublishMsgs << std::endl;
 }
 
 void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,

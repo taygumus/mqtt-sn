@@ -37,6 +37,7 @@ class MqttSNSubscriber : public MqttSNClient
         std::map<uint16_t, DataInfo> messages;
 
         // metrics attributes
+        std::set<unsigned> instancePublishMsgIdentifiers;
         static std::set<unsigned> publishMsgIdentifiers;
 
     protected:
