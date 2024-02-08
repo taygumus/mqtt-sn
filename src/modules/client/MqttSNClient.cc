@@ -10,6 +10,7 @@
 #include "messages/MqttSNConnect.h"
 #include "messages/MqttSNBaseWithReturnCode.h"
 #include "messages/MqttSNDisconnect.h"
+#include <fstream>
 
 namespace mqttsn {
 
@@ -984,6 +985,9 @@ void MqttSNClient::handleFinalSimulationResults()
         computePublishEndToEndDelay();
         computePublishHitRate();
 
+        // save results
+        appendSimulationResultsToCsv("results/results.csv");
+
         resultsProcessed = true;
     }
 }
@@ -1015,6 +1019,34 @@ void MqttSNClient::computePublishHitRate()
     }
 
     std::cout << "No publish messages sent to calculate hit rate" << std::endl;
+}
+
+void MqttSNClient::appendSimulationResultsToCsv(const std::string& filePath)
+{
+    // check if the CSV file already exists
+    std::ifstream infile(filePath);
+    bool fileExists = infile.good();
+
+    // open the CSV file in append mode
+    std::ofstream outfile(filePath, std::ios::app);
+
+    // if the file does not exist, write the column headers
+    if (!fileExists) {
+        outfile << "BER,Average End-to-End Delay,Hit Rate,Total Received Duplicates\n";
+    }
+
+    // calculate average end-to-end delay
+    double averageDelay = receivedTotalPublishMsgs > 0 ? sumReceivedPublishMsgTimestamps / receivedTotalPublishMsgs : 0;
+
+    // calculate hit rate
+    double hitRate = sentUniquePublishMsgs > 0 ? static_cast<double>(receivedUniquePublishMsgs) / sentUniquePublishMsgs * 100 : 0;
+
+    // write the simulation results to the file
+    outfile << MqttSNApp::packetBER << "," << averageDelay << "," << hitRate << "," << receivedDuplicatePublishMsgs << "\n";
+
+    // close the files
+    infile.close();
+    outfile.close();
 }
 
 void MqttSNClient::scheduleMsgRetransmission(const inet::L3Address& destAddress, const int& destPort, MsgType msgType,
