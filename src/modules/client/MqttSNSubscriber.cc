@@ -65,9 +65,6 @@ void MqttSNSubscriber::scheduleActiveStateEventsCustom()
 
     // reset messages, if any
     messages.clear();
-
-    // clear the set of message identifiers for this subscriber instance
-    instancePublishMsgIdentifiers.clear();
 }
 
 void MqttSNSubscriber::cancelActiveStateEventsCustom()
