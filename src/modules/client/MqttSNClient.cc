@@ -23,6 +23,9 @@ unsigned MqttSNClient::sentUniquePublishMsgs = 0;
 unsigned MqttSNClient::receivedUniquePublishMsgs = 0;
 unsigned MqttSNClient::receivedDuplicatePublishMsgs = 0;
 
+unsigned MqttSNClient::publishersRetransmissions = 0;
+unsigned MqttSNClient::subscribersRetransmissions = 0;
+
 void MqttSNClient::levelOneInit()
 {
     stateChangeEvent = new inet::ClockEvent("stateChangeTimer");
@@ -59,6 +62,9 @@ void MqttSNClient::levelOneInit()
     sentUniquePublishMsgs = 0;
     receivedUniquePublishMsgs = 0;
     receivedDuplicatePublishMsgs = 0;
+
+    publishersRetransmissions = 0;
+    subscribersRetransmissions = 0;
 
     levelTwoInit();
 }
@@ -1032,7 +1038,8 @@ void MqttSNClient::appendSimulationResultsToCsv(const std::string& filePath)
 
     // if the file does not exist, write the column headers
     if (!fileExists) {
-        outfile << "BER,Average End-to-End Delay,Hit Rate,Total Received Duplicates\n";
+        outfile << "BER,Average End-to-End Delay,Hit Rate,Total Received Duplicates,"
+                   "Publishers Retransmissions,Servers Retransmissions,Subscribers Retransmissions\n";
     }
 
     // calculate average end-to-end delay
@@ -1042,7 +1049,8 @@ void MqttSNClient::appendSimulationResultsToCsv(const std::string& filePath)
     double hitRate = sentUniquePublishMsgs > 0 ? static_cast<double>(receivedUniquePublishMsgs) / sentUniquePublishMsgs * 100 : 0;
 
     // write the simulation results to the file
-    outfile << MqttSNApp::packetBER << "," << averageDelay << "," << hitRate << "," << receivedDuplicatePublishMsgs << "\n";
+    outfile << MqttSNApp::packetBER << "," << averageDelay << "," << hitRate << "," << receivedDuplicatePublishMsgs << ","
+            << publishersRetransmissions << "," << MqttSNApp::serversRetransmissions << subscribersRetransmissions << "\n";
 
     // close the files
     infile.close();
@@ -1175,6 +1183,8 @@ void MqttSNClient::retransmitDisconnect(const inet::L3Address& destAddress, cons
     else {
         MqttSNApp::sendDisconnect(destAddress, destPort);
     }
+
+    updateRetransmissionsCounter();
 }
 
 void MqttSNClient::retransmitPingReq(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
@@ -1185,6 +1195,8 @@ void MqttSNClient::retransmitPingReq(const inet::L3Address& destAddress, const i
     else {
         MqttSNApp::sendPingReq(destAddress, destPort);
     }
+
+    updateRetransmissionsCounter();
 }
 
 MqttSNClient::~MqttSNClient()

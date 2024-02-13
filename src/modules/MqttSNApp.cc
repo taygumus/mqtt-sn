@@ -11,6 +11,8 @@ namespace mqttsn {
 
 using json = nlohmann::json;
 
+unsigned MqttSNApp::serversRetransmissions = 0;
+
 void MqttSNApp::initialize(int stage)
 {
     ClockUserModuleMixin::initialize(stage);
@@ -20,6 +22,8 @@ void MqttSNApp::initialize(int stage)
         retransmissionCounter = par("retransmissionCounter");
 
         packetBER = par("packetBER");
+
+        serversRetransmissions = 0;
 
         levelOneInit();
     }

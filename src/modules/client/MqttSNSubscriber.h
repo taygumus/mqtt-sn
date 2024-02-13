@@ -101,6 +101,8 @@ class MqttSNSubscriber : public MqttSNClient
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
                                                      MsgType msgType) override;
 
+        virtual void updateRetransmissionsCounter() override;
+
         virtual void retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
         virtual void retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
 

@@ -64,6 +64,9 @@ class MqttSNClient : public MqttSNApp
         static unsigned receivedUniquePublishMsgs;
         static unsigned receivedDuplicatePublishMsgs;
 
+        static unsigned publishersRetransmissions;
+        static unsigned subscribersRetransmissions;
+
     protected:
         // initialization
         virtual void levelOneInit() override;
@@ -181,6 +184,9 @@ class MqttSNClient : public MqttSNApp
 
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
                                                      MsgType msgType) = 0;
+
+        virtual void updateRetransmissionsCounter() = 0;
+
     public:
         MqttSNClient() {};
         ~MqttSNClient();

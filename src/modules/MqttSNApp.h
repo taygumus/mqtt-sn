@@ -22,6 +22,9 @@ class MqttSNApp : public inet::ClockUserModuleMixin<inet::ApplicationBase>, publ
         // app state
         inet::UdpSocket socket;
 
+        // metrics attributes
+        static unsigned serversRetransmissions;
+
     protected:
         // initialization
         virtual int numInitStages() const override { return inet::NUM_INIT_STAGES; }

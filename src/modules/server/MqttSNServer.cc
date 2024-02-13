@@ -1256,6 +1256,8 @@ void MqttSNServer::handleRequestsCheckEvent()
             // update request information
             requestInfo.retransmissionCounter++;
             requestInfo.requestTime = getClockTime();
+
+            MqttSNApp::serversRetransmissions++;
         }
 
         ++requestIt;
@@ -1294,6 +1296,8 @@ void MqttSNServer::handleRegistrationsCheckEvent()
             // update the registration
             registerInfo.retransmissionCounter++;
             registerInfo.requestTime = getClockTime();
+
+            MqttSNApp::serversRetransmissions++;
         }
 
         ++registrationIt;

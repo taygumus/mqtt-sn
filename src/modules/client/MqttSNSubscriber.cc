@@ -696,6 +696,11 @@ void MqttSNSubscriber::handleRetransmissionEventCustom(const inet::L3Address& de
     }
 }
 
+void MqttSNSubscriber::updateRetransmissionsCounter()
+{
+    MqttSNClient::subscribersRetransmissions++;
+}
+
 void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     TopicIdType topicIdType = lastSubscription.itemInfo->topicIdType;
@@ -703,6 +708,8 @@ void MqttSNSubscriber::retransmitSubscribe(const inet::L3Address& destAddress, c
     sendSubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, true, lastSubscription.itemInfo->qos,
                   topicIdType, std::stoi(msg->par("msgId").stringValue()), lastSubscription.topicName, lastSubscription.itemInfo->topicId,
                   (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
+
+    MqttSNClient::subscribersRetransmissions++;
 }
 
 void MqttSNSubscriber::retransmitUnsubscribe(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
@@ -712,6 +719,8 @@ void MqttSNSubscriber::retransmitUnsubscribe(const inet::L3Address& destAddress,
     sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, topicIdType,
                     std::stoi(msg->par("msgId").stringValue()), lastUnsubscription.topicName, lastUnsubscription.itemInfo->topicId,
                     (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
+
+    MqttSNClient::subscribersRetransmissions++;
 }
 
 MqttSNSubscriber::~MqttSNSubscriber()

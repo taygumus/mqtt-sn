@@ -778,30 +778,45 @@ void MqttSNPublisher::handleRetransmissionEventCustom(const inet::L3Address& des
     }
 }
 
+void MqttSNPublisher::updateRetransmissionsCounter()
+{
+    MqttSNClient::publishersRetransmissions++;
+}
+
 void MqttSNPublisher::retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort)
 {
     sendBaseWithWillTopic(destAddress, destPort, MsgType::WILLTOPICUPD, ConversionHelper::intToQoS(willQoS), willRetain, willTopic);
+
+    MqttSNClient::publishersRetransmissions++;
 }
 
 void MqttSNPublisher::retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort)
 {
     sendBaseWithWillMsg(destAddress, destPort, MsgType::WILLMSGUPD, willMsg);
+
+    MqttSNClient::publishersRetransmissions++;
 }
 
 void MqttSNPublisher::retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendRegister(destAddress, destPort, std::stoi(msg->par("msgId").stringValue()), lastRegistration.topicName);
+
+    MqttSNClient::publishersRetransmissions++;
 }
 
 void MqttSNPublisher::retransmitPublish(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendPublish(destAddress, destPort, true, lastPublish.dataInfo->qos, lastPublish.dataInfo->retain, lastPublish.itemInfo->topicIdType,
                 lastPublish.topicId, std::stoi(msg->par("msgId").stringValue()), lastPublish.dataInfo->data, lastPublish.tagInfo);
+
+    MqttSNClient::publishersRetransmissions++;
 }
 
 void MqttSNPublisher::retransmitPubRel(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg)
 {
     sendBaseWithMsgId(destAddress, destPort, MsgType::PUBREL, std::stoi(msg->par("msgId").stringValue()));
+
+    MqttSNClient::publishersRetransmissions++;
 }
 
 MqttSNPublisher::~MqttSNPublisher()

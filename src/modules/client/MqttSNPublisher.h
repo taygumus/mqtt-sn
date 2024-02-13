@@ -111,6 +111,8 @@ class MqttSNPublisher : public MqttSNClient
         virtual void handleRetransmissionEventCustom(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg,
                                                      MsgType msgType) override;
 
+        virtual void updateRetransmissionsCounter() override;
+
         virtual void retransmitWillTopicUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitWillMsgUpd(const inet::L3Address& destAddress, const int& destPort);
         virtual void retransmitRegister(const inet::L3Address& destAddress, const int& destPort, omnetpp::cMessage* msg);
