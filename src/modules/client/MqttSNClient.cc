@@ -1050,7 +1050,7 @@ void MqttSNClient::appendSimulationResultsToCsv(const std::string& filePath)
 
     // write the simulation results to the file
     outfile << MqttSNApp::packetBER << "," << averageDelay << "," << hitRate << "," << receivedDuplicatePublishMsgs << ","
-            << publishersRetransmissions << "," << MqttSNApp::serversRetransmissions << subscribersRetransmissions << "\n";
+            << publishersRetransmissions << "," << MqttSNApp::serversRetransmissions << "," <<subscribersRetransmissions << "\n";
 
     // close the files
     infile.close();
