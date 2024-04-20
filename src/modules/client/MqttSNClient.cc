@@ -661,11 +661,11 @@ void MqttSNClient::processPingResp(const inet::L3Address& srcAddress, const int&
     if (currentState == ClientState::AWAKE) {
         returnToSleep();
         clearRetransmissions();
+        return;
     }
-    else {
-        EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
-        unscheduleMsgRetransmission(MsgType::PINGREQ);
-    }
+
+    EV << "Received ping response from server: " << srcAddress << ":" << srcPort << std::endl;
+    unscheduleMsgRetransmission(MsgType::PINGREQ);
 }
 
 void MqttSNClient::processDisconnect(inet::Packet* pk)
@@ -820,13 +820,12 @@ void MqttSNClient::handlePingEvent()
 
 void MqttSNClient::updateActiveGateways(const inet::L3Address& srcAddress, const int& srcPort, uint8_t gatewayId, uint16_t duration)
 {
-    auto it = gateways.find(gatewayId);
-
     // gwInfo messages use a temporary duration set in the client
     if (duration == 0) {
         duration = temporaryDuration;
     }
 
+    auto it = gateways.find(gatewayId);
     if (it == gateways.end()) {
         GatewayInfo gatewayInfo;
         gatewayInfo.address = srcAddress;
@@ -835,15 +834,15 @@ void MqttSNClient::updateActiveGateways(const inet::L3Address& srcAddress, const
         gatewayInfo.lastUpdatedTime = getClockTime();
 
         gateways[gatewayId] = gatewayInfo;
+        return;
     }
-    else {
-        // update the duration field only when we receive an advertise message
-        if (duration != temporaryDuration && it->second.duration != duration) {
-            it->second.duration = duration;
-        }
 
-        it->second.lastUpdatedTime = getClockTime();
+    // update the duration field only when we receive an advertise message
+    if (duration != temporaryDuration && it->second.duration != duration) {
+        it->second.duration = duration;
     }
+
+    it->second.lastUpdatedTime = getClockTime();
 }
 
 bool MqttSNClient::isSelectedGateway(const inet::L3Address& srcAddress, const int& srcPort)
@@ -898,7 +897,7 @@ void MqttSNClient::scheduleRetransmissionWithMsgId(MsgType msgType, uint16_t msg
 
 bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
 {
-    // check if the message type exists in the map and if the stored message ID matches the input one
+    // check if the message type exists in the map
     auto it = retransmissions.find(msgType);
     if (it == retransmissions.end()) {
         // message type not found in retransmissions
@@ -916,6 +915,7 @@ bool MqttSNClient::checkMsgIdForType(MsgType msgType, uint16_t msgId)
         return false;
     }
 
+    // check if the stored message ID matches the input one
     return std::stoi(retransmissionEvent->par("msgId").stringValue()) == msgId;
 }
 
@@ -1096,8 +1096,6 @@ void MqttSNClient::unscheduleMsgRetransmission(MsgType msgType)
 {
     // find the element in the map with the specified message type
     auto it = retransmissions.find(msgType);
-
-    // check if the element is found in the map
     if (it != retransmissions.end()) {
         RetransmissionInfo& retransmissionInfo = it->second;
         // cancel the event inside the struct
@@ -1125,9 +1123,8 @@ void MqttSNClient::handleRetransmissionEvent(omnetpp::cMessage* msg)
     // get the message type from the message parameter
     MsgType msgType = static_cast<MsgType>(msg->par("messageType").longValue());
 
-    auto it = retransmissions.find(msgType);
-
     // check the message type in the map
+    auto it = retransmissions.find(msgType);
     if (it == retransmissions.end()) {
         // if not found, exit the function
         return;

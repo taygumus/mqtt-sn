@@ -258,12 +258,11 @@ void MqttSNServer::setGatewayId()
 {
     if (gatewayIdCounter < UINT8_MAX) {
         gatewayIdCounter++;
-    }
-    else {
-        throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
+        gatewayId = gatewayIdCounter;
+        return;
     }
 
-    gatewayId = gatewayIdCounter;
+    throw omnetpp::cRuntimeError("The gateway ID counter has reached its maximum limit");
 }
 
 void MqttSNServer::processPacket(inet::Packet* pk)
@@ -1434,7 +1433,6 @@ ClientInfo* MqttSNServer::getClientInfo(const inet::L3Address& clientAddress, co
 {
     // check if the client with the specified address and port is present in the data structure
     auto clientIterator = clients.find(std::make_pair(clientAddress, clientPort));
-
     if (clientIterator != clients.end()) {
         return &clientIterator->second;
     }
@@ -1449,7 +1447,6 @@ PublisherInfo* MqttSNServer::getPublisherInfo(const inet::L3Address& publisherAd
 
     // check if the publisher with the specified address and port is present in the data structure
     auto publisherIterator = publishers.find(publisherKey);
-
     if (publisherIterator != publishers.end()) {
         return &publisherIterator->second;
     }
@@ -1604,6 +1601,8 @@ MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo,
         if (messageIt != messages.end()) {
             messageInfo = &messageIt->second;
         }
+
+        return messageInfo;
     }
     else if (requestInfo.retainMessagesKey > 0) {
         // check if the key exists in the retain messages map
@@ -1625,12 +1624,11 @@ MessageInfo* MqttSNServer::getRequestMessageInfo(const RequestInfo& requestInfo,
             // add the object pointer to the vector for future deallocation
             allocatedObjects.push_back(messageInfo);
         }
-    }
-    else {
-        throw omnetpp::cRuntimeError("Expecting at least one valid message key");
+
+        return messageInfo;
     }
 
-    return messageInfo;
+    throw omnetpp::cRuntimeError("Expecting at least one valid message key");
 }
 
 void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
@@ -1949,7 +1947,6 @@ SubscriberInfo* MqttSNServer::getSubscriberInfo(const inet::L3Address& subscribe
 
     // check if the subscriber with the specified address and port is present in the data structure
     auto subscriberIterator = subscribers.find(subscriberKey);
-
     if (subscriberIterator != subscribers.end()) {
         return &subscriberIterator->second;
     }
