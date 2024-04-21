@@ -605,7 +605,7 @@ void MqttSNServer::processDisconnect(inet::Packet* pk, const inet::L3Address& sr
     clientInfo->sleepDuration = sleepDuration;
     clientInfo->currentState = (sleepDuration > 0) ? ClientState::ASLEEP : ClientState::DISCONNECTED;
 
-    // ACK with disconnect message
+    // ACK with DISCONNECT message
     MqttSNApp::sendDisconnect(srcAddress, srcPort, sleepDuration);
 }
 
@@ -730,7 +730,7 @@ void MqttSNServer::processPublish(inet::Packet* pk, const inet::L3Address& srcAd
     // save message data for reuse
     publisherInfo->messages[msgId] = dataInfo;
 
-    // send publish received
+    // send PUBlish RECeived
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
 }
 
@@ -780,7 +780,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
     // check if the message exists for the given message ID
     auto messageIt = messages.find(msgId);
     if (messageIt != messages.end()) {
-        // process the original publish message only once; as required for QoS 2 level
+        // process the original PUBLISH message only once; as required for QoS 2 level
         const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
@@ -799,7 +799,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
         messages.erase(messageIt);
     }
 
-    // send publish complete
+    // send PUBlish COMPlete
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
 }
 
@@ -964,7 +964,7 @@ void MqttSNServer::processPubRec(inet::Packet* pk, const inet::L3Address& srcAdd
         return;
     }
 
-    // send publish release
+    // send PUBlish RELease
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
 
     // update the request
@@ -1106,7 +1106,7 @@ void MqttSNServer::handleActiveClientsCheckEvent()
                 // will feature activation; to be implemented
             }
             else {
-                // send a solicitation ping request to the expired client
+                // send a solicitation PINGREQ to the expired client
                 const std::pair<inet::L3Address, int> clientKey = it->first;
 
                 MqttSNApp::sendPingReq(clientKey.first, clientKey.second);
@@ -1206,11 +1206,11 @@ void MqttSNServer::handleRequestsCheckEvent()
         QoS resultQoS;
 
         if (requestInfo.messageType == MsgType::PUBLISH) {
-            // calculate the minimum QoS level between subscription QoS and original publish QoS
+            // calculate the minimum QoS level between subscription QoS and original PUBLISH QoS
             resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
 
             if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
-                // send a publish message with QoS -1 or QoS 0 to the subscriber
+                // send a PUBLISH message with QoS -1 or QoS 0 to the subscriber
                 sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
                             messageInfo->topicIdType, messageInfo->topicId, 0, messageInfo->data, messageInfo->tagInfo);
 
@@ -1219,7 +1219,7 @@ void MqttSNServer::handleRequestsCheckEvent()
             }
 
             if (requestInfo.sendAtLeastOnce) {
-                // send a publish message with QoS 1 or QoS 2 to the subscriber
+                // send a PUBLISH message with QoS 1 or QoS 2 to the subscriber
                 sendPublish(subscriberAddress, subscriberPort, messageInfo->dup, resultQoS, messageInfo->retain,
                             messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
 
@@ -1243,12 +1243,12 @@ void MqttSNServer::handleRequestsCheckEvent()
             resultQoS = NumericHelper::minQoS(subscriptionKey.second, messageInfo->qos);
 
             if (requestInfo.messageType == MsgType::PUBLISH) {
-                // send a publish message with QoS 1 or QoS 2 to the subscriber
+                // send a PUBLISH message with QoS 1 or QoS 2 to the subscriber
                 sendPublish(subscriberAddress, subscriberPort, true, resultQoS, messageInfo->retain,
                             messageInfo->topicIdType, messageInfo->topicId, requestIt->first, messageInfo->data, messageInfo->tagInfo);
             }
             else if (requestInfo.messageType == MsgType::PUBREL) {
-                // send publish release
+                // send PUBlish RELease
                 sendBaseWithMsgId(subscriberAddress, subscriberPort, MsgType::PUBREL, requestIt->first);
             }
 
@@ -1551,7 +1551,7 @@ void MqttSNServer::addNewPendingRetainMessage(const inet::L3Address& subscriberA
         messageInfo.retain = true;
         messageInfo.data = retainMessageInfo.data;
 
-        // calculate the minimum QoS level between subscription QoS and original publish QoS
+        // calculate the minimum QoS level between subscription QoS and original PUBLISH QoS
         messageInfo.qos = NumericHelper::minQoS(qos, retainMessageInfo.qos);
 
         // store the pending retain message for the subscriber
@@ -1644,7 +1644,7 @@ void MqttSNServer::dispatchPublishToSubscribers(const MessageInfo& messageInfo)
         // check if the subscription exists for the given key
         auto subscriptionIt = subscriptions.find(key);
         if (subscriptionIt != subscriptions.end()) {
-            // calculate the minimum QoS level between subscription QoS and incoming publish QoS
+            // calculate the minimum QoS level between subscription QoS and incoming PUBLISH QoS
             QoS resultQoS = NumericHelper::minQoS(key.second, messageInfo.qos);
 
             for (const auto& subscriber : subscriptionIt->second) {
@@ -1704,7 +1704,7 @@ void MqttSNServer::processRequest(const inet::L3Address& subscriberAddress, cons
         addAndMarkMessage(messageInfo, isMessageAdded);
     }
 
-    // process the publish request to the subscriber
+    // process the PUBLISH request to the subscriber
     addAndSendPublishRequest(subscriberAddress, subscriberPort, messageInfo, resultQoS, currentMessageId);
 }
 
@@ -1716,7 +1716,7 @@ void MqttSNServer::bufferRequest(const inet::L3Address& subscriberAddress, const
         addAndMarkMessage(messageInfo, isMessageAdded);
     }
 
-    // add a new publish request to be processed later
+    // add a new PUBLISH request to be processed later
     addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, true, currentMessageId, 0);
 }
 
@@ -1724,7 +1724,7 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
                                             QoS resultQoS, uint16_t messagesKey, uint16_t retainMessagesKey)
 {
     if (resultQoS == QoS::QOS_MINUS_ONE || resultQoS == QoS::QOS_ZERO) {
-        // send a publish message with QoS -1 or QoS 0 to the subscriber
+        // send a PUBLISH message with QoS -1 or QoS 0 to the subscriber
         sendPublish(subscriberAddress, subscriberPort, messageInfo.dup, resultQoS, messageInfo.retain,
                     messageInfo.topicIdType, messageInfo.topicId, 0, messageInfo.data, messageInfo.tagInfo);
 
@@ -1734,7 +1734,7 @@ void MqttSNServer::addAndSendPublishRequest(const inet::L3Address& subscriberAdd
 
     addNewRequest(subscriberAddress, subscriberPort, MsgType::PUBLISH, false, messagesKey, retainMessagesKey);
 
-    // send a publish message with QoS 1 or QoS 2 to the subscriber
+    // send a PUBLISH message with QoS 1 or QoS 2 to the subscriber
     sendPublish(subscriberAddress, subscriberPort, messageInfo.dup, resultQoS, messageInfo.retain,
                 messageInfo.topicIdType, messageInfo.topicId, currentRequestId, messageInfo.data, messageInfo.tagInfo);
 }

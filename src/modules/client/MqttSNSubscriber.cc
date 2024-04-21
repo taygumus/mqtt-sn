@@ -317,7 +317,7 @@ void MqttSNSubscriber::processPublish(inet::Packet* pk, const inet::L3Address& s
     // save message data for reuse
     messages[msgId] = dataInfo;
 
-    // send publish received
+    // send PUBlish RECeived
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREC, msgId);
 }
 
@@ -329,7 +329,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
     // check if the message exists for the given message ID
     auto messageIt = messages.find(msgId);
     if (messageIt != messages.end()) {
-        // process the original publish message only once; as required for QoS 2 level
+        // process the original PUBLISH message only once; as required for QoS 2
         const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
@@ -350,7 +350,7 @@ void MqttSNSubscriber::processPubRel(inet::Packet* pk, const inet::L3Address& sr
         messages.erase(messageIt);
     }
 
-    // send publish complete
+    // send PUBlish COMPlete
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBCOMP, msgId);
 }
 
@@ -443,7 +443,7 @@ void MqttSNSubscriber::handleSubscriptionEvent()
                   topicIdType, MqttSNClient::getNewMsgId(), lastSubscription.topicName, lastSubscription.itemInfo->topicId,
                   (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
 
-    // schedule subscribe retransmission
+    // schedule SUBSCRIBE retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::SUBSCRIBE, MqttSNClient::currentMsgId);
 }
 
@@ -458,7 +458,7 @@ void MqttSNSubscriber::handleUnsubscriptionEvent()
     sendUnsubscribe(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, topicIdType, MqttSNClient::getNewMsgId(),
                     lastUnsubscription.topicName, lastUnsubscription.itemInfo->topicId, (topicIdType == TopicIdType::PRE_DEFINED_TOPIC_ID));
 
-    // schedule unsubscribe retransmission
+    // schedule UNSUBSCRIBE retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::UNSUBSCRIBE, MqttSNClient::currentMsgId);
 }
 
@@ -668,14 +668,14 @@ void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
         instancePublishMsgIdentifiers.insert(tagInfo.identifier);
     }
     else {
-        // increment the count of duplicate publish messages received so far
+        // increment the count of duplicate PUBLISH messages received so far
         MqttSNClient::receivedDuplicatePublishMsgs++;
     }
 
     // insert the message identifier into the set to track distinct messages
     publishMsgIdentifiers.insert(tagInfo.identifier);
 
-    // count of unique publish messages received so far
+    // count of unique PUBLISH messages received so far
     MqttSNClient::receivedUniquePublishMsgs = publishMsgIdentifiers.size();
 }
 

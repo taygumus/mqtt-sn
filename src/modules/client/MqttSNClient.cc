@@ -237,7 +237,7 @@ bool MqttSNClient::fromActiveToDisconnected()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
-    // schedule disconnect retransmission
+    // schedule DISCONNECT retransmission
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT);
 
     return false;
@@ -278,7 +278,7 @@ bool MqttSNClient::fromActiveToAsleep()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port, sleepDuration);
 
-    // schedule disconnect retransmission
+    // schedule DISCONNECT retransmission
     std::map<std::string, std::string> parameters;
     parameters["sleepDuration"] = std::to_string(sleepDuration);
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT, &parameters);
@@ -318,7 +318,7 @@ bool MqttSNClient::fromAsleepToAwake()
     EV << "Asleep -> Awake" << std::endl;
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port, clientId);
 
-    // schedule ping retransmission
+    // schedule PINGREQ retransmission
     std::map<std::string, std::string> parameters;
     parameters["clientId"] = clientId;
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::PINGREQ, &parameters);
@@ -337,7 +337,7 @@ bool MqttSNClient::fromAsleepToDisconnected()
 
     MqttSNApp::sendDisconnect(selectedGateway.address, selectedGateway.port);
 
-    // schedule disconnect retransmission
+    // schedule DISCONNECT retransmission
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::DISCONNECT);
 
     return false;
@@ -591,13 +591,13 @@ void MqttSNClient::processAdvertise(inet::Packet* pk, const inet::L3Address& src
 
 void MqttSNClient::processSearchGw()
 {
-    // no need for this client to send again the search gateway message
+    // no need for this client to send again SEARCHGW message
     if (searchGateway) {
         searchGateway = false;
     }
 
     if (!gateways.empty() && !gatewayInfoEvent->isScheduled()) {
-        // delay sending of gwInfo message for a random time
+        // delay sending of GWINFO message for a random time
         scheduleClockEventAfter(gatewayInfoInterval, gatewayInfoEvent);
     }
 }
@@ -611,15 +611,15 @@ void MqttSNClient::processGwInfo(inet::Packet* pk, const inet::L3Address& srcAdd
     uint16_t gatewayPort = payload->getGwPort();
 
     if (!gatewayAddress.empty() && gatewayPort > 0) {
-        // gwInfo from other client
+        // GWINFO from other client
         inet::L3Address ipAddress = inet::L3AddressResolver().resolve(gatewayAddress.c_str());
         updateActiveGateways(ipAddress, (int) gatewayPort, gatewayId, 0);
     }
     else {
-        // gwInfo from a server
+        // GWINFO from a server
         updateActiveGateways(srcAddress, srcPort, gatewayId, 0);
 
-        // if client receives a gwInfo message, it will cancel the transmission of its gwInfo message
+        // if client receives a GWINFO message, it will cancel the transmission of its GWINFO message
         cancelEvent(gatewayInfoEvent);
     }
 
@@ -760,7 +760,7 @@ void MqttSNClient::handleSearchGatewayEvent()
         return;
     }
 
-    // send a search gateway message
+    // send a SEARCHGW message
     sendSearchGw();
 
     if (!maxIntervalReached) {
@@ -785,7 +785,7 @@ void MqttSNClient::handleGatewayInfoEvent()
     uint8_t gatewayId = gateway.first;
     GatewayInfo gatewayInfo = gateway.second;
 
-    // client answers with a gwInfo message
+    // client answers with a GWINFO message
     MqttSNApp::sendGwInfo(gatewayId, gatewayInfo.address.str(), gatewayInfo.port);
 }
 
@@ -812,7 +812,7 @@ void MqttSNClient::handlePingEvent()
 {
     MqttSNApp::sendPingReq(selectedGateway.address, selectedGateway.port);
 
-    // schedule ping retransmission
+    // schedule PINGREQ retransmission
     scheduleMsgRetransmission(selectedGateway.address, selectedGateway.port, MsgType::PINGREQ);
 
     scheduleClockEventAfter(keepAlive, pingEvent);
@@ -820,7 +820,7 @@ void MqttSNClient::handlePingEvent()
 
 void MqttSNClient::updateActiveGateways(const inet::L3Address& srcAddress, const int& srcPort, uint8_t gatewayId, uint16_t duration)
 {
-    // gwInfo messages use a temporary duration set in the client
+    // GWINFO messages use a temporary duration set in the client
     if (duration == 0) {
         duration = temporaryDuration;
     }
@@ -837,7 +837,7 @@ void MqttSNClient::updateActiveGateways(const inet::L3Address& srcAddress, const
         return;
     }
 
-    // update the duration field only when we receive an advertise message
+    // update the duration field only when an advertise message is received
     if (duration != temporaryDuration && it->second.duration != duration) {
         it->second.duration = duration;
     }

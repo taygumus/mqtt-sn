@@ -274,7 +274,7 @@ void MqttSNPublisher::processPubAck(inet::Packet* pk)
         throw omnetpp::cRuntimeError("Unexpected error: Invalid return code");
     }
 
-    // handle operations when publish is ACCEPTED
+    // handle operations when PUBLISH is ACCEPTED
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
 }
@@ -289,10 +289,10 @@ void MqttSNPublisher::processPubRec(inet::Packet* pk, const inet::L3Address& src
         return;
     }
 
-    // send publish release
+    // send PUBlish RELease
     sendBaseWithMsgId(srcAddress, srcPort, MsgType::PUBREL, msgId);
 
-    // schedule publish release retransmission
+    // schedule PUBlish RELease retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBREL, msgId);
 }
 
@@ -305,7 +305,7 @@ void MqttSNPublisher::processPubComp(inet::Packet* pk)
         return;
     }
 
-    // proceed with the next publish
+    // proceed with the next PUBLISH
     lastPublish.retry = false;
     scheduleClockEventAfter(publishInterval, publishEvent);
 }
@@ -410,7 +410,7 @@ void MqttSNPublisher::handleRegistrationEvent()
     sendRegister(MqttSNClient::selectedGateway.address, MqttSNClient::selectedGateway.port, MqttSNClient::getNewMsgId(),
                  lastRegistration.topicName);
 
-    // schedule register retransmission
+    // schedule REGISTER retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::REGISTER, MqttSNClient::currentMsgId);
 }
 
@@ -435,7 +435,7 @@ void MqttSNPublisher::handlePublishEvent()
                 lastPublish.itemInfo->topicIdType, lastPublish.topicId, MqttSNClient::getNewMsgId(), lastPublish.dataInfo->data,
                 lastPublish.tagInfo);
 
-    // schedule publish retransmission
+    // schedule PUBLISH retransmission
     MqttSNClient::scheduleRetransmissionWithMsgId(MsgType::PUBLISH, MqttSNClient::currentMsgId);
 }
 
@@ -503,7 +503,7 @@ void MqttSNPublisher::populateItems()
 
         // iterate over data array within the current item
         for (const auto& data : item["data"]) {
-            // extract quality of service (QoS) and retain flags
+            // extract Quality of Service (QoS) and retain flags
             QoS qos = ConversionHelper::intToQoS(data["qos"]);
             bool retain = data["retain"];
 
@@ -621,7 +621,7 @@ void MqttSNPublisher::retryLastPublish()
 {
     lastPublish.retry = true;
 
-    // reschedule the last publish
+    // reschedule the last PUBLISH
     cancelEvent(publishEvent);
     scheduleClockEventAfter(MqttSNClient::waitingInterval, publishEvent);
 }
@@ -634,7 +634,7 @@ bool MqttSNPublisher::proceedWithPublish()
     }
 
     int publishLimit = par("publishLimit");
-    // check if the publish limit is set and reached
+    // check if the PUBLISH limit is set and reached
     if (publishLimit != -1 && publishLimit == publishCounter) {
         return false;
     }
@@ -695,7 +695,7 @@ bool MqttSNPublisher::proceedWithPublish()
 bool MqttSNPublisher::proceedWithPublishMinusOne()
 {
     int publishMinusOneLimit = par("publishMinusOneLimit");
-    // check if the publish limit is set and reached
+    // check if the PUBLISH limit is set and reached
     if (publishMinusOneLimit != -1 && publishMinusOneLimit == publishMinusOneCounter) {
         return false;
     }
