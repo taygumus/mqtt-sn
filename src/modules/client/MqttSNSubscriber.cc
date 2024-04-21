@@ -664,7 +664,7 @@ void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
     // duplicate detection
     auto identifierIt = instancePublishMsgIdentifiers.find(tagInfo.identifier);
     if (identifierIt == instancePublishMsgIdentifiers.end()) {
-        // insert the message identifier into the instance set to track distinct messages
+        // insert the message identifier into the instance set to track unique messages
         instancePublishMsgIdentifiers.insert(tagInfo.identifier);
     }
     else {
@@ -672,7 +672,7 @@ void MqttSNSubscriber::handlePublishMessageMetrics(const TagInfo& tagInfo)
         MqttSNClient::receivedDuplicatePublishMsgs++;
     }
 
-    // insert the message identifier into the set to track distinct messages
+    // insert the message identifier into the set to track unique messages
     publishMsgIdentifiers.insert(tagInfo.identifier);
 
     // count of unique PUBLISH messages received so far
