@@ -780,7 +780,7 @@ void MqttSNServer::processPubRel(inet::Packet* pk, const inet::L3Address& srcAdd
     // check if the message exists for the given message ID
     auto messageIt = messages.find(msgId);
     if (messageIt != messages.end()) {
-        // process the original PUBLISH message only once; as required for QoS 2 level
+        // process the original PUBLISH message only once; as required for QoS 2
         const DataInfo& dataInfo = messageIt->second;
 
         MessageInfo messageInfo;
