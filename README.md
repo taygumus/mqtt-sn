@@ -17,8 +17,8 @@ To run simulations:
 
 2. Either use the existing simulation model or make edits to the `simulations/WifiNetwork.ned` file as required.
 
-3. Use the existing parameters or modify them in the `simulation/omnetpp.ini` file as needed.
+3. Use the existing parameters or modify them in the `simulations/omnetpp.ini` file as needed.
 
 4. Run the simulation.
 
-5. Results can be found in the CSV file within the `simulation/results` directory.
+5. Results can be found in the CSV file within the `simulations/results` directory.
