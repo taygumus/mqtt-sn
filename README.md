@@ -2,7 +2,7 @@
 
 ## Project Overview
 This repository presents an MQTT-SN implementation using the discrete event simulator OMNeT++. The development is mostly compliant with the protocol standards. See details in the [MQTT-SN specifications](https://groups.oasis-open.org/higherlogic/ws/public/document?document_id=66091).  
-The primary aim of the work is academic, serving as the completion of my final MSc thesis. For more information, please access the related [documentation](https://github.com/taygumus/thesis).
+The primary aim of the work is academic, serving as the completion of my final MSc thesis. For more information, please access the [related documentation](https://github.com/taygumus/thesis).
 
 ## Installation
 1. **Install OMNeT++**: Download and install OMNeT++ from [OMNeT++](https://omnetpp.org/).
