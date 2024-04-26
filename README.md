@@ -11,6 +11,8 @@ The primary aim of the work is academic, serving as the completion of my final M
 
 3. **Clone the Repository**: Clone this repository using: `git clone https://github.com/taygumus/mqtt-sn.git`.
 
+4. **Include JSON library**: Download the `json.hpp` file from the [nlohmann JSON repository](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json.hpp) and place it in the `src/externals/nlohmann` directory.
+
 ## Usage
 To run simulations:
 
