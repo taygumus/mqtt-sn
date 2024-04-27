@@ -7,9 +7,12 @@ The primary aim of the work is academic, serving as the completion of my final M
 ## Installation
 1. **Install OMNeT++**: Download and install OMNeT++ from [OMNeT++](https://omnetpp.org/).
 
-2. **Install INET Framework**: Download and integrate the INET framework into OMNeT++. Learn more at [INET](https://inet.omnetpp.org/).
+2. **Install INET Framework**: Download and integrate the INET framework into OMNeT++. Learn more about [INET](https://inet.omnetpp.org/).
 
-3. **Clone the Repository**: Clone this repository using: `git clone https://github.com/taygumus/mqtt-sn.git`.
+3. **Clone the Repository**: Clone this repository using:
+   ```bash
+   git clone https://github.com/taygumus/mqtt-sn.git
+   ```
 
 4. **Include JSON library**: Download the `json.hpp` file from the [nlohmann JSON repository](https://github.com/nlohmann/json/blob/develop/single_include/nlohmann/json.hpp) and place it in the `src/externals/nlohmann` directory.
 
