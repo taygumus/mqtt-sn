@@ -27,7 +27,11 @@ To run simulations:
 5. Results can be found within the `simulations/results` directory.
 
 ## Contributing
-There are certainly opportunities for refinement and enhancement, particularly in terms of addressing a few minor omitted functionalities, some method refactorization and overall performance improvement. The project meets the academic goals for the final thesis. Contributions are warmly welcomed and your input would be highly appreciated.
+There are certainly opportunities for refinement and enhancement, particularly in terms of addressing a few minor omitted functionalities, some method refactoring and overall performance improvement. The project meets the academic goals for the final thesis. Contributions are warmly welcomed and your input would be highly appreciated.
 
 ## Credits and Licenses
+- **OMNeT++**: Licensed under its own [Academic Public License](https://omnetpp.org/intro/license).
+
+- **INET Framework**: GNU Lesser General Public License. For details, see [INET License repository](https://github.com/inet-framework/inet/blob/master/LICENSE.md).
+
 - **JSON for Modern C++ by Niels Lohmann**: Used under the MIT License. The license details can be viewed in the [nlohmann JSON MIT License](https://github.com/nlohmann/json/blob/develop/LICENSE.MIT).
